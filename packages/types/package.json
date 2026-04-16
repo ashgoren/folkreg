@@ -6,6 +6,9 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "scripts": {
+    "generate:types": "supabase gen types --lang=typescript --local > src/database.types.ts"
+  },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "typescript": "^5"
