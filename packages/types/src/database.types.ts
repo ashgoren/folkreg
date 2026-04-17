@@ -52,7 +52,7 @@ export type Database = {
             | null
           people: Json | null
           status: Database["public"]["Enums"]["order_status_type"] | null
-          tenant_id: string | null
+          tenant_id: string
           total: number | null
         }
         Insert: {
@@ -72,7 +72,7 @@ export type Database = {
             | null
           people?: Json | null
           status?: Database["public"]["Enums"]["order_status_type"] | null
-          tenant_id?: string | null
+          tenant_id: string
           total?: number | null
         }
         Update: {
@@ -92,7 +92,7 @@ export type Database = {
             | null
           people?: Json | null
           status?: Database["public"]["Enums"]["order_status_type"] | null
-          tenant_id?: string | null
+          tenant_id?: string
           total?: number | null
         }
         Relationships: [
