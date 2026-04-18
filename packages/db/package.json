@@ -5,16 +5,15 @@
   "private": true,
   "exports": {
     "./server": "./src/server.ts",
-    "./middleware": "./src/middleware.ts",
-    "./client": "./src/client.ts"
+    "./queries": "./src/queries.ts"
   },
   "dependencies": {
     "@repo/types": "workspace:*",
-    "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.2"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
+    "@types/node": "^20",
     "typescript": "^5"
   }
 }

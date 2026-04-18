@@ -26,6 +26,9 @@ importers:
       '@repo/types':
         specifier: workspace:*
         version: link:../../packages/types
+      '@supabase/ssr':
+        specifier: ^0.10.2
+        version: 0.10.2(@supabase/supabase-js@2.103.2)
       next:
         specifier: 16.2.3
         version: 16.2.3(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -75,6 +78,9 @@ importers:
       '@repo/types':
         specifier: workspace:*
         version: link:../../packages/types
+      '@supabase/supabase-js':
+        specifier: ^2.103.2
+        version: 2.103.2
       next:
         specifier: 16.2.3
         version: 16.2.3(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -127,10 +133,16 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.103.2
         version: 2.103.2
+      next:
+        specifier: 16.2.3
+        version: 16.2.3(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
     devDependencies:
       '@repo/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+      '@types/node':
+        specifier: ^20
+        version: 20.19.39
       typescript:
         specifier: ^5
         version: 5.9.2
