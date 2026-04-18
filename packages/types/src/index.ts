@@ -2,11 +2,6 @@ import { Tables, Enums } from "./database.types.js"
 
 export * from "./database.types.js"
 
-// Row type aliases
-export type Tenant = Tables<'tenants'>
-export type TenantSecrets = Tables<'tenant_secrets'>
-
-// Enum type aliases
 export type PaymentProcessor = Enums<'payment_processor_type'>
 export type PaymentMethod = Enums<'payment_method_type'>
 export type OrderStatus = Enums<'order_status_type'>
@@ -127,3 +122,14 @@ export interface SpreadsheetConfig {
 }
 
 export type ThemeConfig = Record<string, string>; // TBD
+
+export type Tenant = Omit<Tables<'tenants'>, 'event_config' | 'registration_config' | 'admissions_config' | 'payments_config' | 'theme_config' | 'spreadsheet_config'> & {
+  event_config: EventConfig | null
+  registration_config: RegistrationConfig | null
+  admissions_config: AdmissionsConfig | null
+  payments_config: PaymentsConfig | null
+  spreadsheet_config: SpreadsheetConfig | null
+  theme_config: ThemeConfig | null
+}
+
+export type TenantSecrets = Tables<'tenant_secrets'>
