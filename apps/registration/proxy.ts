@@ -5,7 +5,6 @@ import { createServiceRoleClient } from "@repo/db/server";
 import { getTenantByDomain } from "@repo/db/queries";
 
 async function resolveTenant(request: NextRequest) {
-  const supabaseResponse = NextResponse.next({ request });
   const supabase = createServiceRoleClient();
 
   const host = request.headers.get('host');
@@ -18,15 +17,13 @@ async function resolveTenant(request: NextRequest) {
     if (!tenant) {
       return new NextResponse('Tenant not found', { status: 404 });
     }
-
-    // Set tenant ID in custom header for downstream middleware & route handlers to use
-    supabaseResponse.headers.set('x-tenant-id', tenant.id);
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-tenant-id', tenant.id);
+    return NextResponse.next({ request: { headers: requestHeaders } });
   } catch (error) {
     console.error('Error resolving tenant:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
-
-  return supabaseResponse;
 }
 
 export async function proxy(request: NextRequest) {
