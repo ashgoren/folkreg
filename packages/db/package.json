@@ -9,7 +9,8 @@
   },
   "dependencies": {
     "@repo/types": "workspace:*",
-    "@supabase/supabase-js": "^2.103.2"
+    "@supabase/supabase-js": "^2.103.2",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",

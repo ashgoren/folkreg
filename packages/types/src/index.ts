@@ -1,6 +1,9 @@
-import { Tables, Enums } from "./database.types.js"
+import { Tables, Enums, Database } from "./database.types.js"
+import { type SupabaseClient } from "@supabase/supabase-js"
 
 export * from "./database.types.js"
+
+export type DbClient = SupabaseClient<Database>
 
 export type PaymentProcessor = Enums<'payment_processor_type'>
 export type PaymentMethod = Enums<'payment_method_type'>

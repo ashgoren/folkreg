@@ -1,6 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr";
-import { type Database } from "@repo/types";
-import { type DbClient } from "@repo/db/server";
+import { type Database, DbClient } from "@repo/types";
 
 export function createClient(): DbClient {
   return createBrowserClient<Database>(

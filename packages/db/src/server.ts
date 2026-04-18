@@ -1,7 +1,7 @@
-import { type Database } from "@repo/types";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js"
+import 'server-only';
 
-export type DbClient = SupabaseClient<Database>
+import { type Database } from "@repo/types";
+import { createClient } from "@supabase/supabase-js"
 
 export function createServiceRoleClient() {
   return createClient<Database>(

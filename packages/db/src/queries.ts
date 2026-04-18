@@ -1,5 +1,5 @@
-import type { DbClient } from "./server.ts";
 import type {
+  DbClient,
   Json,
   Tenant, TenantSecrets,
   EventConfig, RegistrationConfig, AdmissionsConfig, PaymentsConfig, SpreadsheetConfig, ThemeConfig,
