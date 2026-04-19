@@ -56,7 +56,7 @@ export function AppSidebar({ userEmail }: AppSidebarProps) {
   return (
     <Sidebar>
       <SidebarHeader className="px-4 py-4">
-        <span className="text-sm font-semibold tracking-tight">FolkReg Admin</span>
+        <span className="font-mono font-normal text-base">FolkReg Admin</span>
       </SidebarHeader>
 
       <SidebarContent>
