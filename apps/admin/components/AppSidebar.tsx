@@ -5,19 +5,22 @@ import {
   ChevronUp,
   ClipboardList,
   CreditCard,
-  LayoutDashboard,
-  Settings,
-  Users,
+  FileSignature,
+  LogOut,
+  Mail,
+  Palette,
+  Sheet,
+  Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { logout } from "@/app/auth/logout/actions";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -33,12 +36,14 @@ import {
 } from "@/components/ui/sidebar";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/event", label: "Event", icon: CalendarDays },
   { href: "/dashboard/registration", label: "Registration", icon: ClipboardList },
   { href: "/dashboard/admissions", label: "Admissions", icon: CreditCard },
-  { href: "/dashboard/attendees", label: "Attendees", icon: Users },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
+  { href: "/dashboard/payments", label: "Payments", icon: Wallet },
+  { href: "/dashboard/docuseal", label: "Docuseal", icon: FileSignature },
+  { href: "/dashboard/email", label: "Email", icon: Mail },
+  { href: "/dashboard/spreadsheet", label: "Spreadsheet", icon: Sheet },
+  { href: "/dashboard/theme", label: "Theme", icon: Palette },
 ];
 
 interface AppSidebarProps {
@@ -48,12 +53,10 @@ interface AppSidebarProps {
 export function AppSidebar({ userEmail }: AppSidebarProps) {
   const pathname = usePathname();
 
-  const initials = (userEmail.split("@")[0] ?? userEmail).slice(0, 2).toUpperCase();
-
   return (
     <Sidebar>
       <SidebarHeader className="px-4 py-4">
-        <span className="text-sm font-semibold tracking-tight">folkreg</span>
+        <span className="text-sm font-semibold tracking-tight">FolkReg Admin</span>
       </SidebarHeader>
 
       <SidebarContent>
@@ -79,19 +82,19 @@ export function AppSidebar({ userEmail }: AppSidebarProps) {
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton className="h-10">
-                  <Avatar className="h-6 w-6">
-                    <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-                  </Avatar>
+                <SidebarMenuButton>
                   <span className="flex-1 truncate text-sm">{userEmail}</span>
                   <ChevronUp className="ml-auto" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="top" align="start" className="w-56">
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="text-destructive focus:text-destructive cursor-pointer"
+                  variant="destructive"
+                  className="cursor-pointer"
                   onSelect={() => logout()}
                 >
+                  <LogOut />
                   Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
