@@ -1,39 +1,11 @@
 "use client";
 
-import {
-  CalendarDays,
-  ChevronUp,
-  ClipboardList,
-  CreditCard,
-  FileSignature,
-  LogOut,
-  Mail,
-  Palette,
-  Sheet,
-  Wallet,
-} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
+import { CalendarDays, ChevronUp, ClipboardList, CreditCard, FileSignature, LogOut, Mail, Palette, Sheet, Wallet } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { logout } from "@/app/auth/logout/actions";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar";
 
 const navItems = [
   { href: "/dashboard/event", label: "Event", icon: CalendarDays },
@@ -46,11 +18,7 @@ const navItems = [
   { href: "/dashboard/theme", label: "Theme", icon: Palette },
 ];
 
-interface AppSidebarProps {
-  userEmail: string;
-}
-
-export function AppSidebar({ userEmail }: AppSidebarProps) {
+export function AppSidebar({ userEmail }: { userEmail: string }) {
   const pathname = usePathname();
 
   return (

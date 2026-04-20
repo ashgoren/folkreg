@@ -18,11 +18,7 @@ export const metadata: Metadata = {
   description: "Admin dashboard for FolkReg event registration system",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{children: React.ReactNode}>) {
   return (
     <html
       lang="en"
