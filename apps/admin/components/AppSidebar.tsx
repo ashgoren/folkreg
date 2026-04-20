@@ -2,20 +2,21 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, ChevronUp, ClipboardList, CreditCard, FileSignature, LogOut, Mail, Palette, Sheet, Wallet } from "lucide-react";
+import { CalendarDays, ChevronUp, ClipboardList, CreditCard, FileSignature, LogOut, Mail, Palette, Settings, Sheet, Ticket } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { logout } from "@/app/auth/logout/actions";
 
 const navItems = [
+  { href: "/dashboard/general", label: "General", icon: Settings },
   { href: "/dashboard/event", label: "Event", icon: CalendarDays },
-  { href: "/dashboard/registration", label: "Registration", icon: ClipboardList },
-  { href: "/dashboard/admissions", label: "Admissions", icon: CreditCard },
-  { href: "/dashboard/payments", label: "Payments", icon: Wallet },
-  { href: "/dashboard/docuseal", label: "Docuseal", icon: FileSignature },
-  { href: "/dashboard/email", label: "Email", icon: Mail },
+  { href: "/dashboard/fields", label: "Fields", icon: ClipboardList },
+  { href: "/dashboard/admissions", label: "Admissions", icon: Ticket },
+  { href: "/dashboard/payments", label: "Payments", icon: CreditCard },
+  { href: "/dashboard/waivers", label: "Waivers", icon: FileSignature },
+  { href: "/dashboard/receipts", label: "Receipts", icon: Mail },
   { href: "/dashboard/spreadsheet", label: "Spreadsheet", icon: Sheet },
-  { href: "/dashboard/theme", label: "Theme", icon: Palette },
+  { href: "/dashboard/appearance", label: "Appearance", icon: Palette },
 ];
 
 export function AppSidebar({ userEmail }: { userEmail: string }) {
