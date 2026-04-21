@@ -7,19 +7,24 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { logout } from "@/app/auth/logout/actions";
 
-const navItems = [
-  { href: "/dashboard/general", label: "General", icon: Settings },
-  { href: "/dashboard/event", label: "Event", icon: CalendarDays },
-  { href: "/dashboard/fields", label: "Fields", icon: ClipboardList },
-  { href: "/dashboard/admissions", label: "Admissions", icon: Ticket },
-  { href: "/dashboard/payments", label: "Payments", icon: CreditCard },
-  { href: "/dashboard/waivers", label: "Waivers", icon: FileSignature },
-  { href: "/dashboard/receipts", label: "Receipts", icon: Mail },
-  { href: "/dashboard/spreadsheet", label: "Spreadsheet", icon: Sheet },
-  { href: "/dashboard/appearance", label: "Appearance", icon: Palette },
+const navSections = [
+  { path: "general", label: "General", icon: Settings },
+  { path: "event", label: "Event", icon: CalendarDays },
+  { path: "fields", label: "Fields", icon: ClipboardList },
+  { path: "admissions", label: "Admissions", icon: Ticket },
+  { path: "payments", label: "Payments", icon: CreditCard },
+  { path: "waivers", label: "Waivers", icon: FileSignature },
+  { path: "receipts", label: "Receipts", icon: Mail },
+  { path: "spreadsheet", label: "Spreadsheet", icon: Sheet },
+  { path: "appearance", label: "Appearance", icon: Palette },
 ];
 
-export function AppSidebar({ userEmail }: { userEmail: string }) {
+export function AppSidebar({ userEmail, tenantId }: { userEmail: string; tenantId: string }) {
+  const navItems = navSections.map(({ path, label, icon }) => ({
+    href: `/dashboard/${tenantId}/${path}`,
+    label,
+    icon,
+  }));
   const pathname = usePathname();
 
   return (
