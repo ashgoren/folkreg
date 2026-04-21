@@ -7,7 +7,6 @@ import type {
 } from "@repo/types";
 
 type TenantUpdates = Partial<{
-  slug: string,
   domain: string,
   is_live: boolean,
   payment_processor: PaymentProcessor,

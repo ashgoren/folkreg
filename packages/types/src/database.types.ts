@@ -160,7 +160,6 @@ export type Database = {
             | null
           payments_config: Json | null
           registration_config: Json | null
-          slug: string
           spreadsheet_config: Json | null
           theme_config: Json | null
           updated_at: string | null
@@ -178,7 +177,6 @@ export type Database = {
             | null
           payments_config?: Json | null
           registration_config?: Json | null
-          slug: string
           spreadsheet_config?: Json | null
           theme_config?: Json | null
           updated_at?: string | null
@@ -196,7 +194,6 @@ export type Database = {
             | null
           payments_config?: Json | null
           registration_config?: Json | null
-          slug?: string
           spreadsheet_config?: Json | null
           theme_config?: Json | null
           updated_at?: string | null
