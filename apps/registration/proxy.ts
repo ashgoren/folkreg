@@ -2,7 +2,9 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 import { createServiceRoleClient } from "@repo/db/server";
-import { getTenantByDomain } from "@repo/db/queries";
+import { getTenantByDomain, getTenantBySlug } from "@repo/db/queries";
+
+const { PLATFORM_DOMAIN = 'folkreg.org' } = process.env;
 
 async function resolveTenant(request: NextRequest) {
   const supabase = createServiceRoleClient();
@@ -13,7 +15,13 @@ async function resolveTenant(request: NextRequest) {
   }
 
   try {
-    const tenant = await getTenantByDomain(supabase, host);
+    const isPlatformSubdomain = host.endsWith(`.${PLATFORM_DOMAIN}`);
+
+    // console.log(`Resolving tenant for host: ${host} (isPlatformSubdomain: ${isPlatformSubdomain}, slug: ${isPlatformSubdomain ? host.split('.')[0] : 'N/A'})`);
+    const tenant = isPlatformSubdomain
+      ? await getTenantBySlug(supabase, host.split('.')[0]!)
+      : await getTenantByDomain(supabase, host);
+
     if (!tenant) {
       return new NextResponse('Tenant not found', { status: 404 });
     }
