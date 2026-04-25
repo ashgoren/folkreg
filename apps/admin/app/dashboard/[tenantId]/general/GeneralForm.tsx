@@ -22,6 +22,7 @@ export function GeneralForm({ tenant, tenantId }: { tenant: Tenant; tenantId: st
   const form = useForm<GeneralValues>({
     resolver: zodResolver(generalSchema),
     defaultValues: {
+      slug: tenant.slug,
       domain: tenant.domain ?? "",
       is_live: tenant.is_live,
       waitlistEnabled: regConfig?.waitlistCutoff != null,
@@ -48,6 +49,18 @@ export function GeneralForm({ tenant, tenantId }: { tenant: Tenant; tenantId: st
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
       <FieldGroup>
+        <Controller
+          name="slug"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor="general-slug">Slug</FieldLabel>
+              <FieldDescription>Platform subdomain identifier (e.g. snowdance → snowdance.folkreg.org)</FieldDescription>
+              <Input {...field} id="general-slug" aria-invalid={fieldState.invalid} />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
         <Controller
           name="domain"
           control={form.control}

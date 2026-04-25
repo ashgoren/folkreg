@@ -5,7 +5,8 @@
   "private": true,
   "exports": {
     "./server": "./src/server.ts",
-    "./queries": "./src/queries.ts"
+    "./queries": "./src/queries.ts",
+    "./errors": "./src/errors.ts"
   },
   "dependencies": {
     "@repo/types": "workspace:*",
