@@ -110,30 +110,42 @@ export type Database = {
           docuseal_key: string | null
           email_from: string | null
           email_reply_to: string | null
-          paypal_secret: string | null
-          paypal_webhook_id: string | null
-          stripe_secret_key: string | null
-          stripe_webhook_secret: string | null
+          paypal_secret_live: string | null
+          paypal_secret_test: string | null
+          paypal_webhook_id_live: string | null
+          paypal_webhook_id_test: string | null
+          stripe_secret_key_live: string | null
+          stripe_secret_key_test: string | null
+          stripe_webhook_secret_live: string | null
+          stripe_webhook_secret_test: string | null
           tenant_id: string
         }
         Insert: {
           docuseal_key?: string | null
           email_from?: string | null
           email_reply_to?: string | null
-          paypal_secret?: string | null
-          paypal_webhook_id?: string | null
-          stripe_secret_key?: string | null
-          stripe_webhook_secret?: string | null
+          paypal_secret_live?: string | null
+          paypal_secret_test?: string | null
+          paypal_webhook_id_live?: string | null
+          paypal_webhook_id_test?: string | null
+          stripe_secret_key_live?: string | null
+          stripe_secret_key_test?: string | null
+          stripe_webhook_secret_live?: string | null
+          stripe_webhook_secret_test?: string | null
           tenant_id: string
         }
         Update: {
           docuseal_key?: string | null
           email_from?: string | null
           email_reply_to?: string | null
-          paypal_secret?: string | null
-          paypal_webhook_id?: string | null
-          stripe_secret_key?: string | null
-          stripe_webhook_secret?: string | null
+          paypal_secret_live?: string | null
+          paypal_secret_test?: string | null
+          paypal_webhook_id_live?: string | null
+          paypal_webhook_id_test?: string | null
+          stripe_secret_key_live?: string | null
+          stripe_secret_key_test?: string | null
+          stripe_webhook_secret_live?: string | null
+          stripe_webhook_secret_test?: string | null
           tenant_id?: string
         }
         Relationships: [

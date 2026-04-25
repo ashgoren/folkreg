@@ -96,8 +96,10 @@ export type AdmissionsConfig =
   | { mode: 'tiered'; earlybirdCutoff: string }
 
 export interface PaymentsConfig {
-  stripePublishableKey: string | null;
-  paypalClientId: string | null;
+  stripePublishableKeyLive: string | null;
+  stripePublishableKeyTest: string | null;
+  paypalClientIdLive: string | null;
+  paypalClientIdTest: string | null;
   paymentDueDate: string | null;
   directPaymentUrl: string | null;
   coverFeesCheckbox: boolean;
