@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const generalSchema = z.object({
-  domain: z.string().min(1, "Required"),
+  domain: z.string().optional(),
   is_live: z.boolean(),
   waitlistEnabled: z.boolean(),
   waitlistCutoff: z.number().int().min(1, "Must be at least 1").nullable(),

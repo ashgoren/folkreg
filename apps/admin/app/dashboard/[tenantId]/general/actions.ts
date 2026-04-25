@@ -18,7 +18,7 @@ export async function updateGeneral(tenantId: string, values: GeneralValues): Pr
   if (!current) return "No tenant found";
 
   await db.updateTenant({
-    domain: values.domain,
+    domain: values.domain || null,
     is_live: values.is_live,
     registration_config: {
       ...current.registration_config,

@@ -22,7 +22,7 @@ export function GeneralForm({ tenant, tenantId }: { tenant: Tenant; tenantId: st
   const form = useForm<GeneralValues>({
     resolver: zodResolver(generalSchema),
     defaultValues: {
-      domain: tenant.domain,
+      domain: tenant.domain ?? "",
       is_live: tenant.is_live,
       waitlistEnabled: regConfig?.waitlistCutoff != null,
       waitlistCutoff: regConfig?.waitlistCutoff ?? null,

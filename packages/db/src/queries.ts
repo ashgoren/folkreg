@@ -7,7 +7,8 @@ import type {
 } from "@repo/types";
 
 type TenantUpdates = Partial<{
-  domain: string,
+  slug: string,
+  domain: string | null,
   is_live: boolean,
   payment_processor: PaymentProcessor,
   owner_id: string,
@@ -20,6 +21,19 @@ type TenantUpdates = Partial<{
 }>
 
 type TenantSecretsUpdates = Partial<Omit<TenantSecrets, 'tenant_id'>>
+
+export const getTenantBySlug = async (supabase: DbClient, slug: string) => {
+  const { data, error } = await supabase
+    .from("tenants")
+    .select("id")
+    .eq("slug", slug)
+    .single();
+  if (error) {
+    if (error.code === "PGRST116") return null;
+    throw error;
+  }
+  return data;
+};
 
 export const getTenantByDomain = async (supabase: DbClient, domain: string) => {
   const { data, error } = await supabase

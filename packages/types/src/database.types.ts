@@ -150,7 +150,7 @@ export type Database = {
         Row: {
           admissions_config: Json | null
           created_at: string | null
-          domain: string
+          domain: string | null
           event_config: Json | null
           id: string
           is_live: boolean
@@ -160,6 +160,7 @@ export type Database = {
             | null
           payments_config: Json | null
           registration_config: Json | null
+          slug: string
           spreadsheet_config: Json | null
           theme_config: Json | null
           updated_at: string | null
@@ -167,7 +168,7 @@ export type Database = {
         Insert: {
           admissions_config?: Json | null
           created_at?: string | null
-          domain: string
+          domain?: string | null
           event_config?: Json | null
           id?: string
           is_live?: boolean
@@ -177,6 +178,7 @@ export type Database = {
             | null
           payments_config?: Json | null
           registration_config?: Json | null
+          slug: string
           spreadsheet_config?: Json | null
           theme_config?: Json | null
           updated_at?: string | null
@@ -184,7 +186,7 @@ export type Database = {
         Update: {
           admissions_config?: Json | null
           created_at?: string | null
-          domain?: string
+          domain?: string | null
           event_config?: Json | null
           id?: string
           is_live?: boolean
@@ -194,6 +196,7 @@ export type Database = {
             | null
           payments_config?: Json | null
           registration_config?: Json | null
+          slug?: string
           spreadsheet_config?: Json | null
           theme_config?: Json | null
           updated_at?: string | null
