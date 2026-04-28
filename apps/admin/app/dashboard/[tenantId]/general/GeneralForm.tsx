@@ -26,13 +26,11 @@ export function GeneralForm({ tenant, tenantId }: { tenant: Tenant; tenantId: st
       slug: tenant.slug,
       domain: tenant.domain ?? "",
       is_live: tenant.is_live,
-      waitlistEnabled: regConfig?.waitlistCutoff != null,
       waitlistCutoff: regConfig?.waitlistCutoff ?? null,
       showPreregistration: regConfig?.showPreregistration ?? false,
     },
   });
 
-  const waitlistEnabled = form.watch("waitlistEnabled");
   const isDirty = form.formState.isDirty;
   useEffect(() => { if (isDirty) setSaved(false); }, [isDirty]);
 
@@ -74,6 +72,25 @@ export function GeneralForm({ tenant, tenantId }: { tenant: Tenant; tenantId: st
               <FormLabel htmlFor="general-domain">Custom domain</FormLabel>
               <FieldDescription>Optional custom domain, e.g. example.org</FieldDescription>
               <Input {...field} id="general-domain" aria-invalid={fieldState.invalid} />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+
+        <Controller
+          name="waitlistCutoff"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FormLabel htmlFor="general-waitlist-cutoff">Waitlist cutoff</FormLabel>
+              <FieldDescription>Max registrations before waitlist kicks in &mdash; <em>leave blank for no capacity limit</em></FieldDescription>
+              <Input
+                id="general-waitlist-cutoff"
+                type="number"
+                aria-invalid={fieldState.invalid}
+                value={field.value ?? ""}
+                onChange={e => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+              />
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
             </Field>
           )}
@@ -122,45 +139,6 @@ export function GeneralForm({ tenant, tenantId }: { tenant: Tenant; tenantId: st
             </Field>
           )}
         />
-
-        <Controller
-          name="waitlistEnabled"
-          control={form.control}
-          render={({ field, fieldState }) => (
-            <Field orientation="horizontal" data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <FormLabel htmlFor="general-waitlist">Enable waitlist</FormLabel>
-                <FieldDescription>New registrations go to the waitlist after capacity is reached</FieldDescription>
-              </FieldContent>
-              <Switch
-                id="general-waitlist"
-                checked={field.value}
-                onCheckedChange={field.onChange}
-                aria-invalid={fieldState.invalid}
-              />
-            </Field>
-          )}
-        />
-        {waitlistEnabled && (
-          <Controller
-            name="waitlistCutoff"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FormLabel htmlFor="general-waitlist-cutoff">Waitlist capacity</FormLabel>
-                <FieldDescription>Number of registrations before waitlist kicks in</FieldDescription>
-                <Input
-                  id="general-waitlist-cutoff"
-                  type="number"
-                  aria-invalid={fieldState.invalid}
-                  value={field.value ?? ""}
-                  onChange={e => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
-                />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
-          />
-        )}
 
       </FieldGroup>
 

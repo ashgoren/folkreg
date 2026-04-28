@@ -25,7 +25,7 @@ export async function updateGeneral(tenantId: string, values: GeneralValues): Pr
       is_live: values.is_live,
       registration_config: {
         ...current.registration_config,
-        waitlistCutoff: values.waitlistEnabled ? values.waitlistCutoff : null,
+        waitlistCutoff: values.waitlistCutoff,
         showPreregistration: values.showPreregistration,
       } as RegistrationConfig,
     });
