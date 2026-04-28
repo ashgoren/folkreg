@@ -5,7 +5,8 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Field, FieldContent, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldContent, FieldDescription, FieldError, FieldGroup } from "@/components/ui/field";
+import { FormLabel } from "@/components/form-label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
@@ -54,8 +55,8 @@ export function GeneralForm({ tenant, tenantId }: { tenant: Tenant; tenantId: st
           control={form.control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="general-slug">Slug</FieldLabel>
-              <FieldDescription>Platform subdomain identifier (e.g. snowdance → snowdance.folkreg.org)</FieldDescription>
+              <FormLabel htmlFor="general-slug" required>Subdomain</FormLabel>
+              <FieldDescription>e.g. snowdance → snowdance.folkreg.org</FieldDescription>
               <Input {...field} id="general-slug" aria-invalid={fieldState.invalid} />
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
             </Field>
@@ -66,8 +67,7 @@ export function GeneralForm({ tenant, tenantId }: { tenant: Tenant; tenantId: st
           control={form.control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="general-domain">Domain</FieldLabel>
-              <FieldDescription>Custom domain for the registration app</FieldDescription>
+              <FormLabel htmlFor="general-domain">Custom domain</FormLabel>
               <Input {...field} id="general-domain" aria-invalid={fieldState.invalid} />
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
             </Field>
@@ -84,7 +84,7 @@ export function GeneralForm({ tenant, tenantId }: { tenant: Tenant; tenantId: st
           render={({ field, fieldState }) => (
             <Field orientation="horizontal" data-invalid={fieldState.invalid}>
               <FieldContent>
-                <FieldLabel htmlFor="general-is-live">Live</FieldLabel>
+                <FormLabel htmlFor="general-is-live">Live</FormLabel>
                 <FieldDescription>Registration is open to the public</FieldDescription>
               </FieldContent>
               <Switch
@@ -102,7 +102,7 @@ export function GeneralForm({ tenant, tenantId }: { tenant: Tenant; tenantId: st
           render={({ field, fieldState }) => (
             <Field orientation="horizontal" data-invalid={fieldState.invalid}>
               <FieldContent>
-                <FieldLabel htmlFor="general-preregistration">Show preregistration</FieldLabel>
+                <FormLabel htmlFor="general-preregistration">Show preregistration</FormLabel>
                 <FieldDescription>Show a policy acknowledgment checkbox before registration</FieldDescription>
               </FieldContent>
               <Switch
@@ -120,7 +120,7 @@ export function GeneralForm({ tenant, tenantId }: { tenant: Tenant; tenantId: st
           render={({ field, fieldState }) => (
             <Field orientation="horizontal" data-invalid={fieldState.invalid}>
               <FieldContent>
-                <FieldLabel htmlFor="general-waitlist">Enable waitlist</FieldLabel>
+                <FormLabel htmlFor="general-waitlist">Enable waitlist</FormLabel>
                 <FieldDescription>New registrations go to the waitlist after capacity is reached</FieldDescription>
               </FieldContent>
               <Switch
@@ -138,7 +138,7 @@ export function GeneralForm({ tenant, tenantId }: { tenant: Tenant; tenantId: st
             control={form.control}
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor="general-waitlist-cutoff">Waitlist capacity</FieldLabel>
+                <FormLabel htmlFor="general-waitlist-cutoff" required>Waitlist capacity</FormLabel>
                 <FieldDescription>Number of registrations before waitlist kicks in</FieldDescription>
                 <Input
                   id="general-waitlist-cutoff"
