@@ -32,7 +32,7 @@ export function GeneralForm({ tenant, tenantId }: { tenant: Tenant; tenantId: st
   });
 
   const isDirty = form.formState.isDirty;
-  useEffect(() => { if (isDirty) setSaved(false); }, [isDirty]);
+  useEffect(() => { if (isDirty) setSaved(false) }, [isDirty]);
 
   function onSubmit(values: GeneralValues) {
     setSaved(false);

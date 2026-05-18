@@ -39,7 +39,7 @@ export type Order = Omit<Tables<'orders'>, 'people'> & {
 
 export interface EventConfig {
   title: string;
-  titleWithYear: string;
+  year: number;
   location: string;
   date: string;
   timezone: string;
@@ -56,10 +56,8 @@ export interface EventConfig {
   };
   links: {
     info?: string;
-    policies?: {
-      health?: string;
-      safety?: string;
-    }
+    health?: string;
+    safety?: string;
   };
   nametags: {
     includePronouns: boolean;
