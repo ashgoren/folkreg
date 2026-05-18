@@ -25,7 +25,6 @@ export interface Person {
   city?: string;
   state?: string;
   zip?: string;
-  country?: string;
   age?: AgeGroup;
   share?: string[];
   misc?: string[];
@@ -71,9 +70,10 @@ export interface FieldConfig {
   label?: string;
   placeholder?: string;
   options?: { label: string; value: string }[];
+  defaultValue?: string;
   rows?: number;
+  width?: number;
   required?: boolean;
-  requiredMessage?: string;
 }
 
 export interface RegistrationConfig {
