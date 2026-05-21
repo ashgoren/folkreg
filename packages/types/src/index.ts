@@ -65,7 +65,6 @@ export interface EventConfig {
 }
 
 export interface FieldConfig {
-  field: string;
   title?: string;
   label?: string;
   placeholder?: string;
@@ -76,16 +75,19 @@ export interface FieldConfig {
   required?: boolean;
 }
 
+export interface FieldsConfig {
+  contactOrder: string[];
+  miscOrder: string[];
+  config: Record<string, FieldConfig>;
+}
+
 export interface RegistrationConfig {
   waitlistCutoff: number | null;
   showPreregistration: boolean;
   showWaiver: boolean;
   docusealTemplateId: string | null;
   admissionQuantityMax: number | null;
-  fields: {
-    contact: FieldConfig[];
-    misc: FieldConfig[];
-  };
+  fields: FieldsConfig;
 }
 
 export type AdmissionsConfig =

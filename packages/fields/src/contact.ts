@@ -2,7 +2,7 @@ import { z } from "zod";
 import { STATE_OPTIONS } from "./stateOptions";
 import type { FieldDef } from "./types";
 
-export const contactFields: Record<string, FieldDef> = {
+export const CONTACT_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
   first: {
     type: "text",
     autoComplete: "given-name",

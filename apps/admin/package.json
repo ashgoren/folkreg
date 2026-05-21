@@ -11,8 +11,11 @@
     "check-types": "next typegen && tsc --noEmit"
   },
   "dependencies": {
+    "@dnd-kit/helpers": "^0.4.0",
+    "@dnd-kit/react": "^0.4.0",
     "@hookform/resolvers": "^5.2.2",
     "@repo/db": "workspace:*",
+    "@repo/fields": "workspace:*",
     "@repo/types": "workspace:*",
     "@supabase/ssr": "^0.10.2",
     "class-variance-authority": "^0.7.1",

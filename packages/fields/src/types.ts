@@ -31,6 +31,7 @@ export interface FieldDefaults {
 
 export interface FieldDef {
   type: FieldType;
+  group: "contact" | "misc";
   autoComplete?: string;
   suggestions?: readonly { id: string; fullName: string; abbreviation: string; country: string }[];
   validation: z.ZodTypeAny;

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { FieldDef } from "./types";
 
-export const miscFields: Record<string, FieldDef> = {
+export const MISC_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
   age: {
     type: "radio",
     validation: z.string().min(1, "Please select age range."),
