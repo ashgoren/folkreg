@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { DragDropProvider } from "@dnd-kit/react";
 import { move } from "@dnd-kit/helpers";
+import { toast } from "sonner";
 import { FIELD_DEFS } from "@repo/fields";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { FieldRow } from "./FieldRow";
 import { ConfigPanel } from "./ConfigPanel";
@@ -34,57 +33,68 @@ export function FieldsForm({ tenant, tenantId }: { tenant: Tenant; tenantId: str
   const [miscOrder, setMiscOrder] = useState<string[]>(initialFields?.miscOrder ?? []);
   const [config, setConfig] = useState<Record<string, FieldConfig>>(initialFields?.config ?? {});
 
+  // Mirrors state so debounced callbacks always read the latest values
+  const stateRef = useRef({ contactOrder, miscOrder, config });
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [selectedField, setSelectedField] = useState<string | null>(null);
 
+  // UI state
   const [contactOpen, setContactOpen] = useState(true);
   const [miscOpen, setMiscOpen] = useState(true);
   const [availableOpen, setAvailableOpen] = useState(contactOrder.length === 0 && miscOrder.length === 0);
-
-  const [isDirty, setIsDirty] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [savedRecently, setSavedRecently] = useState(false);
   const [isPending, startTransition] = useTransition();
 
+  function save(data: { contactOrder: string[]; miscOrder: string[]; config: Record<string, FieldConfig> }) {
+    startTransition(async () => {
+      const error = await updateFields(tenantId, data);
+      if (error) {
+        toast.error(error);
+      } else {
+        setSavedRecently(true);
+        setTimeout(() => setSavedRecently(false), 2000);
+      }
+    });
+  }
+
   function updateFieldConfig(fieldName: string, updates: Partial<FieldConfig>) {
-    setConfig((prev) => ({ ...prev, [fieldName]: { ...prev[fieldName], ...updates } }));
-    setIsDirty(true);
+    setConfig((prev) => {
+      const next = { ...prev, [fieldName]: { ...prev[fieldName], ...updates } };
+      stateRef.current = { ...stateRef.current, config: next };
+      return next;
+    });
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => save(stateRef.current), 500);
   }
 
   function activateField(fieldName: string) {
     const def = FIELD_DEFS[fieldName];
+    const newConfig = { ...stateRef.current.config, [fieldName]: getDefaultConfig(fieldName) };
     if (def!.group === "contact") {
-      setContactOrder((prev) => [...prev, fieldName]);
+      const newContactOrder = [...stateRef.current.contactOrder, fieldName];
+      setContactOrder(newContactOrder);
+      stateRef.current = { ...stateRef.current, contactOrder: newContactOrder, config: newConfig };
     } else {
-      setMiscOrder((prev) => [...prev, fieldName]);
+      const newMiscOrder = [...stateRef.current.miscOrder, fieldName];
+      setMiscOrder(newMiscOrder);
+      stateRef.current = { ...stateRef.current, miscOrder: newMiscOrder, config: newConfig };
     }
-    setConfig((prev) => ({ ...prev, [fieldName]: getDefaultConfig(fieldName) }));
-    setIsDirty(true);
+    setConfig(newConfig);
+    save(stateRef.current);
   }
 
   function deactivateField(fieldName: string) {
-    setContactOrder((prev) => prev.filter((n) => n !== fieldName));
-    setMiscOrder((prev) => prev.filter((n) => n !== fieldName));
-    setConfig((prev) => {
-      const next = { ...prev };
-      delete next[fieldName];
-      return next;
-    });
+    const newContactOrder = stateRef.current.contactOrder.filter((n) => n !== fieldName);
+    const newMiscOrder = stateRef.current.miscOrder.filter((n) => n !== fieldName);
+    const newConfig = { ...stateRef.current.config };
+    delete newConfig[fieldName];
+    setContactOrder(newContactOrder);
+    setMiscOrder(newMiscOrder);
+    setConfig(newConfig);
+    stateRef.current = { contactOrder: newContactOrder, miscOrder: newMiscOrder, config: newConfig };
     if (selectedField === fieldName) setSelectedField(null);
-    setIsDirty(true);
-  }
-
-  function handleSave() {
-    setSaveError(null);
-    setSaved(false);
-    startTransition(async () => {
-      const error = await updateFields(tenantId, { contactOrder, miscOrder, config });
-      if (error) {
-        setSaveError(error);
-      } else {
-        setIsDirty(false);
-        setSaved(true);
-      }
-    });
+    save(stateRef.current);
   }
 
   function needsOptions(fieldName: string) {
@@ -122,8 +132,10 @@ export function FieldsForm({ tenant, tenantId }: { tenant: Tenant; tenantId: str
             <DragDropProvider
               onDragEnd={(event) => {
                 if (event.canceled) return;
-                setContactOrder((prev) => move(prev, event) as string[]);
-                setIsDirty(true);
+                const newOrder = move(contactOrder, event) as string[];
+                setContactOrder(newOrder);
+                stateRef.current = { ...stateRef.current, contactOrder: newOrder };
+                save(stateRef.current);
               }}
             >
               <div className="flex flex-col gap-1">
@@ -157,8 +169,10 @@ export function FieldsForm({ tenant, tenantId }: { tenant: Tenant; tenantId: str
             <DragDropProvider
               onDragEnd={(event) => {
                 if (event.canceled) return;
-                setMiscOrder((prev) => move(prev, event) as string[]);
-                setIsDirty(true);
+                const newOrder = move(miscOrder, event) as string[];
+                setMiscOrder(newOrder);
+                stateRef.current = { ...stateRef.current, miscOrder: newOrder };
+                save(stateRef.current);
               }}
             >
               <div className="flex flex-col gap-1">
@@ -203,18 +217,9 @@ export function FieldsForm({ tenant, tenantId }: { tenant: Tenant; tenantId: str
           </div>
         )}
 
-        <div className="flex items-center gap-4">
-          <Button type="button" onClick={handleSave} disabled={isPending || !isDirty}>
-            {isPending ? "Saving…" : "Save"}
-          </Button>
-          {saved && <span className="text-sm text-muted-foreground">Saved ✓</span>}
+        <div className="text-sm text-muted-foreground h-5">
+          {isPending ? "Saving…" : savedRecently ? "Saved ✓" : null}
         </div>
-
-        {saveError && (
-          <Alert variant="destructive">
-            <AlertDescription>{saveError}</AlertDescription>
-          </Alert>
-        )}
       </div>
 
       {/* Right column: config panel */}
