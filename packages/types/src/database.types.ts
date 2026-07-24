@@ -163,52 +163,49 @@ export type Database = {
           admissions_config: Json | null
           created_at: string | null
           event_config: Json | null
+          fields_config: Json | null
           id: string
           is_live: boolean
           owner_id: string | null
-          payment_processor:
-            | Database["public"]["Enums"]["payment_processor_type"]
-            | null
           payments_config: Json | null
-          registration_config: Json | null
+          show_preregistration: boolean
           slug: string
           spreadsheet_config: Json | null
           theme_config: Json | null
           updated_at: string | null
+          waiver_config: Json | null
         }
         Insert: {
           admissions_config?: Json | null
           created_at?: string | null
           event_config?: Json | null
+          fields_config?: Json | null
           id?: string
           is_live?: boolean
           owner_id?: string | null
-          payment_processor?:
-            | Database["public"]["Enums"]["payment_processor_type"]
-            | null
           payments_config?: Json | null
-          registration_config?: Json | null
+          show_preregistration?: boolean
           slug: string
           spreadsheet_config?: Json | null
           theme_config?: Json | null
           updated_at?: string | null
+          waiver_config?: Json | null
         }
         Update: {
           admissions_config?: Json | null
           created_at?: string | null
           event_config?: Json | null
+          fields_config?: Json | null
           id?: string
           is_live?: boolean
           owner_id?: string | null
-          payment_processor?:
-            | Database["public"]["Enums"]["payment_processor_type"]
-            | null
           payments_config?: Json | null
-          registration_config?: Json | null
+          show_preregistration?: boolean
           slug?: string
           spreadsheet_config?: Json | null
           theme_config?: Json | null
           updated_at?: string | null
+          waiver_config?: Json | null
         }
         Relationships: []
       }
@@ -223,7 +220,6 @@ export type Database = {
       environment_type: "dev" | "stg" | "prd"
       order_status_type: "pending" | "final"
       payment_method_type: "stripe" | "paypal" | "check"
-      payment_processor_type: "stripe" | "paypal"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -357,7 +353,6 @@ export const Constants = {
       environment_type: ["dev", "stg", "prd"],
       order_status_type: ["pending", "final"],
       payment_method_type: ["stripe", "paypal", "check"],
-      payment_processor_type: ["stripe", "paypal"],
     },
   },
 } as const

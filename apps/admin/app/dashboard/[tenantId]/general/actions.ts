@@ -3,7 +3,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createTenantDb } from "@repo/db/queries";
 import { isPostgresError } from "@repo/db/errors";
-import type { RegistrationConfig } from "@repo/types";
 import { generalSchema, type GeneralValues } from "./schema";
 
 export async function updateGeneral(tenantId: string, values: GeneralValues): Promise<string | null> {
@@ -15,18 +14,12 @@ export async function updateGeneral(tenantId: string, values: GeneralValues): Pr
   if (!user) return "Not authenticated";
 
   const db = createTenantDb(supabase, tenantId);
-  const current = await db.getTenant();
-  if (!current) return "No tenant found";
 
   try {
     await db.updateTenant({
       slug: values.slug,
       is_live: values.is_live,
-      registration_config: {
-        ...current.registration_config,
-        waitlistCutoff: values.waitlistCutoff,
-        showPreregistration: values.showPreregistration,
-      } as RegistrationConfig,
+      show_preregistration: values.show_preregistration,
     });
   } catch (error: unknown) {
     if (isPostgresError(error) && error.code === '23505') { // Uniqueness violation

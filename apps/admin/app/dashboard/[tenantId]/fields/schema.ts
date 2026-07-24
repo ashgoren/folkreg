@@ -9,6 +9,7 @@ const fieldConfigSchema = z.object({
   rows: z.number().optional(),
   width: z.number().optional(),
   required: z.boolean().optional(),
+  includeOnNametag: z.boolean().optional(),
 });
 
 export const fieldsSchema = z.object({

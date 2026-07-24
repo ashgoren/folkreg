@@ -18,15 +18,12 @@ export function GeneralForm({ tenant }: { tenant: Tenant }) {
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
 
-  const regConfig = tenant.registration_config;
-
   const form = useForm<GeneralValues>({
     resolver: zodResolver(generalSchema),
     defaultValues: {
       slug: tenant.slug,
       is_live: tenant.is_live,
-      waitlistCutoff: regConfig?.waitlistCutoff ?? null,
-      showPreregistration: regConfig?.showPreregistration ?? false,
+      show_preregistration: tenant.show_preregistration,
     },
   });
 
@@ -63,25 +60,6 @@ export function GeneralForm({ tenant }: { tenant: Tenant }) {
           )}
         />
 
-        <Controller
-          name="waitlistCutoff"
-          control={form.control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FormLabel htmlFor="general-waitlist-cutoff">Waitlist cutoff</FormLabel>
-              <FieldDescription>Max registrations before waitlist kicks in &mdash; <em>leave blank for no capacity limit</em></FieldDescription>
-              <Input
-                id="general-waitlist-cutoff"
-                type="number"
-                aria-invalid={fieldState.invalid}
-                value={field.value ?? ""}
-                onChange={e => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
-              />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-
       </FieldGroup>
 
       <Separator />
@@ -89,13 +67,13 @@ export function GeneralForm({ tenant }: { tenant: Tenant }) {
       <FieldGroup>
 
         <Controller
-          name="showPreregistration"
+          name="show_preregistration"
           control={form.control}
           render={({ field, fieldState }) => (
             <Field orientation="horizontal" data-invalid={fieldState.invalid}>
               <FieldContent>
-                <FormLabel htmlFor="general-preregistration">Show preregistration</FormLabel>
-                <FieldDescription>Show a policy acknowledgment checkbox before registration</FieldDescription>
+                <FormLabel htmlFor="general-preregistration">Show preregistration?</FormLabel>
+                <FieldDescription>{field.value ? "Shows policy acknowledgment checkbox before registration" : "Does not show policy acknowledgment checkbox before registration"}</FieldDescription>
               </FieldContent>
               <Switch
                 id="general-preregistration"
@@ -113,8 +91,8 @@ export function GeneralForm({ tenant }: { tenant: Tenant }) {
           render={({ field, fieldState }) => (
             <Field orientation="horizontal" data-invalid={fieldState.invalid}>
               <FieldContent>
-                <FormLabel htmlFor="general-is-live">Live</FormLabel>
-                <FieldDescription>Registration is open to the public</FieldDescription>
+                <FormLabel htmlFor="general-is-live">Live mode?</FormLabel>
+                <FieldDescription>Registration is {field.value ? "open" : "closed"} to the public</FieldDescription>
               </FieldContent>
               <Switch
                 id="general-is-live"

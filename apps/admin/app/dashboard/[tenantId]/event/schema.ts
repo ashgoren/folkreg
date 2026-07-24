@@ -22,10 +22,6 @@ export const eventSchema = z.object({
     health: z.string(),
     safety: z.string(),
   }),
-  nametags: z.object({
-    includePronouns: z.boolean(),
-    includeLastName: z.boolean(),
-  }),
 });
 
 export type EventValues = z.infer<typeof eventSchema>;

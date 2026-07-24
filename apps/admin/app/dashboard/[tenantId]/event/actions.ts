@@ -24,9 +24,15 @@ export async function updateEvent(tenantId: string, values: EventValues): Promis
     date: values.date,
     timezone: values.timezone,
     ...(hasCalendar && { calendar: values.calendar }),
-    contacts: values.contacts,
-    links: values.links,
-    nametags: values.nametags,
+    contacts: {
+      info: values.contacts.info,
+      ...(values.contacts.housing && { housing: values.contacts.housing }),
+    },
+    links: {
+      ...(values.links.info && { info: values.links.info }),
+      ...(values.links.health && { health: values.links.health }),
+      ...(values.links.safety && { safety: values.links.safety }),
+    },
   };
 
   await db.updateTenant({ event_config });

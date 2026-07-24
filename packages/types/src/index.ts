@@ -5,7 +5,7 @@ export * from "./database.types.js"
 
 export type DbClient = SupabaseClient<Database>
 
-export type PaymentProcessor = Enums<'payment_processor_type'>
+export type PaymentProcessor = 'stripe' | 'paypal'
 export type PaymentMethod = Enums<'payment_method_type'>
 export type OrderStatus = Enums<'order_status_type'>
 export type Environment = Enums<'environment_type'>
@@ -58,10 +58,6 @@ export interface EventConfig {
     health?: string;
     safety?: string;
   };
-  nametags: {
-    includePronouns: boolean;
-    includeLastName: boolean;
-  };
 }
 
 export interface FieldConfig {
@@ -73,6 +69,7 @@ export interface FieldConfig {
   rows?: number;
   width?: number;
   required?: boolean;
+  includeOnNametag?: boolean;
 }
 
 export interface FieldsConfig {
@@ -81,21 +78,22 @@ export interface FieldsConfig {
   config: Record<string, FieldConfig>;
 }
 
-export interface RegistrationConfig {
-  waitlistCutoff: number | null;
-  showPreregistration: boolean;
-  showWaiver: boolean;
+export interface WaiverConfig {
+  show: boolean;
   docusealTemplateId: string | null;
-  admissionQuantityMax: number | null;
-  fields: FieldsConfig;
 }
 
-export type AdmissionsConfig =
+export type AdmissionsConfig = (
   | { mode: 'sliding-scale'; costRange: [number, number]; costDefault: number }
   | { mode: 'fixed'; cost: number }
   | { mode: 'tiered'; earlybirdCutoff: string }
+) & {
+  admissionQuantityMax: number | null;
+  waitlistCutoff: number | null;
+}
 
 export interface PaymentsConfig {
+  processor: PaymentProcessor;
   stripePublishableKeyLive: string | null;
   stripePublishableKeyTest: string | null;
   paypalClientIdLive: string | null;
@@ -135,13 +133,14 @@ export interface ThemeConfig {
   accentDark: string;
 }
 
-export type Tenant = Omit<Tables<'tenants'>, 'event_config' | 'registration_config' | 'admissions_config' | 'payments_config' | 'theme_config' | 'spreadsheet_config'> & {
+export type Tenant = Omit<Tables<'tenants'>, 'event_config' | 'fields_config' | 'admissions_config' | 'payments_config' | 'theme_config' | 'spreadsheet_config' | 'waiver_config'> & {
   event_config: EventConfig | null
-  registration_config: RegistrationConfig | null
+  fields_config: FieldsConfig | null
   admissions_config: AdmissionsConfig | null
   payments_config: PaymentsConfig | null
   spreadsheet_config: SpreadsheetConfig | null
   theme_config: ThemeConfig | null
+  waiver_config: WaiverConfig | null
 }
 
 export type TenantSecrets = Tables<'tenant_secrets'>

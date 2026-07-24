@@ -5,11 +5,10 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Field, FieldContent, FieldDescription, FieldError, FieldGroup } from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldGroup } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import type { Tenant } from "@repo/types";
 import { eventSchema, type EventValues } from "./schema";
 import { updateEvent } from "./actions";
@@ -43,10 +42,6 @@ export function EventForm({ tenant }: { tenant: Tenant }) {
         info: eventConfig?.links?.info ?? "",
         health: eventConfig?.links?.health ?? "",
         safety: eventConfig?.links?.safety ?? "",
-      },
-      nametags: {
-        includePronouns: eventConfig?.nametags?.includePronouns ?? false,
-        includeLastName: eventConfig?.nametags?.includeLastName ?? false,
       },
     },
   });
@@ -220,41 +215,6 @@ export function EventForm({ tenant }: { tenant: Tenant }) {
               <FormLabel htmlFor="event-link-safety">Safety policy URL</FormLabel>
               <Input {...field} id="event-link-safety" aria-invalid={fieldState.invalid} />
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )} />
-        </FieldGroup>
-      </div>
-
-      <Separator />
-
-      <div className="space-y-4">
-        <h2 className="text-base font-medium">Nametags</h2>
-        <FieldGroup>
-          <Controller name="nametags.includePronouns" control={form.control} render={({ field, fieldState }) => (
-            <Field orientation="horizontal" data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <FormLabel htmlFor="event-nametag-pronouns">Include pronouns</FormLabel>
-              </FieldContent>
-              <Switch
-                id="event-nametag-pronouns"
-                checked={field.value}
-                onCheckedChange={field.onChange}
-                aria-invalid={fieldState.invalid}
-              />
-            </Field>
-          )} />
-
-          <Controller name="nametags.includeLastName" control={form.control} render={({ field, fieldState }) => (
-            <Field orientation="horizontal" data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <FormLabel htmlFor="event-nametag-last-name">Include last name</FormLabel>
-              </FieldContent>
-              <Switch
-                id="event-nametag-last-name"
-                checked={field.value}
-                onCheckedChange={field.onChange}
-                aria-invalid={fieldState.invalid}
-              />
             </Field>
           )} />
         </FieldGroup>

@@ -2,21 +2,21 @@ import type {
   DbClient,
   Json,
   Tenant, TenantSecrets,
-  EventConfig, RegistrationConfig, AdmissionsConfig, PaymentsConfig, SpreadsheetConfig, ThemeConfig,
-  PaymentProcessor,
+  EventConfig, FieldsConfig, AdmissionsConfig, PaymentsConfig, SpreadsheetConfig, ThemeConfig, WaiverConfig,
 } from "@repo/types";
 
 type TenantUpdates = Partial<{
   slug: string,
   is_live: boolean,
-  payment_processor: PaymentProcessor,
+  show_preregistration: boolean,
   owner_id: string,
   event_config: EventConfig,
-  registration_config: RegistrationConfig,
+  fields_config: FieldsConfig,
   admissions_config: AdmissionsConfig,
   payments_config: PaymentsConfig,
   theme_config: ThemeConfig,
-  spreadsheet_config: SpreadsheetConfig
+  spreadsheet_config: SpreadsheetConfig,
+  waiver_config: WaiverConfig,
 }>
 
 type TenantSecretsUpdates = Partial<Omit<TenantSecrets, 'tenant_id'>>
@@ -61,16 +61,17 @@ export const createTenantDb = (supabase: DbClient, tenantId: string) => {
     },
 
     updateTenant: async (updates: TenantUpdates) => {
-      const { event_config, registration_config, admissions_config, payments_config, theme_config, spreadsheet_config, ...scalars } = updates;
+      const { event_config, fields_config, admissions_config, payments_config, theme_config, spreadsheet_config, waiver_config, ...scalars } = updates;
 
       const payload = {
         ...scalars,
         ...(event_config !== undefined && { event_config: event_config as unknown as Json }),
-        ...(registration_config !== undefined && { registration_config: registration_config as unknown as Json }),
+        ...(fields_config !== undefined && { fields_config: fields_config as unknown as Json }),
         ...(admissions_config !== undefined && { admissions_config: admissions_config as unknown as Json }),
         ...(payments_config !== undefined && { payments_config: payments_config as unknown as Json }),
         ...(theme_config !== undefined && { theme_config: theme_config as unknown as Json }),
         ...(spreadsheet_config !== undefined && { spreadsheet_config: spreadsheet_config as unknown as Json }),
+        ...(waiver_config !== undefined && { waiver_config: waiver_config as unknown as Json }),
       };
 
       const { error } = await supabase

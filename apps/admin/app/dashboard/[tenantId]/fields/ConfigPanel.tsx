@@ -2,7 +2,7 @@
 
 import { FIELD_DEFS } from "@repo/fields";
 import type { FieldConfig } from "@repo/types";
-import { Field, FieldGroup } from "@/components/ui/field";
+import { Field, FieldContent, FieldGroup } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -17,7 +17,12 @@ interface ConfigPanelProps {
   onChange: (updates: Partial<FieldConfig>) => void;
 }
 
-export function ConfigPanel({ fieldName, group, config, onChange }: ConfigPanelProps) {
+export function ConfigPanel({
+  fieldName,
+  group,
+  config,
+  onChange,
+}: ConfigPanelProps) {
   const def = FIELD_DEFS[fieldName];
   if (!def) return null;
 
@@ -26,13 +31,16 @@ export function ConfigPanel({ fieldName, group, config, onChange }: ConfigPanelP
   const showWidth = group === "contact";
   const showRows = def.type === "textarea";
   const showOptions = def.type === "radio" || def.type === "checkbox";
+  const showNametagToggle = fieldName === "last" || fieldName === "pronouns";
 
   return (
     <div className="border rounded-lg p-6 space-y-6 w-full max-w-2xl">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-2">
           <h2 className="font-medium">{fieldName}</h2>
-          <span className="text-xs bg-muted text-muted-foreground rounded px-1.5 py-0.5">{def.type}</span>
+          <span className="text-xs bg-muted text-muted-foreground rounded px-1.5 py-0.5">
+            {def.type}
+          </span>
         </div>
         <div className="flex flex-col items-end gap-4 shrink-0">
           <div className="flex items-center gap-2">
@@ -52,7 +60,12 @@ export function ConfigPanel({ fieldName, group, config, onChange }: ConfigPanelP
                 max={12}
                 value={config.width ?? ""}
                 onChange={(e) =>
-                  onChange({ width: e.target.value === "" ? undefined : Number(e.target.value) })
+                  onChange({
+                    width:
+                      e.target.value === ""
+                        ? undefined
+                        : Number(e.target.value),
+                  })
                 }
                 className="w-12 rounded border border-input bg-background px-1.5 py-0.5 text-sm text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               />
@@ -66,7 +79,12 @@ export function ConfigPanel({ fieldName, group, config, onChange }: ConfigPanelP
                 min={1}
                 value={config.rows ?? ""}
                 onChange={(e) =>
-                  onChange({ rows: e.target.value === "" ? undefined : Number(e.target.value) })
+                  onChange({
+                    rows:
+                      e.target.value === ""
+                        ? undefined
+                        : Number(e.target.value),
+                  })
                 }
                 className="w-12 rounded border border-input bg-background px-1.5 py-0.5 text-sm text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               />
@@ -110,7 +128,9 @@ export function ConfigPanel({ fieldName, group, config, onChange }: ConfigPanelP
 
         {showPlaceholder && (
           <Field>
-            <FormLabel htmlFor={`config-placeholder-${fieldName}`}>Placeholder</FormLabel>
+            <FormLabel htmlFor={`config-placeholder-${fieldName}`}>
+              Placeholder
+            </FormLabel>
             <Input
               id={`config-placeholder-${fieldName}`}
               value={config.placeholder ?? ""}
@@ -119,9 +139,11 @@ export function ConfigPanel({ fieldName, group, config, onChange }: ConfigPanelP
           </Field>
         )}
 
-{showOptions && (
+        {showOptions && (
           <Field>
-            <FormLabel>{def.type === "radio" ? "Radio options" : "Checkbox options"}</FormLabel>
+            <FormLabel>
+              {def.type === "radio" ? "Radio options" : "Checkbox options"}
+            </FormLabel>
             <div className="space-y-2 mt-1">
               <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
                 <span className="flex-3">Label</span>
@@ -151,7 +173,9 @@ export function ConfigPanel({ fieldName, group, config, onChange }: ConfigPanelP
                   <button
                     type="button"
                     onClick={() => {
-                      const options = (config.options ?? []).filter((_, j) => j !== i);
+                      const options = (config.options ?? []).filter(
+                        (_, j) => j !== i,
+                      );
                       onChange({ options });
                     }}
                     className="text-muted-foreground hover:text-destructive shrink-0"
@@ -166,7 +190,10 @@ export function ConfigPanel({ fieldName, group, config, onChange }: ConfigPanelP
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  const options = [...(config.options ?? []), { label: "", value: "" }];
+                  const options = [
+                    ...(config.options ?? []),
+                    { label: "", value: "" },
+                  ];
                   onChange({ options });
                 }}
               >
@@ -180,14 +207,35 @@ export function ConfigPanel({ fieldName, group, config, onChange }: ConfigPanelP
         <Field>
           <FormLabel htmlFor={`config-default-${fieldName}`}>Default</FormLabel>
           {def.type === "checkbox" && (
-            <p className="text-xs text-muted-foreground">Comma-separated option values</p>
+            <p className="text-xs text-muted-foreground">
+              Comma-separated option values
+            </p>
           )}
           <Input
             id={`config-default-${fieldName}`}
             value={config.defaultValue ?? ""}
-            onChange={(e) => onChange({ defaultValue: e.target.value || undefined })}
+            onChange={(e) =>
+              onChange({ defaultValue: e.target.value || undefined })
+            }
           />
         </Field>
+
+        {showNametagToggle && (
+          <Field orientation="horizontal">
+            <FieldContent>
+              <FormLabel htmlFor={`config-nametag-${fieldName}`}>
+                Include on nametag?
+              </FormLabel>
+            </FieldContent>
+            <Switch
+              id={`config-nametag-${fieldName}`}
+              checked={config.includeOnNametag ?? false}
+              onCheckedChange={(checked) =>
+                onChange({ includeOnNametag: checked })
+              }
+            />
+          </Field>
+        )}
       </FieldGroup>
     </div>
   );

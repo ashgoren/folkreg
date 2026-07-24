@@ -28,10 +28,16 @@ function getDefaultConfig(fieldName: string): FieldConfig {
 
 export function FieldsForm({ tenant }: { tenant: Tenant }) {
   // Load initial fields config from db and keep it in local state until user saves
-  const initialFields = tenant.registration_config?.fields;
-  const [contactOrder, setContactOrder] = useState<string[]>(initialFields?.contactOrder ?? []);
-  const [miscOrder, setMiscOrder] = useState<string[]>(initialFields?.miscOrder ?? []);
-  const [config, setConfig] = useState<Record<string, FieldConfig>>(initialFields?.config ?? {});
+  const initialFields = tenant.fields_config;
+  const [contactOrder, setContactOrder] = useState<string[]>(
+    initialFields?.contactOrder ?? [],
+  );
+  const [miscOrder, setMiscOrder] = useState<string[]>(
+    initialFields?.miscOrder ?? [],
+  );
+  const [config, setConfig] = useState<Record<string, FieldConfig>>(
+    initialFields?.config ?? {},
+  );
 
   // Mirrors state so debounced callbacks always read the latest values
   const stateRef = useRef({ contactOrder, miscOrder, config });
@@ -42,11 +48,17 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
   // UI state
   const [contactOpen, setContactOpen] = useState(true);
   const [miscOpen, setMiscOpen] = useState(true);
-  const [availableOpen, setAvailableOpen] = useState(contactOrder.length === 0 && miscOrder.length === 0);
+  const [availableOpen, setAvailableOpen] = useState(
+    contactOrder.length === 0 && miscOrder.length === 0,
+  );
   const [savedRecently, setSavedRecently] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  function save(data: { contactOrder: string[]; miscOrder: string[]; config: Record<string, FieldConfig> }) {
+  function save(data: {
+    contactOrder: string[];
+    miscOrder: string[];
+    config: Record<string, FieldConfig>;
+  }) {
     startTransition(async () => {
       const error = await updateFields(tenant.id, data);
       if (error) {
@@ -70,29 +82,48 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
 
   function activateField(fieldName: string) {
     const def = FIELD_DEFS[fieldName];
-    const newConfig = { ...stateRef.current.config, [fieldName]: getDefaultConfig(fieldName) };
+    const newConfig = {
+      ...stateRef.current.config,
+      [fieldName]: getDefaultConfig(fieldName),
+    };
     if (def!.group === "contact") {
       const newContactOrder = [...stateRef.current.contactOrder, fieldName];
       setContactOrder(newContactOrder);
-      stateRef.current = { ...stateRef.current, contactOrder: newContactOrder, config: newConfig };
+      stateRef.current = {
+        ...stateRef.current,
+        contactOrder: newContactOrder,
+        config: newConfig,
+      };
     } else {
       const newMiscOrder = [...stateRef.current.miscOrder, fieldName];
       setMiscOrder(newMiscOrder);
-      stateRef.current = { ...stateRef.current, miscOrder: newMiscOrder, config: newConfig };
+      stateRef.current = {
+        ...stateRef.current,
+        miscOrder: newMiscOrder,
+        config: newConfig,
+      };
     }
     setConfig(newConfig);
     save(stateRef.current);
   }
 
   function deactivateField(fieldName: string) {
-    const newContactOrder = stateRef.current.contactOrder.filter((n) => n !== fieldName);
-    const newMiscOrder = stateRef.current.miscOrder.filter((n) => n !== fieldName);
+    const newContactOrder = stateRef.current.contactOrder.filter(
+      (n) => n !== fieldName,
+    );
+    const newMiscOrder = stateRef.current.miscOrder.filter(
+      (n) => n !== fieldName,
+    );
     const newConfig = { ...stateRef.current.config };
     delete newConfig[fieldName];
     setContactOrder(newContactOrder);
     setMiscOrder(newMiscOrder);
     setConfig(newConfig);
-    stateRef.current = { contactOrder: newContactOrder, miscOrder: newMiscOrder, config: newConfig };
+    stateRef.current = {
+      contactOrder: newContactOrder,
+      miscOrder: newMiscOrder,
+      config: newConfig,
+    };
     if (selectedField === fieldName) setSelectedField(null);
     save(stateRef.current);
   }
@@ -108,11 +139,15 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
   }
 
   const activeNames = new Set([...contactOrder, ...miscOrder]);
-  const availableFields = Object.entries(FIELD_DEFS).filter(([name]) => !activeNames.has(name));
+  const availableFields = Object.entries(FIELD_DEFS).filter(
+    ([name]) => !activeNames.has(name),
+  );
 
-  const selectedConfig = selectedField ? config[selectedField] ?? null : null;
+  const selectedConfig = selectedField ? (config[selectedField] ?? null) : null;
   const selectedGroup: "contact" | "misc" | null = selectedField
-    ? (contactOrder.includes(selectedField) ? "contact" : "misc")
+    ? contactOrder.includes(selectedField)
+      ? "contact"
+      : "misc"
     : null;
 
   return (
@@ -134,7 +169,10 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
                 if (event.canceled) return;
                 const newOrder = move(contactOrder, event) as string[];
                 setContactOrder(newOrder);
-                stateRef.current = { ...stateRef.current, contactOrder: newOrder };
+                stateRef.current = {
+                  ...stateRef.current,
+                  contactOrder: newOrder,
+                };
                 save(stateRef.current);
               }}
             >
@@ -171,7 +209,10 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
                 if (event.canceled) return;
                 const newOrder = move(miscOrder, event) as string[];
                 setMiscOrder(newOrder);
-                stateRef.current = { ...stateRef.current, miscOrder: newOrder };
+                stateRef.current = {
+                  ...stateRef.current,
+                  miscOrder: newOrder,
+                };
                 save(stateRef.current);
               }}
             >
@@ -200,7 +241,11 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
               onClick={() => setAvailableOpen((o) => !o)}
               className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
             >
-              {availableOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              {availableOpen ? (
+                <ChevronUp size={14} />
+              ) : (
+                <ChevronDown size={14} />
+              )}
               Available fields
             </button>
             {availableOpen && (
