@@ -126,7 +126,14 @@ export interface SpreadsheetConfig {
   fieldOrder: string[];
 }
 
-export type ThemeConfig = Record<string, string>; // TBD
+export interface ThemeConfig {
+  backgroundLight: string;
+  backgroundDark: string;
+  foregroundLight: string;
+  foregroundDark: string;
+  accentLight: string;
+  accentDark: string;
+}
 
 export type Tenant = Omit<Tables<'tenants'>, 'event_config' | 'registration_config' | 'admissions_config' | 'payments_config' | 'theme_config' | 'spreadsheet_config'> & {
   event_config: EventConfig | null
