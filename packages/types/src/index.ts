@@ -124,6 +124,11 @@ export interface SpreadsheetConfig {
   fieldOrder: string[];
 }
 
+export interface ReceiptsConfig {
+  emailFrom: string | null;
+  emailReplyTo: string | null;
+}
+
 export interface ThemeConfig {
   backgroundLight: string;
   backgroundDark: string;
@@ -133,7 +138,7 @@ export interface ThemeConfig {
   accentDark: string;
 }
 
-export type Tenant = Omit<Tables<'tenants'>, 'event_config' | 'fields_config' | 'admissions_config' | 'payments_config' | 'theme_config' | 'spreadsheet_config' | 'waiver_config'> & {
+export type Tenant = Omit<Tables<'tenants'>, 'event_config' | 'fields_config' | 'admissions_config' | 'payments_config' | 'theme_config' | 'spreadsheet_config' | 'waiver_config' | 'receipts_config'> & {
   event_config: EventConfig | null
   fields_config: FieldsConfig | null
   admissions_config: AdmissionsConfig | null
@@ -141,6 +146,7 @@ export type Tenant = Omit<Tables<'tenants'>, 'event_config' | 'fields_config' | 
   spreadsheet_config: SpreadsheetConfig | null
   theme_config: ThemeConfig | null
   waiver_config: WaiverConfig | null
+  receipts_config: ReceiptsConfig | null
 }
 
 export type TenantSecrets = Tables<'tenant_secrets'>

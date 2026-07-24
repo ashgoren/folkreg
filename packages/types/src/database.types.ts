@@ -108,8 +108,6 @@ export type Database = {
       tenant_secrets: {
         Row: {
           docuseal_key: string | null
-          email_from: string | null
-          email_reply_to: string | null
           paypal_secret_live: string | null
           paypal_secret_test: string | null
           paypal_webhook_id_live: string | null
@@ -122,8 +120,6 @@ export type Database = {
         }
         Insert: {
           docuseal_key?: string | null
-          email_from?: string | null
-          email_reply_to?: string | null
           paypal_secret_live?: string | null
           paypal_secret_test?: string | null
           paypal_webhook_id_live?: string | null
@@ -136,8 +132,6 @@ export type Database = {
         }
         Update: {
           docuseal_key?: string | null
-          email_from?: string | null
-          email_reply_to?: string | null
           paypal_secret_live?: string | null
           paypal_secret_test?: string | null
           paypal_webhook_id_live?: string | null
@@ -168,6 +162,7 @@ export type Database = {
           is_live: boolean
           owner_id: string | null
           payments_config: Json | null
+          receipts_config: Json | null
           show_preregistration: boolean
           slug: string
           spreadsheet_config: Json | null
@@ -184,6 +179,7 @@ export type Database = {
           is_live?: boolean
           owner_id?: string | null
           payments_config?: Json | null
+          receipts_config?: Json | null
           show_preregistration?: boolean
           slug: string
           spreadsheet_config?: Json | null
@@ -200,6 +196,7 @@ export type Database = {
           is_live?: boolean
           owner_id?: string | null
           payments_config?: Json | null
+          receipts_config?: Json | null
           show_preregistration?: boolean
           slug?: string
           spreadsheet_config?: Json | null
