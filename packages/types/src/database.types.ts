@@ -162,7 +162,6 @@ export type Database = {
         Row: {
           admissions_config: Json | null
           created_at: string | null
-          domain: string | null
           event_config: Json | null
           id: string
           is_live: boolean
@@ -180,7 +179,6 @@ export type Database = {
         Insert: {
           admissions_config?: Json | null
           created_at?: string | null
-          domain?: string | null
           event_config?: Json | null
           id?: string
           is_live?: boolean
@@ -198,7 +196,6 @@ export type Database = {
         Update: {
           admissions_config?: Json | null
           created_at?: string | null
-          domain?: string | null
           event_config?: Json | null
           id?: string
           is_live?: boolean

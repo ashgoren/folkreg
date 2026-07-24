@@ -21,7 +21,6 @@ export async function updateGeneral(tenantId: string, values: GeneralValues): Pr
   try {
     await db.updateTenant({
       slug: values.slug,
-      domain: values.domain || null,
       is_live: values.is_live,
       registration_config: {
         ...current.registration_config,
@@ -32,7 +31,6 @@ export async function updateGeneral(tenantId: string, values: GeneralValues): Pr
   } catch (error: unknown) {
     if (isPostgresError(error) && error.code === '23505') { // Uniqueness violation
       if (error.detail.includes('slug')) return "That slug is already taken";
-      if (error.detail.includes('domain')) return "That domain is already in use";
       return "A uniqueness constraint was violated";
     }
     throw error;

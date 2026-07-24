@@ -24,7 +24,6 @@ export function GeneralForm({ tenant, tenantId }: { tenant: Tenant; tenantId: st
     resolver: zodResolver(generalSchema),
     defaultValues: {
       slug: tenant.slug,
-      domain: tenant.domain ?? "",
       is_live: tenant.is_live,
       waitlistCutoff: regConfig?.waitlistCutoff ?? null,
       showPreregistration: regConfig?.showPreregistration ?? false,
@@ -59,19 +58,6 @@ export function GeneralForm({ tenant, tenantId }: { tenant: Tenant; tenantId: st
               <FormLabel htmlFor="general-slug" required>Subdomain</FormLabel>
               <FieldDescription>e.g. example → example.folkreg.org</FieldDescription>
               <Input {...field} id="general-slug" aria-invalid={fieldState.invalid} />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-
-        <Controller
-          name="domain"
-          control={form.control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FormLabel htmlFor="general-domain">Custom domain</FormLabel>
-              <FieldDescription>Optional custom domain, e.g. example.org</FieldDescription>
-              <Input {...field} id="general-domain" aria-invalid={fieldState.invalid} />
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
             </Field>
           )}

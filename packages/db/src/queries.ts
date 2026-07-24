@@ -8,7 +8,6 @@ import type {
 
 type TenantUpdates = Partial<{
   slug: string,
-  domain: string | null,
   is_live: boolean,
   payment_processor: PaymentProcessor,
   owner_id: string,
@@ -31,19 +30,6 @@ export const getTenantBySlug = async (supabase: DbClient, slug: string) => {
   if (error) {
     if (error.code === "PGRST116") return null;
     throw error;
-  }
-  return data;
-};
-
-export const getTenantByDomain = async (supabase: DbClient, domain: string) => {
-  const { data, error } = await supabase
-    .from("tenants")
-    .select("id")
-    .eq("domain", domain)
-    .single();
-  if (error) {
-    if (error.code === "PGRST116") return null; // No row found
-    throw error; // Unexpected error
   }
   return data;
 };
