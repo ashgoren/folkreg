@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldContent, FieldDescription, FieldError, FieldGroup } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
 import { Input } from "@/components/ui/input";
+import { SecretInput } from "@/components/ui/secret-input";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import type { Tenant, TenantSecrets } from "@repo/types";
@@ -79,7 +80,7 @@ export function WaiversForm({ tenant, secrets }: { tenant: Tenant; secrets: Tena
         <Controller name="docuseal_key" control={form.control} render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
             <FormLabel htmlFor="waivers-api-key">DocuSeal API key</FormLabel>
-            <Input {...field} id="waivers-api-key" type="password" autoComplete="new-password" aria-invalid={fieldState.invalid} />
+            <SecretInput {...field} id="waivers-api-key" aria-invalid={fieldState.invalid} />
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>
         )} />
