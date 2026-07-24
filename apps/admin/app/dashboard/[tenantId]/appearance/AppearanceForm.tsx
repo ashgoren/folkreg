@@ -43,7 +43,7 @@ function ColorField({ name, label, control }: { name: keyof AppearanceValues; la
   );
 }
 
-export function AppearanceForm({ tenant, tenantId }: { tenant: Tenant; tenantId: string }) {
+export function AppearanceForm({ tenant }: { tenant: Tenant }) {
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
 
@@ -67,7 +67,7 @@ export function AppearanceForm({ tenant, tenantId }: { tenant: Tenant; tenantId:
   function onSubmit(values: AppearanceValues) {
     setSaved(false);
     startTransition(async () => {
-      const error = await updateAppearance(tenantId, values);
+      const error = await updateAppearance(tenant.id, values);
       if (error) {
         form.setError("root", { message: error });
       } else {

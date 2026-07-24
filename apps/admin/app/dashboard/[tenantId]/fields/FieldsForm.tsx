@@ -26,7 +26,7 @@ function getDefaultConfig(fieldName: string): FieldConfig {
   };
 }
 
-export function FieldsForm({ tenant, tenantId }: { tenant: Tenant; tenantId: string }) {
+export function FieldsForm({ tenant }: { tenant: Tenant }) {
   // Load initial fields config from db and keep it in local state until user saves
   const initialFields = tenant.registration_config?.fields;
   const [contactOrder, setContactOrder] = useState<string[]>(initialFields?.contactOrder ?? []);
@@ -48,7 +48,7 @@ export function FieldsForm({ tenant, tenantId }: { tenant: Tenant; tenantId: str
 
   function save(data: { contactOrder: string[]; miscOrder: string[]; config: Record<string, FieldConfig> }) {
     startTransition(async () => {
-      const error = await updateFields(tenantId, data);
+      const error = await updateFields(tenant.id, data);
       if (error) {
         toast.error(error);
       } else {

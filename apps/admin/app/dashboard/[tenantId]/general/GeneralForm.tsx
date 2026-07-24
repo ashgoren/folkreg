@@ -14,7 +14,7 @@ import type { Tenant } from "@repo/types";
 import { generalSchema, type GeneralValues } from "./schema";
 import { updateGeneral } from "./actions";
 
-export function GeneralForm({ tenant, tenantId }: { tenant: Tenant; tenantId: string }) {
+export function GeneralForm({ tenant }: { tenant: Tenant }) {
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
 
@@ -36,7 +36,7 @@ export function GeneralForm({ tenant, tenantId }: { tenant: Tenant; tenantId: st
   function onSubmit(values: GeneralValues) {
     setSaved(false);
     startTransition(async () => {
-      const error = await updateGeneral(tenantId, values);
+      const error = await updateGeneral(tenant.id, values);
       if (error) {
         form.setError('root', { message: error });
       } else {

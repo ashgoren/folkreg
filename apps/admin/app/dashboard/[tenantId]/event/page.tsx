@@ -8,7 +8,7 @@ export default async function EventPage({ params }: { params: Promise<{ tenantId
   return (
     <div className="max-w-xl">
       <h1 className="text-2xl font-semibold mb-8">Event</h1>
-      <EventForm tenant={tenant} tenantId={tenantId} />
+      <EventForm tenant={tenant} />
     </div>
   );
 }

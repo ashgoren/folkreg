@@ -7,7 +7,7 @@ export default async function FieldsPage({ params }: { params: Promise<{ tenantI
   return (
     <div>
       <h1 className="text-2xl font-semibold mb-8">Fields</h1>
-      <FieldsForm tenant={tenant} tenantId={tenantId} />
+      <FieldsForm tenant={tenant} />
     </div>
   );
 }

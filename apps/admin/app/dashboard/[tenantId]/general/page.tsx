@@ -8,7 +8,7 @@ export default async function GeneralPage({ params }: { params: Promise<{ tenant
   return (
     <div className="max-w-xl">
       <h1 className="text-2xl font-semibold mb-8">General</h1>
-      <GeneralForm tenant={tenant} tenantId={tenantId} />
+      <GeneralForm tenant={tenant} />
     </div>
   );
 }

@@ -8,7 +8,7 @@ export default async function AppearancePage({ params }: { params: Promise<{ ten
   return (
     <div className="max-w-xl">
       <h1 className="text-2xl font-semibold mb-8">Appearance</h1>
-      <AppearanceForm tenant={tenant} tenantId={tenantId} />
+      <AppearanceForm tenant={tenant} />
     </div>
   );
 }

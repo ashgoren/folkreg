@@ -14,7 +14,7 @@ import type { Tenant } from "@repo/types";
 import { eventSchema, type EventValues } from "./schema";
 import { updateEvent } from "./actions";
 
-export function EventForm({ tenant, tenantId }: { tenant: Tenant; tenantId: string }) {
+export function EventForm({ tenant }: { tenant: Tenant }) {
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
 
@@ -57,7 +57,7 @@ export function EventForm({ tenant, tenantId }: { tenant: Tenant; tenantId: stri
   function onSubmit(values: EventValues) {
     setSaved(false);
     startTransition(async () => {
-      const error = await updateEvent(tenantId, values);
+      const error = await updateEvent(tenant.id, values);
       if (error) {
         form.setError("root", { message: error });
       } else {
