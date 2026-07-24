@@ -33,6 +33,8 @@ export function WaiversForm({ tenant, secrets }: { tenant: Tenant; secrets: Tena
   const isDirty = form.formState.isDirty;
   useEffect(() => { if (isDirty) setSaved(false) }, [isDirty]);
 
+  const showWaiver = form.watch("show");
+
   function onSubmit(values: WaiversValues) {
     setSaved(false);
     startTransition(async () => {
@@ -53,8 +55,8 @@ export function WaiversForm({ tenant, secrets }: { tenant: Tenant; secrets: Tena
         <Controller name="show" control={form.control} render={({ field, fieldState }) => (
           <Field orientation="horizontal" data-invalid={fieldState.invalid}>
             <FieldContent>
-              <FormLabel htmlFor="waivers-show">Show waiver</FormLabel>
-              <FieldDescription>Registrants must sign a waiver before completing registration</FieldDescription>
+              <FormLabel htmlFor="waivers-show">Show waiver?</FormLabel>
+              <FieldDescription>Registrants {showWaiver ? "must sign a waiver during registration" : "do not need to sign a waiver during registration"}</FieldDescription>
             </FieldContent>
             <Switch
               id="waivers-show"
@@ -66,25 +68,29 @@ export function WaiversForm({ tenant, secrets }: { tenant: Tenant; secrets: Tena
         )} />
       </FieldGroup>
 
-      <Separator />
+      {showWaiver && (
+        <>
+          <Separator />
 
-      <FieldGroup>
-        <Controller name="docusealTemplateId" control={form.control} render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FormLabel htmlFor="waivers-template-id">DocuSeal template ID</FormLabel>
-            <Input {...field} id="waivers-template-id" autoComplete="off" aria-invalid={fieldState.invalid} />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )} />
+          <FieldGroup>
+            <Controller name="docusealTemplateId" control={form.control} render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FormLabel htmlFor="waivers-template-id">DocuSeal template ID</FormLabel>
+                <Input {...field} id="waivers-template-id" autoComplete="off" aria-invalid={fieldState.invalid} />
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )} />
 
-        <Controller name="docuseal_key" control={form.control} render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FormLabel htmlFor="waivers-api-key">DocuSeal API key</FormLabel>
-            <SecretInput {...field} id="waivers-api-key" aria-invalid={fieldState.invalid} />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )} />
-      </FieldGroup>
+            <Controller name="docuseal_key" control={form.control} render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FormLabel htmlFor="waivers-api-key">DocuSeal API key</FormLabel>
+                <SecretInput {...field} id="waivers-api-key" aria-invalid={fieldState.invalid} />
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )} />
+          </FieldGroup>
+        </>
+      )}
 
       {form.formState.errors.root && (
         <Alert variant="destructive">
