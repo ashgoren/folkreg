@@ -5,7 +5,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Field, FieldDescription, FieldError, FieldGroup } from "@/components/ui/field";
+import { Field, FieldError, FieldGroup } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
 import { Input } from "@/components/ui/input";
 import type { Tenant } from "@repo/types";
@@ -49,7 +49,6 @@ export function ReceiptsForm({ tenant }: { tenant: Tenant }) {
         <Controller name="emailFrom" control={form.control} render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
             <FormLabel htmlFor="receipts-email-from">From address</FormLabel>
-            <FieldDescription>Sender address for confirmation emails</FieldDescription>
             <Input {...field} id="receipts-email-from" type="email" autoComplete="off" aria-invalid={fieldState.invalid} />
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>
@@ -57,8 +56,7 @@ export function ReceiptsForm({ tenant }: { tenant: Tenant }) {
 
         <Controller name="emailReplyTo" control={form.control} render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
-            <FormLabel htmlFor="receipts-email-reply-to">Reply-to address</FormLabel>
-            <FieldDescription>Where registrant replies go</FieldDescription>
+            <FormLabel htmlFor="receipts-email-reply-to">Reply-to address (if different)</FormLabel>
             <Input {...field} id="receipts-email-reply-to" type="email" autoComplete="off" aria-invalid={fieldState.invalid} />
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>

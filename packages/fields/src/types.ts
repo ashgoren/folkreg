@@ -38,4 +38,6 @@ export interface FieldDef {
   crossValidation?: (person: Record<string, unknown>, personIndex: number) => string | null;
   followUp?: FollowUp;
   defaults?: FieldDefaults;
+  /** Excluded from the Spreadsheet page's available columns (e.g. emailConfirmation, structurally redundant with email) */
+  excludeFromSpreadsheet?: boolean;
 }

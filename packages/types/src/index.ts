@@ -1,7 +1,7 @@
-import { Tables, Enums, Database } from "./database.types.js"
+import { Tables, Enums, Database } from "./database.types"
 import { type SupabaseClient } from "@supabase/supabase-js"
 
-export * from "./database.types.js"
+export * from "./database.types"
 
 export type DbClient = SupabaseClient<Database>
 
@@ -121,8 +121,18 @@ export interface PaymentsConfig {
 
 export interface SpreadsheetConfig {
   sheetId: string;
-  fieldOrder: string[];
+  columns: { name: string; visible: boolean }[];
 }
+
+// Computed order/payment columns the spreadsheet sync writes alongside registrant
+// fields -- not user-entered, so not part of the FieldDef catalog in @repo/fields.
+// `waiver`/`deposit`/`donation` are only relevant when the corresponding tenant
+// feature is enabled; the rest always apply.
+export const SPREADSHEET_SYSTEM_COLUMNS = [
+  'admission', 'donation', 'total', 'deposit', 'fees', 'paid', 'charged',
+  'status', 'purchaser', 'completedAt', 'paymentId', 'paymentEmail',
+  'waiver', 'environment',
+] as const;
 
 export interface ReceiptsConfig {
   emailFrom: string | null;

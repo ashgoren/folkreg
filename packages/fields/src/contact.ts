@@ -56,6 +56,7 @@ export const CONTACT_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
       label: "Confirm email",
       width: 6
     },
+    excludeFromSpreadsheet: true,
   },
   phone: {
     type: "phone",
