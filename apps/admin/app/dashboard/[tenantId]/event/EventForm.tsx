@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Field, FieldDescription, FieldError, FieldGroup } from "@/components/ui/field";
+import { AutosaveStatus } from "@/components/autosave-status";
 import { FormLabel } from "@/components/form-label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -213,9 +214,7 @@ export function EventForm({ tenant }: { tenant: Tenant }) {
         </FieldGroup>
       </div>
 
-      <div className="text-sm text-muted-foreground h-5">
-        {isPending ? "Saving…" : savedRecently ? "Saved ✓" : null}
-      </div>
+      <AutosaveStatus isPending={isPending} savedRecently={savedRecently} />
     </div>
   );
 }

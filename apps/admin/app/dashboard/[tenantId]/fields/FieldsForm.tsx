@@ -6,6 +6,7 @@ import { move } from "@dnd-kit/helpers";
 import { FIELD_DEFS } from "@repo/fields";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useAutosave } from "@/lib/useAutosave";
+import { AutosaveStatus } from "@/components/autosave-status";
 import { FieldRow } from "./FieldRow";
 import { ConfigPanel } from "./ConfigPanel";
 import { updateFields } from "./actions";
@@ -252,10 +253,9 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
           </div>
         )}
 
-        <div className="text-sm text-muted-foreground h-5">
-          {isPending ? "Saving…" : savedRecently ? "Saved ✓" : null}
-        </div>
       </div>
+
+      <AutosaveStatus isPending={isPending} savedRecently={savedRecently} />
 
       {/* Right column: config panel */}
       <div className="flex-1 min-w-0">

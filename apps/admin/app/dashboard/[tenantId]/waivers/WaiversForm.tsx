@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Field, FieldContent, FieldDescription, FieldError, FieldGroup } from "@/components/ui/field";
+import { AutosaveStatus } from "@/components/autosave-status";
 import { FormLabel } from "@/components/form-label";
 import { Input } from "@/components/ui/input";
 import { SecretInput } from "@/components/ui/secret-input";
@@ -85,9 +86,7 @@ export function WaiversForm({ tenant, secrets }: { tenant: Tenant; secrets: Tena
         </>
       )}
 
-      <div className="text-sm text-muted-foreground h-5">
-        {isPending ? "Saving…" : savedRecently ? "Saved ✓" : null}
-      </div>
+      <AutosaveStatus isPending={isPending} savedRecently={savedRecently} />
     </div>
   );
 }
