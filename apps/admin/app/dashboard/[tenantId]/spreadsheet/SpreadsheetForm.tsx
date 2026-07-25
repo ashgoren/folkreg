@@ -1,16 +1,15 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect } from "react";
 import { DragDropProvider } from "@dnd-kit/react";
 import { move } from "@dnd-kit/helpers";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FIELD_DEFS } from "@repo/fields";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
 import { Input } from "@/components/ui/input";
+import { useAutosave } from "@/lib/useAutosave";
 import type { Tenant } from "@repo/types";
 import { SPREADSHEET_SYSTEM_COLUMNS } from "@repo/types";
 import { spreadsheetSchema, type SpreadsheetValues } from "./schema";
@@ -25,9 +24,6 @@ function isSystemColumnRelevant(column: string, tenant: Tenant): boolean {
 }
 
 export function SpreadsheetForm({ tenant }: { tenant: Tenant }) {
-  const [isPending, startTransition] = useTransition();
-  const [saved, setSaved] = useState(false);
-
   const activeFieldNames = [
     ...(tenant.fields_config?.contactOrder ?? []),
     ...(tenant.fields_config?.miscOrder ?? []),
@@ -55,6 +51,7 @@ export function SpreadsheetForm({ tenant }: { tenant: Tenant }) {
     : availableRegistrantColumns.map((name) => ({ name, visible: true }));
 
   const form = useForm<SpreadsheetValues>({
+    mode: "onBlur",
     resolver: zodResolver(spreadsheetSchema),
     defaultValues: {
       sheetId: tenant.spreadsheet_config?.sheetId ?? "",
@@ -62,8 +59,17 @@ export function SpreadsheetForm({ tenant }: { tenant: Tenant }) {
     },
   });
 
-  const isDirty = form.formState.isDirty;
-  useEffect(() => { if (isDirty) setSaved(false) }, [isDirty]);
+  const { saveDebounced, isPending, savedRecently } = useAutosave<SpreadsheetValues>(
+    (data) => updateSpreadsheet(tenant.id, data),
+  );
+
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      if (!spreadsheetSchema.safeParse(values).success) return;
+      saveDebounced(values as SpreadsheetValues);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, saveDebounced]);
 
   const columns = form.watch("columns");
   const systemColumns = SPREADSHEET_SYSTEM_COLUMNS.filter((column) => isSystemColumnRelevant(column, tenant));
@@ -72,25 +78,11 @@ export function SpreadsheetForm({ tenant }: { tenant: Tenant }) {
     form.setValue(
       "columns",
       columns.map((col) => (col.name === name ? { ...col, visible: !col.visible } : col)),
-      { shouldDirty: true },
     );
   }
 
-  function onSubmit(values: SpreadsheetValues) {
-    setSaved(false);
-    startTransition(async () => {
-      const error = await updateSpreadsheet(tenant.id, values);
-      if (error) {
-        form.setError("root", { message: error });
-      } else {
-        form.reset(values);
-        setSaved(true);
-      }
-    });
-  }
-
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+    <div className="space-y-8">
 
       <FieldGroup>
         <Controller name="sheetId" control={form.control} render={({ field, fieldState }) => (
@@ -116,7 +108,7 @@ export function SpreadsheetForm({ tenant }: { tenant: Tenant }) {
               const names = columns.map((col) => col.name);
               const newOrder = move(names, event) as string[];
               const byName = new Map(columns.map((col) => [col.name, col]));
-              form.setValue("columns", newOrder.map((name) => byName.get(name)!), { shouldDirty: true });
+              form.setValue("columns", newOrder.map((name) => byName.get(name)!));
             }}
           >
             <div className="flex flex-col gap-1">
@@ -145,20 +137,9 @@ export function SpreadsheetForm({ tenant }: { tenant: Tenant }) {
         </div>
       </div>
 
-      {form.formState.errors.root && (
-        <Alert variant="destructive">
-          <AlertDescription>{form.formState.errors.root.message}</AlertDescription>
-        </Alert>
-      )}
-
-      <div className="flex items-center gap-4">
-        <Button type="submit" disabled={isPending || !isDirty}>
-          {isPending ? "Saving…" : "Save"}
-        </Button>
-        {saved && (
-          <span className="text-sm text-muted-foreground">Saved ✓</span>
-        )}
+      <div className="text-sm text-muted-foreground h-5">
+        {isPending ? "Saving…" : savedRecently ? "Saved ✓" : null}
       </div>
-    </form>
+    </div>
   );
 }

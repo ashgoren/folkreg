@@ -1,27 +1,24 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { Field, FieldContent, FieldDescription, FieldError, FieldGroup } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
 import { Input } from "@/components/ui/input";
 import { SecretInput } from "@/components/ui/secret-input";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { useAutosave } from "@/lib/useAutosave";
 import type { Tenant, TenantSecrets } from "@repo/types";
 import { waiversSchema, type WaiversValues } from "./schema";
 import { updateWaivers } from "./actions";
 
 export function WaiversForm({ tenant, secrets }: { tenant: Tenant; secrets: TenantSecrets }) {
-  const [isPending, startTransition] = useTransition();
-  const [saved, setSaved] = useState(false);
-
   const waiverConfig = tenant.waiver_config;
 
   const form = useForm<WaiversValues>({
+    mode: "onBlur",
     resolver: zodResolver(waiversSchema),
     defaultValues: {
       show: waiverConfig?.show ?? false,
@@ -30,33 +27,29 @@ export function WaiversForm({ tenant, secrets }: { tenant: Tenant; secrets: Tena
     },
   });
 
-  const isDirty = form.formState.isDirty;
-  useEffect(() => { if (isDirty) setSaved(false) }, [isDirty]);
+  const { saveDebounced, isPending, savedRecently } = useAutosave<WaiversValues>(
+    (data) => updateWaivers(tenant.id, data),
+  );
 
   const showWaiver = form.watch("show");
 
-  function onSubmit(values: WaiversValues) {
-    setSaved(false);
-    startTransition(async () => {
-      const error = await updateWaivers(tenant.id, values);
-      if (error) {
-        form.setError("root", { message: error });
-      } else {
-        form.reset(values);
-        setSaved(true);
-      }
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      if (!waiversSchema.safeParse(values).success) return;
+      saveDebounced(values as WaiversValues);
     });
-  }
+    return () => subscription.unsubscribe();
+  }, [form, saveDebounced]);
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+    <div className="space-y-8">
 
       <FieldGroup>
         <Controller name="show" control={form.control} render={({ field, fieldState }) => (
           <Field orientation="horizontal" data-invalid={fieldState.invalid}>
             <FieldContent>
-              <FormLabel htmlFor="waivers-show">Show waiver?</FormLabel>
-              <FieldDescription>Registrants {showWaiver ? "must sign a waiver during registration" : "do not need to sign a waiver during registration"}</FieldDescription>
+              <FormLabel htmlFor="waivers-show">Show waiver</FormLabel>
+              <FieldDescription>Registrants must sign a waiver before completing registration</FieldDescription>
             </FieldContent>
             <Switch
               id="waivers-show"
@@ -92,20 +85,9 @@ export function WaiversForm({ tenant, secrets }: { tenant: Tenant; secrets: Tena
         </>
       )}
 
-      {form.formState.errors.root && (
-        <Alert variant="destructive">
-          <AlertDescription>{form.formState.errors.root.message}</AlertDescription>
-        </Alert>
-      )}
-
-      <div className="flex items-center gap-4">
-        <Button type="submit" disabled={isPending || !isDirty}>
-          {isPending ? "Saving…" : "Save"}
-        </Button>
-        {saved && (
-          <span className="text-sm text-muted-foreground">Saved ✓</span>
-        )}
+      <div className="text-sm text-muted-foreground h-5">
+        {isPending ? "Saving…" : savedRecently ? "Saved ✓" : null}
       </div>
-    </form>
+    </div>
   );
 }

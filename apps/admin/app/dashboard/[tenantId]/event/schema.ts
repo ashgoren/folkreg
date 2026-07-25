@@ -1,11 +1,11 @@
 import { z } from "zod";
 
 export const eventSchema = z.object({
-  title: z.string().min(1, "Required"),
+  title: z.string(),
   year: z.number().int().min(2000).max(2100),
-  location: z.string().min(1, "Required"),
-  date: z.string().min(1, "Required"),
-  timezone: z.string().min(1, "Required"),
+  location: z.string(),
+  date: z.string(),
+  timezone: z.string(),
   calendar: z.object({
     title: z.string(),
     description: z.string(),
@@ -14,7 +14,7 @@ export const eventSchema = z.object({
     end: z.string(),
   }),
   contacts: z.object({
-    info: z.string().min(1, "Required").email("Must be a valid email"),
+    info: z.union([z.literal(""), z.string().email("Must be a valid email")]),
     housing: z.string(),
   }),
   links: z.object({

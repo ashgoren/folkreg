@@ -1,25 +1,22 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { useAutosave } from "@/lib/useAutosave";
 import type { Tenant } from "@repo/types";
 import { eventSchema, type EventValues } from "./schema";
 import { updateEvent } from "./actions";
 
 export function EventForm({ tenant }: { tenant: Tenant }) {
-  const [isPending, startTransition] = useTransition();
-  const [saved, setSaved] = useState(false);
-
   const eventConfig = tenant.event_config;
 
   const form = useForm<EventValues>({
+    mode: "onBlur",
     resolver: zodResolver(eventSchema),
     defaultValues: {
       title: eventConfig?.title ?? "",
@@ -46,24 +43,20 @@ export function EventForm({ tenant }: { tenant: Tenant }) {
     },
   });
 
-  const isDirty = form.formState.isDirty;
-  useEffect(() => { if (isDirty) setSaved(false) }, [isDirty]);
+  const { saveDebounced, isPending, savedRecently } = useAutosave<EventValues>(
+    (data) => updateEvent(tenant.id, data),
+  );
 
-  function onSubmit(values: EventValues) {
-    setSaved(false);
-    startTransition(async () => {
-      const error = await updateEvent(tenant.id, values);
-      if (error) {
-        form.setError("root", { message: error });
-      } else {
-        form.reset(values);
-        setSaved(true);
-      }
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      if (!eventSchema.safeParse(values).success) return;
+      saveDebounced(values as EventValues);
     });
-  }
+    return () => subscription.unsubscribe();
+  }, [form, saveDebounced]);
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+    <div className="space-y-8">
 
       <FieldGroup>
         <Controller name="title" control={form.control} render={({ field, fieldState }) => (
@@ -220,20 +213,9 @@ export function EventForm({ tenant }: { tenant: Tenant }) {
         </FieldGroup>
       </div>
 
-      {form.formState.errors.root && (
-        <Alert variant="destructive">
-          <AlertDescription>{form.formState.errors.root.message}</AlertDescription>
-        </Alert>
-      )}
-
-      <div className="flex items-center gap-4">
-        <Button type="submit" disabled={isPending || !isDirty}>
-          {isPending ? "Saving…" : "Save"}
-        </Button>
-        {saved && (
-          <span className="text-sm text-muted-foreground">Saved ✓</span>
-        )}
+      <div className="text-sm text-muted-foreground h-5">
+        {isPending ? "Saving…" : savedRecently ? "Saved ✓" : null}
       </div>
-    </form>
+    </div>
   );
 }

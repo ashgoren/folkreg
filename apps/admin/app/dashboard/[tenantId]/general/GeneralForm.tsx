@@ -1,24 +1,21 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { Field, FieldContent, FieldDescription, FieldError, FieldGroup } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { useAutosave } from "@/lib/useAutosave";
 import type { Tenant } from "@repo/types";
 import { generalSchema, type GeneralValues } from "./schema";
 import { updateGeneral } from "./actions";
 
 export function GeneralForm({ tenant }: { tenant: Tenant }) {
-  const [isPending, startTransition] = useTransition();
-  const [saved, setSaved] = useState(false);
-
   const form = useForm<GeneralValues>({
+    mode: "onBlur",
     resolver: zodResolver(generalSchema),
     defaultValues: {
       slug: tenant.slug,
@@ -27,24 +24,20 @@ export function GeneralForm({ tenant }: { tenant: Tenant }) {
     },
   });
 
-  const isDirty = form.formState.isDirty;
-  useEffect(() => { if (isDirty) setSaved(false) }, [isDirty]);
+  const { saveDebounced, isPending, savedRecently } = useAutosave<GeneralValues>(
+    (data) => updateGeneral(tenant.id, data),
+  );
 
-  function onSubmit(values: GeneralValues) {
-    setSaved(false);
-    startTransition(async () => {
-      const error = await updateGeneral(tenant.id, values);
-      if (error) {
-        form.setError('root', { message: error });
-      } else {
-        form.reset(values);
-        setSaved(true);
-      }
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      if (!generalSchema.safeParse(values).success) return;
+      saveDebounced(values as GeneralValues);
     });
-  }
+    return () => subscription.unsubscribe();
+  }, [form, saveDebounced]);
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+    <div className="space-y-8">
       <FieldGroup>
 
         <Controller
@@ -106,20 +99,9 @@ export function GeneralForm({ tenant }: { tenant: Tenant }) {
 
       </FieldGroup>
 
-      {form.formState.errors.root && (
-        <Alert variant="destructive">
-          <AlertDescription>{form.formState.errors.root.message}</AlertDescription>
-        </Alert>
-      )}
-
-      <div className="flex items-center gap-4">
-        <Button type="submit" disabled={isPending || !isDirty}>
-          {isPending ? "Saving…" : "Save"}
-        </Button>
-        {saved && (
-          <span className="text-sm text-muted-foreground">Saved ✓</span>
-        )}
+      <div className="text-sm text-muted-foreground h-5">
+        {isPending ? "Saving…" : savedRecently ? "Saved ✓" : null}
       </div>
-    </form>
+    </div>
   );
 }

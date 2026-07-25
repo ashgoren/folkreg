@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect } from "react";
 import { Controller, useForm, type Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { useAutosave } from "@/lib/useAutosave";
 import type { Tenant } from "@repo/types";
 import { appearanceSchema, type AppearanceValues } from "./schema";
 import { updateAppearance } from "./actions";
@@ -44,12 +43,10 @@ function ColorField({ name, label, control }: { name: keyof AppearanceValues; la
 }
 
 export function AppearanceForm({ tenant }: { tenant: Tenant }) {
-  const [isPending, startTransition] = useTransition();
-  const [saved, setSaved] = useState(false);
-
   const themeConfig = tenant.theme_config;
 
   const form = useForm<AppearanceValues>({
+    mode: "onBlur",
     resolver: zodResolver(appearanceSchema),
     defaultValues: {
       backgroundLight: themeConfig?.backgroundLight ?? DEFAULTS.backgroundLight,
@@ -61,24 +58,20 @@ export function AppearanceForm({ tenant }: { tenant: Tenant }) {
     },
   });
 
-  const isDirty = form.formState.isDirty;
-  useEffect(() => { if (isDirty) setSaved(false) }, [isDirty]);
+  const { saveDebounced, isPending, savedRecently } = useAutosave<AppearanceValues>(
+    (data) => updateAppearance(tenant.id, data),
+  );
 
-  function onSubmit(values: AppearanceValues) {
-    setSaved(false);
-    startTransition(async () => {
-      const error = await updateAppearance(tenant.id, values);
-      if (error) {
-        form.setError("root", { message: error });
-      } else {
-        form.reset(values);
-        setSaved(true);
-      }
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      if (!appearanceSchema.safeParse(values).success) return;
+      saveDebounced(values as AppearanceValues);
     });
-  }
+    return () => subscription.unsubscribe();
+  }, [form, saveDebounced]);
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+    <div className="space-y-8">
 
       <FieldDescription>
         If applicable, match the static site theme by copying these from the <code>:root</code> block in the static site&apos;s <code>globals.css</code>.
@@ -104,20 +97,9 @@ export function AppearanceForm({ tenant }: { tenant: Tenant }) {
         </FieldGroup>
       </div>
 
-      {form.formState.errors.root && (
-        <Alert variant="destructive">
-          <AlertDescription>{form.formState.errors.root.message}</AlertDescription>
-        </Alert>
-      )}
-
-      <div className="flex items-center gap-4">
-        <Button type="submit" disabled={isPending || !isDirty}>
-          {isPending ? "Saving…" : "Save"}
-        </Button>
-        {saved && (
-          <span className="text-sm text-muted-foreground">Saved ✓</span>
-        )}
+      <div className="text-sm text-muted-foreground h-5">
+        {isPending ? "Saving…" : savedRecently ? "Saved ✓" : null}
       </div>
-    </form>
+    </div>
   );
 }
