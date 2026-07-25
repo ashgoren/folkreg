@@ -1,15 +1,21 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useState, useRef } from "react";
 import { DragDropProvider } from "@dnd-kit/react";
 import { move } from "@dnd-kit/helpers";
-import { toast } from "sonner";
 import { FIELD_DEFS } from "@repo/fields";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { useAutosave } from "@/lib/useAutosave";
 import { FieldRow } from "./FieldRow";
 import { ConfigPanel } from "./ConfigPanel";
 import { updateFields } from "./actions";
 import type { FieldConfig, Tenant } from "@repo/types";
+
+type FieldsState = {
+  contactOrder: string[];
+  miscOrder: string[];
+  config: Record<string, FieldConfig>;
+};
 
 function getDefaultConfig(fieldName: string): FieldConfig {
   const def = FIELD_DEFS[fieldName];
@@ -39,9 +45,8 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
     initialFields?.config ?? {},
   );
 
-  // Mirrors state so debounced callbacks always read the latest values
-  const stateRef = useRef({ contactOrder, miscOrder, config });
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Mirrors state so callbacks always read the latest values
+  const stateRef = useRef<FieldsState>({ contactOrder, miscOrder, config });
 
   const [selectedField, setSelectedField] = useState<string | null>(null);
 
@@ -51,24 +56,10 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
   const [availableOpen, setAvailableOpen] = useState(
     contactOrder.length === 0 && miscOrder.length === 0,
   );
-  const [savedRecently, setSavedRecently] = useState(false);
-  const [isPending, startTransition] = useTransition();
 
-  function save(data: {
-    contactOrder: string[];
-    miscOrder: string[];
-    config: Record<string, FieldConfig>;
-  }) {
-    startTransition(async () => {
-      const error = await updateFields(tenant.id, data);
-      if (error) {
-        toast.error(error);
-      } else {
-        setSavedRecently(true);
-        setTimeout(() => setSavedRecently(false), 2000);
-      }
-    });
-  }
+  const { saveNow, saveDebounced, isPending, savedRecently } = useAutosave<FieldsState>(
+    (data) => updateFields(tenant.id, data),
+  );
 
   function updateFieldConfig(fieldName: string, updates: Partial<FieldConfig>) {
     setConfig((prev) => {
@@ -76,8 +67,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
       stateRef.current = { ...stateRef.current, config: next };
       return next;
     });
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => save(stateRef.current), 500);
+    saveDebounced(stateRef.current);
   }
 
   function activateField(fieldName: string) {
@@ -104,7 +94,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
       };
     }
     setConfig(newConfig);
-    save(stateRef.current);
+    saveNow(stateRef.current);
   }
 
   function deactivateField(fieldName: string) {
@@ -125,7 +115,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
       config: newConfig,
     };
     if (selectedField === fieldName) setSelectedField(null);
-    save(stateRef.current);
+    saveNow(stateRef.current);
   }
 
   function needsOptions(fieldName: string) {
@@ -173,7 +163,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
                   ...stateRef.current,
                   contactOrder: newOrder,
                 };
-                save(stateRef.current);
+                saveNow(stateRef.current);
               }}
             >
               <div className="flex flex-col gap-1">
@@ -213,7 +203,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
                   ...stateRef.current,
                   miscOrder: newOrder,
                 };
-                save(stateRef.current);
+                saveNow(stateRef.current);
               }}
             >
               <div className="flex flex-col gap-1">
