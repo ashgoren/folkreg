@@ -83,13 +83,20 @@ export interface WaiverConfig {
   docusealTemplateId: string | null;
 }
 
+export interface TieredCategory {
+  label: string;
+  ageGroups: AgeGroup[];
+  early: number;
+  later: number;
+}
+
 export type AdmissionsConfig = (
   | { mode: 'sliding-scale'; costRange: [number, number]; costDefault: number }
   | { mode: 'fixed'; cost: number }
-  | { mode: 'tiered'; earlybirdCutoff: string }
+  | { mode: 'tiered'; earlybirdCutoff: string; categories: TieredCategory[] }
 ) & {
-  admissionQuantityMax: number | null;
-  waitlistCutoff: number | null;
+  admissionQuantityMax: number;
+  waitlistCutoff: number;
 }
 
 export interface PaymentsConfig {

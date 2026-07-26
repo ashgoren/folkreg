@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Field, FieldDescription, FieldError, FieldGroup } from "@/components/ui/field";
 import { AutosaveStatus } from "@/components/autosave-status";
 import { FormLabel } from "@/components/form-label";
+import { NumberField } from "@/components/form-number-field";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useAutosave } from "@/lib/useAutosave";
@@ -69,19 +70,7 @@ export function EventForm({ tenant }: { tenant: Tenant }) {
           </Field>
         )} />
 
-        <Controller name="year" control={form.control} render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FormLabel htmlFor="event-year" required>Year</FormLabel>
-            <Input
-              id="event-year"
-              type="number"
-              aria-invalid={fieldState.invalid}
-              value={field.value}
-              onChange={e => field.onChange(Number(e.target.value))}
-            />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )} />
+        <NumberField control={form.control} name="year" id="event-year" label="Year" required />
 
         <Controller name="location" control={form.control} render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
