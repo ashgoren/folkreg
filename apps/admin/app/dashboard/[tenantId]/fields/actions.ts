@@ -2,7 +2,6 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createTenantDb } from "@repo/db/queries";
-import type { FieldsConfig } from "@repo/types";
 import { fieldsSchema, type FieldsValues } from "./schema";
 
 export async function updateFields(tenantId: string, values: FieldsValues): Promise<string | null> {
@@ -18,7 +17,7 @@ export async function updateFields(tenantId: string, values: FieldsValues): Prom
   if (!current) return "No tenant found";
 
   await db.updateTenant({
-    fields_config: values as FieldsConfig,
+    fields_config: parsed.data,
   });
 
   return null;

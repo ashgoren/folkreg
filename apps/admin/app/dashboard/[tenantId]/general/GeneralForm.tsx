@@ -31,8 +31,9 @@ export function GeneralForm({ tenant }: { tenant: Tenant }) {
 
   useEffect(() => {
     const subscription = form.watch((values) => {
-      if (!generalSchema.safeParse(values).success) return;
-      saveDebounced(values as GeneralValues);
+      const parsed = generalSchema.safeParse(values);
+      if (!parsed.success) return;
+      saveDebounced(parsed.data);
     });
     return () => subscription.unsubscribe();
   }, [form, saveDebounced]);

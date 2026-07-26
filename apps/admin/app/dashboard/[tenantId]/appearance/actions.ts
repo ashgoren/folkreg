@@ -15,7 +15,7 @@ export async function updateAppearance(tenantId: string, values: AppearanceValue
 
   const db = createTenantDb(supabase, tenantId);
 
-  const theme_config: ThemeConfig = { ...values };
+  const theme_config: ThemeConfig = { ...parsed.data };
 
   await db.updateTenant({ theme_config });
 

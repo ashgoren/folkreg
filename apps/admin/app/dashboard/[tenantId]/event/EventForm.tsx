@@ -51,8 +51,9 @@ export function EventForm({ tenant }: { tenant: Tenant }) {
 
   useEffect(() => {
     const subscription = form.watch((values) => {
-      if (!eventSchema.safeParse(values).success) return;
-      saveDebounced(values as EventValues);
+      const parsed = eventSchema.safeParse(values);
+      if (!parsed.success) return;
+      saveDebounced(parsed.data);
     });
     return () => subscription.unsubscribe();
   }, [form, saveDebounced]);

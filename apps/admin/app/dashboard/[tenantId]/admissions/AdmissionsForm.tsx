@@ -53,8 +53,9 @@ export function AdmissionsForm({ tenant }: { tenant: Tenant }) {
 
   useEffect(() => {
     const subscription = form.watch((values) => {
-      if (!admissionsSchema.safeParse(values).success) return;
-      saveDebounced(values as AdmissionsValues);
+      const parsed = admissionsSchema.safeParse(values);
+      if (!parsed.success) return;
+      saveDebounced(parsed.data);
     });
     return () => subscription.unsubscribe();
   }, [form, saveDebounced]);

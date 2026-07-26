@@ -28,8 +28,9 @@ export function ReceiptsForm({ tenant }: { tenant: Tenant }) {
 
   useEffect(() => {
     const subscription = form.watch((values) => {
-      if (!receiptsSchema.safeParse(values).success) return;
-      saveDebounced(values as ReceiptsValues);
+      const parsed = receiptsSchema.safeParse(values);
+      if (!parsed.success) return;
+      saveDebounced(parsed.data);
     });
     return () => subscription.unsubscribe();
   }, [form, saveDebounced]);

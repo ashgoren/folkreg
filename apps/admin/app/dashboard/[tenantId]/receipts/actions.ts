@@ -14,10 +14,11 @@ export async function updateReceipts(tenantId: string, values: ReceiptsValues): 
   if (!user) return "Not authenticated";
 
   const db = createTenantDb(supabase, tenantId);
+  const data = parsed.data;
 
   const receipts_config: ReceiptsConfig = {
-    emailFrom: values.emailFrom || null,
-    emailReplyTo: values.emailReplyTo || null,
+    emailFrom: data.emailFrom || null,
+    emailReplyTo: data.emailReplyTo || null,
   };
 
   await db.updateTenant({ receipts_config });

@@ -66,8 +66,9 @@ export function SpreadsheetForm({ tenant }: { tenant: Tenant }) {
 
   useEffect(() => {
     const subscription = form.watch((values) => {
-      if (!spreadsheetSchema.safeParse(values).success) return;
-      saveDebounced(values as SpreadsheetValues);
+      const parsed = spreadsheetSchema.safeParse(values);
+      if (!parsed.success) return;
+      saveDebounced(parsed.data);
     });
     return () => subscription.unsubscribe();
   }, [form, saveDebounced]);

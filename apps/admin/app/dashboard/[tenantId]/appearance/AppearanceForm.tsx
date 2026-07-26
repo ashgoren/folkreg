@@ -65,8 +65,9 @@ export function AppearanceForm({ tenant }: { tenant: Tenant }) {
 
   useEffect(() => {
     const subscription = form.watch((values) => {
-      if (!appearanceSchema.safeParse(values).success) return;
-      saveDebounced(values as AppearanceValues);
+      const parsed = appearanceSchema.safeParse(values);
+      if (!parsed.success) return;
+      saveDebounced(parsed.data);
     });
     return () => subscription.unsubscribe();
   }, [form, saveDebounced]);

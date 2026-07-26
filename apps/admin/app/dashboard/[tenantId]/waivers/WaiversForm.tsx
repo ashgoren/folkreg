@@ -36,8 +36,9 @@ export function WaiversForm({ tenant, secrets }: { tenant: Tenant; secrets: Tena
 
   useEffect(() => {
     const subscription = form.watch((values) => {
-      if (!waiversSchema.safeParse(values).success) return;
-      saveDebounced(values as WaiversValues);
+      const parsed = waiversSchema.safeParse(values);
+      if (!parsed.success) return;
+      saveDebounced(parsed.data);
     });
     return () => subscription.unsubscribe();
   }, [form, saveDebounced]);

@@ -15,7 +15,7 @@ export async function updateAdmissions(tenantId: string, values: AdmissionsValue
 
   const db = createTenantDb(supabase, tenantId);
 
-  const admissions_config: AdmissionsConfig = values;
+  const admissions_config: AdmissionsConfig = parsed.data;
 
   await db.updateTenant({ admissions_config });
 

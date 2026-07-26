@@ -14,14 +14,15 @@ export async function updateWaivers(tenantId: string, values: WaiversValues): Pr
   if (!user) return "Not authenticated";
 
   const db = createTenantDb(supabase, tenantId);
+  const data = parsed.data;
 
   const waiver_config: WaiverConfig = {
-    show: values.show,
-    docusealTemplateId: values.docusealTemplateId || null,
+    show: data.show,
+    docusealTemplateId: data.docusealTemplateId || null,
   };
 
   await db.updateTenant({ waiver_config });
-  await db.updateTenantSecrets({ docuseal_key: values.docuseal_key || null });
+  await db.updateTenantSecrets({ docuseal_key: data.docuseal_key || null });
 
   return null;
 }

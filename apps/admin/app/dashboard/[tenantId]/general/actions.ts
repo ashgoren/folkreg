@@ -14,12 +14,13 @@ export async function updateGeneral(tenantId: string, values: GeneralValues): Pr
   if (!user) return "Not authenticated";
 
   const db = createTenantDb(supabase, tenantId);
+  const data = parsed.data;
 
   try {
     await db.updateTenant({
-      slug: values.slug,
-      is_live: values.is_live,
-      show_preregistration: values.show_preregistration,
+      slug: data.slug,
+      is_live: data.is_live,
+      show_preregistration: data.show_preregistration,
     });
   } catch (error: unknown) {
     if (isPostgresError(error) && error.code === '23505') { // Uniqueness violation

@@ -15,7 +15,7 @@ export async function updateSpreadsheet(tenantId: string, values: SpreadsheetVal
 
   const db = createTenantDb(supabase, tenantId);
 
-  const spreadsheet_config: SpreadsheetConfig = values;
+  const spreadsheet_config: SpreadsheetConfig = parsed.data;
 
   await db.updateTenant({ spreadsheet_config });
 
