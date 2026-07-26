@@ -63,11 +63,12 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
   );
 
   function updateFieldConfig(fieldName: string, updates: Partial<FieldConfig>) {
-    setConfig((prev) => {
-      const next = { ...prev, [fieldName]: { ...prev[fieldName], ...updates } };
-      stateRef.current = { ...stateRef.current, config: next };
-      return next;
-    });
+    const next = {
+      ...stateRef.current.config,
+      [fieldName]: { ...stateRef.current.config[fieldName], ...updates },
+    };
+    setConfig(next);
+    stateRef.current = { ...stateRef.current, config: next };
     saveDebounced(stateRef.current);
   }
 
