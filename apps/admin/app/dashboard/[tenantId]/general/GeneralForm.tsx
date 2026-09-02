@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Badge } from "@/components/ui/badge";
 import { Field, FieldContent, FieldDescription, FieldGroup } from "@/components/ui/field";
 import { AutosaveStatus } from "@/components/autosave-status";
 import { FormLabel } from "@/components/form-label";
@@ -83,7 +84,12 @@ export function GeneralForm({ tenant }: { tenant: Tenant }) {
           render={({ field, fieldState }) => (
             <Field orientation="horizontal" data-invalid={fieldState.invalid}>
               <FieldContent>
-                <FormLabel htmlFor="general-is-live">Live mode?</FormLabel>
+                <div className="flex items-center gap-2">
+                  <FormLabel htmlFor="general-is-live">Live mode?</FormLabel>
+                  <Badge variant={field.value ? "destructive" : "secondary"}>
+                    {field.value ? "LIVE" : "SANDBOX"}
+                  </Badge>
+                </div>
                 <FieldDescription>Registration is currently <strong>{field.value ? "open" : "closed"}</strong> to the public</FieldDescription>
               </FieldContent>
               <Switch
