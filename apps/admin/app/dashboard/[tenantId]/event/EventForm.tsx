@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Field, FieldDescription, FieldError, FieldGroup } from "@/components/ui/field";
+import { FieldGroup } from "@/components/ui/field";
 import { AutosaveStatus } from "@/components/autosave-status";
-import { FormLabel } from "@/components/form-label";
 import { NumberField } from "@/components/form-number-field";
-import { Input } from "@/components/ui/input";
+import { TextField } from "@/components/form-text-field";
 import { Separator } from "@/components/ui/separator";
 import { useAutosave } from "@/lib/useAutosave";
 import type { Tenant } from "@repo/types";
@@ -62,43 +61,15 @@ export function EventForm({ tenant }: { tenant: Tenant }) {
     <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
 
       <FieldGroup>
-        <Controller name="title" control={form.control} render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FormLabel htmlFor="event-title" required>Title</FormLabel>
-            <FieldDescription>Event name</FieldDescription>
-            <Input {...field} id="event-title" aria-invalid={fieldState.invalid} />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )} />
+        <TextField control={form.control} name="title" id="event-title" label="Title" description="Event name" autoComplete="off" required />
 
         <NumberField control={form.control} name="year" id="event-year" label="Year" required />
 
-        <Controller name="location" control={form.control} render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FormLabel htmlFor="event-location" required>Location</FormLabel>
-            <FieldDescription>Display string shown to registrants, e.g. Example Hall, Portland, OR</FieldDescription>
-            <Input {...field} id="event-location" aria-invalid={fieldState.invalid} />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )} />
+        <TextField control={form.control} name="location" id="event-location" label="Location" description="Display string shown to registrants, e.g. Example Hall, Portland, OR" autoComplete="off" required />
 
-        <Controller name="date" control={form.control} render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FormLabel htmlFor="event-date" required>Date</FormLabel>
-            <FieldDescription>Display string shown to registrants, e.g. October 3-5, 2025</FieldDescription>
-            <Input {...field} id="event-date" aria-invalid={fieldState.invalid} />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )} />
+        <TextField control={form.control} name="date" id="event-date" label="Date" description="Display string shown to registrants, e.g. October 3-5, 2025" autoComplete="off" required />
 
-        <Controller name="timezone" control={form.control} render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FormLabel htmlFor="event-timezone" required>Timezone</FormLabel>
-            <FieldDescription>IANA timezone</FieldDescription>
-            <Input {...field} id="event-timezone" aria-invalid={fieldState.invalid} />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )} />
+        <TextField control={form.control} name="timezone" id="event-timezone" label="Timezone" description="IANA timezone" autoComplete="off" required />
       </FieldGroup>
 
       <Separator />
@@ -106,47 +77,15 @@ export function EventForm({ tenant }: { tenant: Tenant }) {
       <div className="space-y-4">
         <h2 className="text-base font-medium">Google Calendar Event (optional)</h2>
         <FieldGroup>
-          <Controller name="calendar.title" control={form.control} render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FormLabel htmlFor="event-cal-title">Title</FormLabel>
-              <Input {...field} id="event-cal-title" aria-invalid={fieldState.invalid} />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )} />
+          <TextField control={form.control} name="calendar.title" id="event-cal-title" label="Title" autoComplete="off" />
 
-          <Controller name="calendar.description" control={form.control} render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FormLabel htmlFor="event-cal-description">Description</FormLabel>
-              <Input {...field} id="event-cal-description" aria-invalid={fieldState.invalid} />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )} />
+          <TextField control={form.control} name="calendar.description" id="event-cal-description" label="Description" autoComplete="off" />
 
-          <Controller name="calendar.location" control={form.control} render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FormLabel htmlFor="event-cal-location">Location</FormLabel>
-              <Input {...field} id="event-cal-location" aria-invalid={fieldState.invalid} />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )} />
+          <TextField control={form.control} name="calendar.location" id="event-cal-location" label="Location" autoComplete="off" />
 
-          <Controller name="calendar.start" control={form.control} render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FormLabel htmlFor="event-cal-start">Start</FormLabel>
-              <FieldDescription>ISO 8601 with offset, e.g. 2025-10-03T19:00:00-07:00</FieldDescription>
-              <Input {...field} id="event-cal-start" aria-invalid={fieldState.invalid} />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )} />
+          <TextField control={form.control} name="calendar.start" id="event-cal-start" label="Start" description="ISO 8601 with offset, e.g. 2025-10-03T19:00:00-07:00" autoComplete="off" />
 
-          <Controller name="calendar.end" control={form.control} render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FormLabel htmlFor="event-cal-end">End</FormLabel>
-              <FieldDescription>ISO 8601 with offset, e.g. 2025-10-05T15:00:00-07:00</FieldDescription>
-              <Input {...field} id="event-cal-end" aria-invalid={fieldState.invalid} />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )} />
+          <TextField control={form.control} name="calendar.end" id="event-cal-end" label="End" description="ISO 8601 with offset, e.g. 2025-10-05T15:00:00-07:00" autoComplete="off" />
         </FieldGroup>
       </div>
 
@@ -155,21 +94,9 @@ export function EventForm({ tenant }: { tenant: Tenant }) {
       <div className="space-y-4">
         <h2 className="text-base font-medium">Contacts</h2>
         <FieldGroup>
-          <Controller name="contacts.info" control={form.control} render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FormLabel htmlFor="event-contact-info" required>Info email</FormLabel>
-              <Input {...field} id="event-contact-info" type="email" aria-invalid={fieldState.invalid} />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )} />
+          <TextField control={form.control} name="contacts.info" id="event-contact-info" label="Info email" type="email" autoComplete="off" required />
 
-          <Controller name="contacts.housing" control={form.control} render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FormLabel htmlFor="event-contact-housing">Housing email</FormLabel>
-              <Input {...field} id="event-contact-housing" type="email" aria-invalid={fieldState.invalid} />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )} />
+          <TextField control={form.control} name="contacts.housing" id="event-contact-housing" label="Housing email" type="email" autoComplete="off" />
         </FieldGroup>
       </div>
 
@@ -178,29 +105,11 @@ export function EventForm({ tenant }: { tenant: Tenant }) {
       <div className="space-y-4">
         <h2 className="text-base font-medium">Links</h2>
         <FieldGroup>
-          <Controller name="links.info" control={form.control} render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FormLabel htmlFor="event-link-info">More info URL</FormLabel>
-              <Input {...field} id="event-link-info" aria-invalid={fieldState.invalid} />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )} />
+          <TextField control={form.control} name="links.info" id="event-link-info" label="More info URL" type="url" autoComplete="url" />
 
-          <Controller name="links.health" control={form.control} render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FormLabel htmlFor="event-link-health">Health policy URL</FormLabel>
-              <Input {...field} id="event-link-health" aria-invalid={fieldState.invalid} />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )} />
+          <TextField control={form.control} name="links.health" id="event-link-health" label="Health policy URL" type="url" autoComplete="url" />
 
-          <Controller name="links.safety" control={form.control} render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FormLabel htmlFor="event-link-safety">Safety policy URL</FormLabel>
-              <Input {...field} id="event-link-safety" aria-invalid={fieldState.invalid} />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )} />
+          <TextField control={form.control} name="links.safety" id="event-link-safety" label="Safety policy URL" type="url" autoComplete="url" />
         </FieldGroup>
       </div>
 

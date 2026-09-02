@@ -3,13 +3,13 @@
 import { useEffect } from "react";
 import { DragDropProvider } from "@dnd-kit/react";
 import { move } from "@dnd-kit/helpers";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FIELD_DEFS } from "@repo/fields";
-import { Field, FieldError, FieldGroup } from "@/components/ui/field";
+import { FieldGroup } from "@/components/ui/field";
 import { AutosaveStatus } from "@/components/autosave-status";
 import { FormLabel } from "@/components/form-label";
-import { Input } from "@/components/ui/input";
+import { TextField } from "@/components/form-text-field";
 import { useAutosave } from "@/lib/useAutosave";
 import type { Tenant } from "@repo/types";
 import { SPREADSHEET_SYSTEM_COLUMNS } from "@repo/types";
@@ -88,13 +88,7 @@ export function SpreadsheetForm({ tenant }: { tenant: Tenant }) {
     <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
 
       <FieldGroup>
-        <Controller name="sheetId" control={form.control} render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FormLabel htmlFor="spreadsheet-sheet-id">Spreadsheet URL or ID</FormLabel>
-            <Input {...field} id="spreadsheet-sheet-id" autoComplete="off" aria-invalid={fieldState.invalid} />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )} />
+        <TextField control={form.control} name="sheetId" id="spreadsheet-sheet-id" label="Spreadsheet URL or ID" autoComplete="off" />
       </FieldGroup>
 
       <div className="max-w-md space-y-2">

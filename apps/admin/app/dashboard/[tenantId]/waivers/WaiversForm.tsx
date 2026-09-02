@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Field, FieldContent, FieldDescription, FieldError, FieldGroup } from "@/components/ui/field";
 import { AutosaveStatus } from "@/components/autosave-status";
 import { FormLabel } from "@/components/form-label";
-import { Input } from "@/components/ui/input";
+import { TextField } from "@/components/form-text-field";
 import { SecretInput } from "@/components/ui/secret-input";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
@@ -68,13 +68,7 @@ export function WaiversForm({ tenant, secrets }: { tenant: Tenant; secrets: Tena
           <Separator />
 
           <FieldGroup>
-            <Controller name="docusealTemplateId" control={form.control} render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FormLabel htmlFor="waivers-template-id">DocuSeal template ID</FormLabel>
-                <Input {...field} id="waivers-template-id" autoComplete="off" aria-invalid={fieldState.invalid} />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )} />
+            <TextField control={form.control} name="docusealTemplateId" id="waivers-template-id" label="DocuSeal template ID" autoComplete="off" />
 
             <Controller name="docuseal_key" control={form.control} render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>

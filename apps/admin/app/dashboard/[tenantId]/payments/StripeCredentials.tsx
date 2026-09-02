@@ -1,9 +1,9 @@
 "use client";
 
 import { Controller, type UseFormReturn } from "react-hook-form";
-import { Field, FieldError, FieldGroup } from "@/components/ui/field";
+import { Field, FieldGroup } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
-import { Input } from "@/components/ui/input";
+import { TextField } from "@/components/form-text-field";
 import { SecretInput } from "@/components/ui/secret-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { PaymentsValues } from "./schema";
@@ -11,13 +11,7 @@ import type { PaymentsValues } from "./schema";
 export function StripeCredentials({ form }: { form: UseFormReturn<PaymentsValues> }) {
   return (
     <FieldGroup>
-      <Controller name="statementDescriptorSuffix" control={form.control} render={({ field, fieldState }) => (
-        <Field data-invalid={fieldState.invalid}>
-          <FormLabel htmlFor="payments-statement-suffix">Statement descriptor suffix</FormLabel>
-          <Input {...field} id="payments-statement-suffix" aria-invalid={fieldState.invalid} />
-          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-        </Field>
-      )} />
+      <TextField control={form.control} name="statementDescriptorSuffix" id="payments-statement-suffix" label="Statement descriptor suffix" autoComplete="off" />
 
       <Tabs defaultValue="live">
         <TabsList className="w-full">

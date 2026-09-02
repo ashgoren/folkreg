@@ -3,10 +3,10 @@
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Field, FieldContent, FieldDescription, FieldError, FieldGroup } from "@/components/ui/field";
+import { Field, FieldContent, FieldDescription, FieldGroup } from "@/components/ui/field";
 import { AutosaveStatus } from "@/components/autosave-status";
 import { FormLabel } from "@/components/form-label";
-import { Input } from "@/components/ui/input";
+import { TextField } from "@/components/form-text-field";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useAutosave } from "@/lib/useAutosave";
@@ -42,17 +42,14 @@ export function GeneralForm({ tenant }: { tenant: Tenant }) {
     <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
       <FieldGroup>
 
-        <Controller
-          name="slug"
+        <TextField
           control={form.control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FormLabel htmlFor="general-slug" required>Subdomain</FormLabel>
-              <FieldDescription>e.g. example → example.folkreg.org</FieldDescription>
-              <Input {...field} id="general-slug" aria-invalid={fieldState.invalid} />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
+          name="slug"
+          id="general-slug"
+          label="Subdomain"
+          description="e.g. example → example.folkreg.org"
+          autoComplete="off"
+          required
         />
 
       </FieldGroup>

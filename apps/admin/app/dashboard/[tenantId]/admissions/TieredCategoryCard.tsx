@@ -4,10 +4,10 @@ import { Controller, type UseFormReturn } from "react-hook-form";
 import { useSortable } from "@dnd-kit/react/sortable";
 import { GripVertical, X } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Field, FieldError } from "@/components/ui/field";
+import { Field } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
 import { NumberField } from "@/components/form-number-field";
-import { Input } from "@/components/ui/input";
+import { TextField } from "@/components/form-text-field";
 import { cn } from "@/lib/utils";
 import type { AgeGroup } from "@repo/types";
 import type { AdmissionsValues } from "./schema";
@@ -46,17 +46,15 @@ export function TieredCategoryCard({
           <GripVertical size={16} />
         </button>
 
-        <Controller
-          name={`categories.${index}.label`}
-          control={form.control}
-          render={({ field: labelField, fieldState }) => (
-            <Field data-invalid={fieldState.invalid} className="flex-1">
-              <FormLabel htmlFor={`admissions-category-label-${index}`}>Label (e.g. Basic, Sustaining, Benefactor)</FormLabel>
-              <Input {...labelField} id={`admissions-category-label-${index}`} aria-invalid={fieldState.invalid} />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
+        <div className="flex-1">
+          <TextField
+            control={form.control}
+            name={`categories.${index}.label`}
+            id={`admissions-category-label-${index}`}
+            label="Label (e.g. Basic, Sustaining, Benefactor)"
+            autoComplete="off"
+          />
+        </div>
         <button
           type="button"
           onClick={onRemove}

@@ -4,10 +4,10 @@ import { useEffect, useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AutosaveStatus } from "@/components/autosave-status";
-import { Field, FieldContent, FieldDescription, FieldError, FieldGroup } from "@/components/ui/field";
+import { Field, FieldContent, FieldDescription, FieldGroup } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
-import { Input } from "@/components/ui/input";
 import { NumberField } from "@/components/form-number-field";
+import { TextField } from "@/components/form-text-field";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
@@ -171,13 +171,7 @@ export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: Ten
       <Separator />
 
       <FieldGroup>
-        <Controller name="directPaymentUrl" control={form.control} render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FormLabel htmlFor="payments-direct-url">Direct payment URL</FormLabel>
-            <Input {...field} id="payments-direct-url" autoComplete="url" aria-invalid={fieldState.invalid} />
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )} />
+        <TextField control={form.control} name="directPaymentUrl" id="payments-direct-url" label="Direct payment URL" type="url" autoComplete="url" />
       </FieldGroup>
 
       <Separator />
@@ -217,13 +211,7 @@ export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: Ten
         {depositEnabled && (
           <>
             <NumberField control={form.control} name="deposit.amount" id="payments-deposit-amount" label="Deposit amount" />
-            <Controller name="paymentDueDate" control={form.control} render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FormLabel htmlFor="payments-due-date">Balance due date</FormLabel>
-                <Input {...field} id="payments-due-date" aria-invalid={fieldState.invalid} />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )} />
+            <TextField control={form.control} name="paymentDueDate" id="payments-due-date" label="Balance due date" autoComplete="off" />
           </>
         )}
       </FieldGroup>
@@ -280,21 +268,9 @@ export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: Ten
 
             {showPostalAddress && (
               <>
-                <Controller name="checks.payee" control={form.control} render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FormLabel htmlFor="payments-checks-payee">Payee name</FormLabel>
-                    <Input {...field} id="payments-checks-payee" aria-invalid={fieldState.invalid} />
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                  </Field>
-                )} />
+                <TextField control={form.control} name="checks.payee" id="payments-checks-payee" label="Payee name" autoComplete="off" />
 
-                <Controller name="checks.address" control={form.control} render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FormLabel htmlFor="payments-checks-address">Mailing address</FormLabel>
-                    <Input {...field} id="payments-checks-address" aria-invalid={fieldState.invalid} />
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                  </Field>
-                )} />
+                <TextField control={form.control} name="checks.address" id="payments-checks-address" label="Mailing address" autoComplete="off" />
               </>
             )}
           </>
