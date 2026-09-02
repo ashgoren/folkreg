@@ -65,7 +65,7 @@ export function GeneralForm({ tenant }: { tenant: Tenant }) {
             <Field orientation="horizontal" data-invalid={fieldState.invalid}>
               <FieldContent>
                 <FormLabel htmlFor="general-preregistration">Show preregistration?</FormLabel>
-                <FieldDescription>{field.value ? "Shows policy acknowledgment checkbox before registration" : "Does not show policy acknowledgment checkbox before registration"}</FieldDescription>
+                <FieldDescription>When on, shows policy acknowledgment checkbox before registration</FieldDescription>
               </FieldContent>
               <Switch
                 id="general-preregistration"
@@ -84,7 +84,7 @@ export function GeneralForm({ tenant }: { tenant: Tenant }) {
             <Field orientation="horizontal" data-invalid={fieldState.invalid}>
               <FieldContent>
                 <FormLabel htmlFor="general-is-live">Live mode?</FormLabel>
-                <FieldDescription>Registration is {field.value ? "open" : "closed"} to the public</FieldDescription>
+                <FieldDescription>Registration is currently <strong>{field.value ? "open" : "closed"}</strong> to the public</FieldDescription>
               </FieldContent>
               <Switch
                 id="general-is-live"

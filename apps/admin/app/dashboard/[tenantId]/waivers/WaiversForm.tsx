@@ -50,8 +50,8 @@ export function WaiversForm({ tenant, secrets }: { tenant: Tenant; secrets: Tena
         <Controller name="show" control={form.control} render={({ field, fieldState }) => (
           <Field orientation="horizontal" data-invalid={fieldState.invalid}>
             <FieldContent>
-              <FormLabel htmlFor="waivers-show">Show waiver</FormLabel>
-              <FieldDescription>Registrants must sign a waiver before completing registration</FieldDescription>
+              <FormLabel htmlFor="waivers-show">Show waiver?</FormLabel>
+              <FieldDescription>When on, registrants must sign a waiver before completing registration</FieldDescription>
             </FieldContent>
             <Switch
               id="waivers-show"

@@ -96,6 +96,7 @@ export type AdmissionsConfig = (
 ) & {
   admissionQuantityMax: number;
   waitlistCutoff: number;
+  forceWaitlist: boolean;
 }
 
 export interface PaymentsConfig {

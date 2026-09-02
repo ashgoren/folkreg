@@ -4,11 +4,12 @@ import { useEffect, useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AutosaveStatus } from "@/components/autosave-status";
-import { Field, FieldContent, FieldGroup } from "@/components/ui/field";
+import { Field, FieldContent, FieldDescription, FieldGroup } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
 import { NumberField } from "@/components/form-number-field";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { useAutosave } from "@/lib/useAutosave";
 import type { Tenant } from "@repo/types";
 import { admissionsSchema, type AdmissionsValues } from "./schema";
@@ -19,7 +20,7 @@ import { TieredFields } from "./TieredFields";
 
 function getDefaultsForMode(
   mode: AdmissionsValues["mode"],
-  shared: { admissionQuantityMax: number; waitlistCutoff: number },
+  shared: { admissionQuantityMax: number; waitlistCutoff: number; forceWaitlist: boolean },
 ): AdmissionsValues {
   switch (mode) {
     case "fixed":
@@ -36,6 +37,7 @@ export function AdmissionsForm({ tenant }: { tenant: Tenant }) {
   const initialShared = {
     admissionQuantityMax: admissionsConfig?.admissionQuantityMax ?? 4,
     waitlistCutoff: admissionsConfig?.waitlistCutoff ?? 999,
+    forceWaitlist: admissionsConfig?.forceWaitlist ?? false,
   };
   const initialValues: AdmissionsValues = admissionsConfig
     ? { ...admissionsConfig, ...initialShared }
@@ -68,7 +70,11 @@ export function AdmissionsForm({ tenant }: { tenant: Tenant }) {
     const current = form.getValues();
     modeCache.current[current.mode] = current;
 
-    const shared = { admissionQuantityMax: current.admissionQuantityMax, waitlistCutoff: current.waitlistCutoff };
+    const shared = {
+      admissionQuantityMax: current.admissionQuantityMax,
+      waitlistCutoff: current.waitlistCutoff,
+      forceWaitlist: current.forceWaitlist,
+    };
     const cached = modeCache.current[newMode];
     form.reset(cached ? { ...cached, ...shared } : getDefaultsForMode(newMode, shared));
   }
@@ -125,6 +131,27 @@ export function AdmissionsForm({ tenant }: { tenant: Tenant }) {
           label="Total number of tickets for sale (before waitlist)"
           description="Registrations beyond this number go to the waitlist"
           required
+        />
+
+        <Controller
+          name="forceWaitlist"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field orientation="horizontal" data-invalid={fieldState.invalid}>
+              <FieldContent>
+                <FormLabel htmlFor="admissions-force-waitlist">Force waitlist mode?</FormLabel>
+                <FieldDescription>
+                  When on, all new registrations go straight to the waitlist, bypassing the cutoff above
+                </FieldDescription>
+              </FieldContent>
+              <Switch
+                id="admissions-force-waitlist"
+                checked={field.value}
+                onCheckedChange={field.onChange}
+                aria-invalid={fieldState.invalid}
+              />
+            </Field>
+          )}
         />
       </FieldGroup>
 

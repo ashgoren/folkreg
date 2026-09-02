@@ -7,6 +7,7 @@ const requiredNumber = (min: number) => z.number({ error: "Required" }).min(min)
 const sharedFields = {
   admissionQuantityMax: requiredNumber(1).int(),
   waitlistCutoff: requiredNumber(1).int(),
+  forceWaitlist: z.boolean(),
 };
 
 export const admissionsSchema = z.discriminatedUnion("mode", [
