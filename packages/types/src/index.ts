@@ -120,7 +120,7 @@ export interface PaymentsConfig {
     allowed: boolean;
     showPostalAddress?: boolean;
     payee?: string;
-    address?: string[];
+    address?: string;
   };
   statementDescriptorSuffix: string | null;
 }
