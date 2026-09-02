@@ -59,7 +59,7 @@ export function EventForm({ tenant }: { tenant: Tenant }) {
   }, [form, saveDebounced]);
 
   return (
-    <div className="space-y-8">
+    <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
 
       <FieldGroup>
         <Controller name="title" control={form.control} render={({ field, fieldState }) => (
@@ -205,6 +205,6 @@ export function EventForm({ tenant }: { tenant: Tenant }) {
       </div>
 
       <AutosaveStatus isPending={isPending} savedRecently={savedRecently} />
-    </div>
+    </form>
   );
 }

@@ -85,7 +85,7 @@ export function SpreadsheetForm({ tenant }: { tenant: Tenant }) {
   }
 
   return (
-    <div className="space-y-8">
+    <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
 
       <FieldGroup>
         <Controller name="sheetId" control={form.control} render={({ field, fieldState }) => (
@@ -141,6 +141,6 @@ export function SpreadsheetForm({ tenant }: { tenant: Tenant }) {
       </div>
 
       <AutosaveStatus isPending={isPending} savedRecently={savedRecently} />
-    </div>
+    </form>
   );
 }

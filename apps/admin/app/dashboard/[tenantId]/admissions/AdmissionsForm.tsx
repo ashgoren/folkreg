@@ -74,7 +74,7 @@ export function AdmissionsForm({ tenant }: { tenant: Tenant }) {
   }
 
   return (
-    <div className="space-y-8">
+    <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
       <FieldGroup>
         <Controller name="mode" control={form.control} render={({ field }) => (
           <RadioGroup value={field.value} onValueChange={(value) => handleModeChange(value as AdmissionsValues["mode"])}>
@@ -129,6 +129,6 @@ export function AdmissionsForm({ tenant }: { tenant: Tenant }) {
       </FieldGroup>
 
       <AutosaveStatus isPending={isPending} savedRecently={savedRecently} />
-    </div>
+    </form>
   );
 }

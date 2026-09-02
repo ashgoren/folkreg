@@ -44,7 +44,7 @@ export function WaiversForm({ tenant, secrets }: { tenant: Tenant; secrets: Tena
   }, [form, saveDebounced]);
 
   return (
-    <div className="space-y-8">
+    <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
 
       <FieldGroup>
         <Controller name="show" control={form.control} render={({ field, fieldState }) => (
@@ -88,6 +88,6 @@ export function WaiversForm({ tenant, secrets }: { tenant: Tenant; secrets: Tena
       )}
 
       <AutosaveStatus isPending={isPending} savedRecently={savedRecently} />
-    </div>
+    </form>
   );
 }

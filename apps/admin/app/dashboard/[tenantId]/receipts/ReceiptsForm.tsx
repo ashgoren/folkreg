@@ -36,7 +36,7 @@ export function ReceiptsForm({ tenant }: { tenant: Tenant }) {
   }, [form, saveDebounced]);
 
   return (
-    <div className="space-y-8">
+    <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
 
       <FieldGroup>
         <Controller name="emailFrom" control={form.control} render={({ field, fieldState }) => (
@@ -57,6 +57,6 @@ export function ReceiptsForm({ tenant }: { tenant: Tenant }) {
       </FieldGroup>
 
       <AutosaveStatus isPending={isPending} savedRecently={savedRecently} />
-    </div>
+    </form>
   );
 }

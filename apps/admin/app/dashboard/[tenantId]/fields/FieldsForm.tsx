@@ -143,7 +143,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
     : null;
 
   return (
-    <div className="flex gap-8">
+    <form onSubmit={(e) => e.preventDefault()} className="flex gap-8">
       {/* Left column: field lists */}
       <div className="w-72 shrink-0 flex flex-col gap-6">
         <div>
@@ -273,7 +273,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
           </p>
         )}
       </div>
-    </div>
+    </form>
   );
 }
 

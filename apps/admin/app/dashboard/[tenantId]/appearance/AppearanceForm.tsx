@@ -73,7 +73,7 @@ export function AppearanceForm({ tenant }: { tenant: Tenant }) {
   }, [form, saveDebounced]);
 
   return (
-    <div className="space-y-8">
+    <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
 
       <FieldDescription>
         If applicable, match the static site theme by copying these from the <code>:root</code> block in the static site&apos;s <code>globals.css</code>.
@@ -100,6 +100,6 @@ export function AppearanceForm({ tenant }: { tenant: Tenant }) {
       </div>
 
       <AutosaveStatus isPending={isPending} savedRecently={savedRecently} />
-    </div>
+    </form>
   );
 }
