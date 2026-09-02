@@ -132,8 +132,9 @@ export interface SpreadsheetConfig {
 
 // Computed order/payment columns the spreadsheet sync writes alongside registrant
 // fields -- not user-entered, so not part of the FieldDef catalog in @repo/fields.
-// `waiver`/`deposit`/`donation` are only relevant when the corresponding tenant
-// feature is enabled; the rest always apply.
+// `waiver`/`deposit`/`donation`/`fees` are only relevant when the corresponding
+// tenant feature is enabled; the rest always apply. `environment` is derived from
+// `orders.is_live` at sync time.
 export const SPREADSHEET_SYSTEM_COLUMNS = [
   'admission', 'donation', 'total', 'deposit', 'fees', 'paid', 'charged',
   'status', 'purchaser', 'completedAt', 'paymentId', 'paymentEmail',
