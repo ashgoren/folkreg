@@ -41,9 +41,9 @@ export type Database = {
           created_at: string | null
           deposit: number | null
           donation: number | null
-          environment: Database["public"]["Enums"]["environment_type"] | null
           fees: number | null
           id: string
+          is_live: boolean
           is_waitlist: boolean
           payment_email: string | null
           payment_id: string | null
@@ -61,9 +61,9 @@ export type Database = {
           created_at?: string | null
           deposit?: number | null
           donation?: number | null
-          environment?: Database["public"]["Enums"]["environment_type"] | null
           fees?: number | null
           id?: string
+          is_live?: boolean
           is_waitlist?: boolean
           payment_email?: string | null
           payment_id?: string | null
@@ -81,9 +81,9 @@ export type Database = {
           created_at?: string | null
           deposit?: number | null
           donation?: number | null
-          environment?: Database["public"]["Enums"]["environment_type"] | null
           fees?: number | null
           id?: string
+          is_live?: boolean
           is_waitlist?: boolean
           payment_email?: string | null
           payment_id?: string | null
@@ -214,7 +214,6 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      environment_type: "dev" | "stg" | "prd"
       order_status_type: "pending" | "final"
       payment_method_type: "stripe" | "paypal" | "check"
     }
@@ -347,7 +346,6 @@ export const Constants = {
   },
   public: {
     Enums: {
-      environment_type: ["dev", "stg", "prd"],
       order_status_type: ["pending", "final"],
       payment_method_type: ["stripe", "paypal", "check"],
     },

@@ -8,7 +8,6 @@ export type DbClient = SupabaseClient<Database>
 export type PaymentProcessor = 'stripe' | 'paypal'
 export type PaymentMethod = Enums<'payment_method_type'>
 export type OrderStatus = Enums<'order_status_type'>
-export type Environment = Enums<'environment_type'>
 
 export type AgeGroup = '0-2' | '3-5' | '6-12' | '13-17' | 'adult'
 
