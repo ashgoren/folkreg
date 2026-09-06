@@ -22,6 +22,39 @@ type TenantUpdates = Partial<{
 
 type TenantSecretsUpdates = Partial<Omit<TenantSecrets, 'tenant_id'>>
 
+export type PaymentProcessorCredentials =
+  | { processor: 'stripe'; secretKey: string; webhookSecret: string; publishableKey: string }
+  | { processor: 'paypal'; clientId: string; secret: string; webhookId: string }
+
+// tenant/secrets are already-fetched rows; is_live picks which live/test variant is "active"
+const resolvePaymentProcessorCredentials = (tenant: Tenant, secrets: TenantSecrets): PaymentProcessorCredentials => {
+  const paymentsConfig = tenant.payments_config;
+  if (!paymentsConfig) throw new Error(`Tenant ${tenant.id} has no payments_config`);
+
+  const { processor } = paymentsConfig;
+  const mode = tenant.is_live ? 'live' : 'test';
+
+  if (processor === 'stripe') {
+    const secretKey = tenant.is_live ? secrets.stripe_secret_key_live : secrets.stripe_secret_key_test;
+    const webhookSecret = tenant.is_live ? secrets.stripe_webhook_secret_live : secrets.stripe_webhook_secret_test;
+    const publishableKey = tenant.is_live ? paymentsConfig.stripePublishableKeyLive : paymentsConfig.stripePublishableKeyTest;
+    if (!secretKey || !webhookSecret || !publishableKey) {
+      throw new Error(`Tenant ${tenant.id} is missing Stripe ${mode} credentials`);
+    }
+    return { processor, secretKey, webhookSecret, publishableKey };
+  } else if (processor === 'paypal') {
+    const secret = tenant.is_live ? secrets.paypal_secret_live : secrets.paypal_secret_test;
+    const webhookId = tenant.is_live ? secrets.paypal_webhook_id_live : secrets.paypal_webhook_id_test;
+    const clientId = tenant.is_live ? paymentsConfig.paypalClientIdLive : paymentsConfig.paypalClientIdTest;
+    if (!secret || !webhookId || !clientId) {
+      throw new Error(`Tenant ${tenant.id} is missing PayPal ${mode} credentials`);
+    }
+    return { processor, clientId, secret, webhookId };
+  } else {
+    throw new Error(`Tenant ${tenant.id} has unknown payment processor: ${processor}`);
+  }
+}
+
 export const getTenantBySlug = async (supabase: DbClient, slug: string) => {
   const { data, error } = await supabase
     .from("tenants")
@@ -36,60 +69,65 @@ export const getTenantBySlug = async (supabase: DbClient, slug: string) => {
 };
 
 export const createTenantDb = (supabase: DbClient, tenantId: string) => {
-  return {
-
-    getTenant: async () => {
-      const { data, error } = await supabase
-        .from("tenants")
-        .select("*")
-        .eq("id", tenantId)
-        .single();
-      if (error) {
-        if (error.code === "PGRST116") return null; // No row found
-        throw error; // Unexpected error
-      }
-      return data as Tenant;
-    },
-
-    getSecrets: async () => {
-      const { data, error } = await supabase
-        .from("tenant_secrets")
-        .select("*")
-        .eq("tenant_id", tenantId)
-        .single();
-      if (error) throw error;
-      return data as TenantSecrets;
-    },
-
-    updateTenant: async (updates: TenantUpdates) => {
-      const { event_config, fields_config, admissions_config, payments_config, theme_config, spreadsheet_config, waiver_config, receipts_config, ...scalars } = updates;
-
-      const payload = {
-        ...scalars,
-        ...(event_config !== undefined && { event_config: event_config as unknown as Json }),
-        ...(fields_config !== undefined && { fields_config: fields_config as unknown as Json }),
-        ...(admissions_config !== undefined && { admissions_config: admissions_config as unknown as Json }),
-        ...(payments_config !== undefined && { payments_config: payments_config as unknown as Json }),
-        ...(theme_config !== undefined && { theme_config: theme_config as unknown as Json }),
-        ...(spreadsheet_config !== undefined && { spreadsheet_config: spreadsheet_config as unknown as Json }),
-        ...(waiver_config !== undefined && { waiver_config: waiver_config as unknown as Json }),
-        ...(receipts_config !== undefined && { receipts_config: receipts_config as unknown as Json }),
-      };
-
-      const { error } = await supabase
-        .from("tenants")
-        .update(payload)
-        .eq("id", tenantId);
-
-      if (error) throw error;
-    },
-
-    updateTenantSecrets: async (secrets: TenantSecretsUpdates) => {
-      const { error } = await supabase
-        .from("tenant_secrets")
-        .update(secrets)
-        .eq("tenant_id", tenantId);
-      if (error) throw error;
+  const getTenant = async () => {
+    const { data, error } = await supabase
+      .from("tenants")
+      .select("*")
+      .eq("id", tenantId)
+      .single();
+    if (error) {
+      if (error.code === "PGRST116") return null; // No row found
+      throw error; // Unexpected error
     }
+    return data as Tenant;
   };
+
+  const getSecrets = async () => {
+    const { data, error } = await supabase
+      .from("tenant_secrets")
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .single();
+    if (error) throw error;
+    return data as TenantSecrets;
+  };
+
+  const getPaymentProcessorCredentials = async () => {
+    const [tenant, secrets] = await Promise.all([getTenant(), getSecrets()]);
+    if (!tenant) throw new Error(`Tenant ${tenantId} not found`);
+    return resolvePaymentProcessorCredentials(tenant, secrets);
+  };
+
+  const updateTenant = async (updates: TenantUpdates) => {
+    const { event_config, fields_config, admissions_config, payments_config, theme_config, spreadsheet_config, waiver_config, receipts_config, ...scalars } = updates;
+
+    const payload = {
+      ...scalars,
+      ...(event_config !== undefined && { event_config: event_config as unknown as Json }),
+      ...(fields_config !== undefined && { fields_config: fields_config as unknown as Json }),
+      ...(admissions_config !== undefined && { admissions_config: admissions_config as unknown as Json }),
+      ...(payments_config !== undefined && { payments_config: payments_config as unknown as Json }),
+      ...(theme_config !== undefined && { theme_config: theme_config as unknown as Json }),
+      ...(spreadsheet_config !== undefined && { spreadsheet_config: spreadsheet_config as unknown as Json }),
+      ...(waiver_config !== undefined && { waiver_config: waiver_config as unknown as Json }),
+      ...(receipts_config !== undefined && { receipts_config: receipts_config as unknown as Json }),
+    };
+
+    const { error } = await supabase
+      .from("tenants")
+      .update(payload)
+      .eq("id", tenantId);
+
+    if (error) throw error;
+  };
+
+  const updateTenantSecrets = async (secrets: TenantSecretsUpdates) => {
+    const { error } = await supabase
+      .from("tenant_secrets")
+      .update(secrets)
+      .eq("tenant_id", tenantId);
+    if (error) throw error;
+  };
+
+  return { getTenant, getSecrets, getPaymentProcessorCredentials, updateTenant, updateTenantSecrets };
 };
