@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
 import { ADMIN_OWNER_EMAIL, ADMIN_TENANT_SLUG, TEST_PASSWORD, createAnonClient, createServiceClient, getTenantIdBySlug, signInAs } from "@/test/supabase";
 import { redirectTo } from "@/test/next-navigation";
 
@@ -35,8 +36,13 @@ describe("/dashboard", () => {
     await expect(DashboardPage()).rejects.toEqual(redirectTo("/auth/login"));
   });
 
-  it("redirects a user who owns no tenant to the login page", async () => {
+  // Redirecting to the login page would be a dead end: the user is already logged in, so they'd
+  // just see the login form again. The page explains instead, and offers a way to log out.
+  it("tells a user who owns no tenant that no event is set up, with a way to log out", async () => {
     vi.mocked(createClient).mockResolvedValueOnce(await signInAs(ORPHAN_EMAIL));
-    await expect(DashboardPage()).rejects.toEqual(redirectTo("/auth/login"));
+    const html = renderToStaticMarkup(await DashboardPage());
+    expect(html).toContain("No event set up");
+    expect(html).toContain(ORPHAN_EMAIL);
+    expect(html).toMatch(/<button[^>]*type="submit"[^>]*>Log out<\/button>/);
   });
 });

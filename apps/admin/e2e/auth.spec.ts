@@ -6,9 +6,9 @@ import {
 // Runs without saved storage state (see the "auth" project in playwright.config.ts), so every
 // test here starts logged out.
 
-const signIn = async (page: Page, password: string) => {
+const signIn = async (page: Page, password: string, email = E2E_OWNER_EMAIL) => {
   await page.goto("/auth/login");
-  await page.getByLabel("Email").fill(E2E_OWNER_EMAIL);
+  await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
 };
@@ -43,4 +43,34 @@ test("logs in to the owner's tenant dashboard, then logs out", async ({ page }) 
   // The session is really gone, not just navigated away from.
   await page.goto(`/dashboard/${tenantId}/general`);
   await expect(page).toHaveURL(/\/auth\/login$/);
+});
+
+test.describe("a user who owns no tenant", () => {
+  const service = createServiceClient();
+  const email = "e2e-no-tenant@test.local";
+  let userId: string | undefined;
+
+  // Not part of the shared seed (nothing else needs a tenant-less user), so created for this
+  // block and deleted afterwards.
+  test.beforeAll(async () => {
+    const { data, error } = await service.auth.admin.createUser({ email, password: TEST_PASSWORD, email_confirm: true });
+    if (error) throw error;
+    userId = data.user.id;
+  });
+  test.afterAll(async () => {
+    if (userId) await service.auth.admin.deleteUser(userId);
+  });
+
+  test("sees that no event is set up, and can log out", async ({ page }) => {
+    await signIn(page, TEST_PASSWORD, email);
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page.getByText("No event set up")).toBeVisible();
+
+    await page.getByRole("button", { name: "Log out" }).click();
+    await expect(page).toHaveURL(/\/auth\/login$/);
+
+    // Logged out for real: /dashboard now redirects to login instead of showing the page again.
+    await page.goto("/dashboard");
+    await expect(page).toHaveURL(/\/auth\/login$/);
+  });
 });
