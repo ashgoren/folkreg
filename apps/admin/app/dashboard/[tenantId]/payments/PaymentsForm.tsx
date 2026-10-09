@@ -32,6 +32,7 @@ const toFormValues = (tenant: Tenant, secrets: TenantSecrets): PaymentsValues =>
 
 export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: TenantSecrets }) {
   const { form, formProps, isPending, savedRecently } = useAutosaveForm({
+    label: "Payments",
     schema: paymentsSchema,
     defaultValues: toFormValues(tenant, secrets),
     save: (data) => updatePayments(tenant.id, data),

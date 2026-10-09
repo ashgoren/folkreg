@@ -15,6 +15,7 @@ import { updateGeneral } from "./actions";
 
 export function GeneralForm({ tenant }: { tenant: Tenant }) {
   const { form, formProps, isPending, savedRecently } = useAutosaveForm({
+    label: "General",
     schema: generalSchema,
     defaultValues: {
       slug: tenant.slug,

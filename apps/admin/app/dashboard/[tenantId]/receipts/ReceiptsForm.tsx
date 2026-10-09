@@ -10,6 +10,7 @@ import { updateReceipts } from "./actions";
 
 export function ReceiptsForm({ tenant }: { tenant: Tenant }) {
   const { form, formProps, isPending, savedRecently } = useAutosaveForm({
+    label: "Receipts",
     schema: receiptsConfigSchema,
     defaultValues: tenant.receipts_config,
     save: (data) => updateReceipts(tenant.id, data),

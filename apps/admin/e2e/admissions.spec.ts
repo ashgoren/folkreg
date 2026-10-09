@@ -80,3 +80,15 @@ test("tiered mode saves categories with their age groups and prices", async ({ p
   await page.getByRole("button", { name: "Remove category" }).click();
   await expect.poll(() => admissionsConfig(tenantId)).toMatchObject({ mode: "tiered", categories: [] });
 });
+
+// Leaving through the sidebar unmounts the page right after the click's blur shows the errors, so
+// a toast on the next page is what tells the organizer the edit didn't save.
+test("leaving with an invalid change says it wasn't saved, on the next page", async ({ page, tenantId, dashboardUrl }) => {
+  await page.getByLabel("Minimum").fill("400"); // above the 350 default
+
+  await page.getByRole("link", { name: "Event", exact: true }).click();
+  await expect(page).toHaveURL(dashboardUrl("event"));
+  await expect(page.locator("[data-sonner-toast]").filter({ hasText: "Your last change on Admissions wasn't saved" }))
+    .toBeVisible();
+  expect(await admissionsConfig(tenantId)).toEqual(defaultAdmissionsConfig());
+});

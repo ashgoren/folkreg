@@ -1,6 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { act, render, renderHook, screen } from "@testing-library/react";
 import { useFormState } from "react-hook-form";
+import { toast } from "sonner";
 import userEvent from "@testing-library/user-event";
 import { z } from "zod";
 import { expectNoSave } from "@/test/autosave";
@@ -18,7 +19,7 @@ const defaultValues = { name: "start", agree: false };
 // page wires the hook. When a save happens depends on focus and blur, which only a rendered form
 // has.
 function TestForm({ save }: { save: (data: z.output<typeof schema>) => Promise<string | null> }) {
-  const { form, formProps } = useAutosaveForm({ schema, defaultValues, save });
+  const { form, formProps } = useAutosaveForm({ label: "Test", schema, defaultValues, save });
   return (
     <form {...formProps}>
       <label>Name <input {...form.register("name")} /></label>
@@ -35,7 +36,7 @@ const rangeSchema = z.object({ low: z.number(), high: z.number() })
   .refine((range) => range.high >= range.low, { message: "Must be at least low", path: ["high"] });
 
 function RangeForm({ save }: { save: (data: z.output<typeof rangeSchema>) => Promise<string | null> }) {
-  const { form, formProps } = useAutosaveForm({ schema: rangeSchema, defaultValues: { low: 1, high: 5 }, save });
+  const { form, formProps } = useAutosaveForm({ label: "Test", schema: rangeSchema, defaultValues: { low: 1, high: 5 }, save });
   const { errors } = useFormState({ control: form.control, name: "high" });
   return (
     <form {...formProps}>
@@ -48,11 +49,14 @@ function RangeForm({ save }: { save: (data: z.output<typeof rangeSchema>) => Pro
 
 const renderForm = () => {
   const save = vi.fn().mockResolvedValue(null);
-  render(<TestForm save={save} />);
-  return { save, user: userEvent.setup(), name: screen.getByLabelText("Name") };
+  const { unmount } = render(<TestForm save={save} />);
+  return { save, unmount, user: userEvent.setup(), name: screen.getByLabelText("Name") };
 };
 
 describe("useAutosaveForm", () => {
+  beforeEach(() => {
+    vi.mocked(toast.error).mockClear();
+  });
   it("seeds the form with the default values", () => {
     const { name } = renderForm();
     expect(name).toHaveValue("start");
@@ -112,10 +116,43 @@ describe("useAutosaveForm", () => {
     await expectNoSave(save);
   });
 
+  // Navigating away through the app unmounts the page right after the click's blur shows the
+  // errors. The toast is what's left to tell the organizer the edit didn't save.
+  describe("leaving the page", () => {
+    it("toasts, naming the page, when the latest change was invalid", async () => {
+      const { user, name, unmount } = renderForm();
+
+      await user.clear(name);
+      await user.tab();
+      unmount();
+
+      expect(toast.error).toHaveBeenCalledExactlyOnceWith("Your last change on Test wasn't saved: a field is invalid.");
+    });
+
+    it("doesn't toast once a later change has saved", async () => {
+      const { save, user, name, unmount } = renderForm();
+
+      await user.clear(name);
+      await user.tab();
+      await user.type(name, "fixed");
+      await user.tab();
+      await vi.waitFor(() => expect(save).toHaveBeenCalledOnce());
+      unmount();
+
+      expect(toast.error).not.toHaveBeenCalled();
+    });
+
+    it("doesn't toast when nothing was changed", () => {
+      const { unmount } = renderForm();
+      unmount();
+      expect(toast.error).not.toHaveBeenCalled();
+    });
+  });
+
   // The same schema drives the inline errors, through the resolver. Read with getFieldState:
   // formState is a proxy that only tracks what a component read during render.
   it("validates fields against the schema", async () => {
-    const { result } = renderHook(() => useAutosaveForm({ schema, defaultValues, save: vi.fn() }));
+    const { result } = renderHook(() => useAutosaveForm({ label: "Test", schema, defaultValues, save: vi.fn() }));
 
     act(() => result.current.form.setValue("name", ""));
     await act(async () => {

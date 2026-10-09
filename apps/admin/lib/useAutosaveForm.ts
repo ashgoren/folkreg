@@ -3,17 +3,14 @@
 import { useCallback, useEffect, useRef, type FormEvent } from "react";
 import { useForm, type DefaultValues, type FieldValues } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 import type { z } from "zod";
 import { useAutosave } from "./useAutosave";
 
-// Input types where the organizer types a value, as opposed to clicking one. Everything else that
-// can take focus here (checkbox/radio/color inputs, and the buttons Radix renders for switches,
-// radios, and checkboxes) is a complete gesture.
 const NON_TEXT_INPUT_TYPES = new Set(["checkbox", "radio", "color", "range", "file", "button", "submit", "reset", "hidden"]);
 
 const isTextEntry = (element: Element | null) =>
-  element instanceof HTMLTextAreaElement
-  || (element instanceof HTMLInputElement && !NON_TEXT_INPUT_TYPES.has(element.type));
+  element instanceof HTMLTextAreaElement || (element instanceof HTMLInputElement && !NON_TEXT_INPUT_TYPES.has(element.type));
 
 /**
  * A react-hook-form form that autosaves through useAutosave: every config page except Fields.
@@ -40,7 +37,9 @@ const isTextEntry = (element: Element | null) =>
  * and there it memoizes form.watch(name) on the never-changing form object, so the value would
  * never update. useWatch is a hook with its own subscription, which the compiler handles.
  */
-export function useAutosaveForm<TInput extends FieldValues, TOutput>({ schema, defaultValues, save }: {
+export function useAutosaveForm<TInput extends FieldValues, TOutput>({ label, schema, defaultValues, save }: {
+  /** The page's name, as the sidebar shows it, for the unsaved-change toast. */
+  label: string;
   schema: z.ZodType<TOutput, TInput>;
   defaultValues: DefaultValues<TInput>;
   save: (data: TOutput) => Promise<string | null>;
@@ -56,15 +55,26 @@ export function useAutosaveForm<TInput extends FieldValues, TOutput>({ schema, d
   // A text edit made since the last blur, waiting to be saved when its field loses focus.
   const textEditPendingRef = useRef(false);
 
+  // The latest change couldn't save because the form was invalid, and no valid save has happened since.
+  const unsavedInvalidRef = useRef(false);
+
   // A change that can't save shows every error, not just the edited field's: onBlur mode only
   // validates the field that lost focus, and a rule spanning two fields (Admissions' "default must
   // be between min and max") puts its error on only one of them. Every page loads valid, so the
   // errors this shows are ones the organizer's own edits caused.
   const saveIfValid = useCallback((values: unknown) => {
     const parsed = schema.safeParse(values);
+    unsavedInvalidRef.current = !parsed.success;
     if (parsed.success) saveNow(parsed.data);
     else void form.trigger();
   }, [form, schema, saveNow]);
+
+  // Leaving the page through the app (a sidebar link) unmounts it right after the click's blur
+  // shows the errors, so they're never seen. The toast is rendered by the root layout's <Toaster>,
+  // outside this page, so it's still showing on the page navigated to.
+  useEffect(() => () => {
+    if (unsavedInvalidRef.current) toast.error(`Your last change on ${label} wasn't saved: a field is invalid.`);
+  }, [label]);
 
   useEffect(() => {
     const subscription = form.watch((values) => {

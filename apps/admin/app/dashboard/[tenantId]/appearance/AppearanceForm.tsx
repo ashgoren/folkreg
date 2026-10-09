@@ -34,6 +34,7 @@ function ColorField({ name, label, control }: { name: keyof ThemeConfig; label: 
 
 export function AppearanceForm({ tenant }: { tenant: Tenant }) {
   const { form, formProps, isPending, savedRecently } = useAutosaveForm({
+    label: "Appearance",
     schema: themeConfigSchema,
     defaultValues: tenant.theme_config,
     save: (data) => updateAppearance(tenant.id, data),

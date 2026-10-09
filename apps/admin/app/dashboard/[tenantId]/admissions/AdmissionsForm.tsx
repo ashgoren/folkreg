@@ -18,6 +18,7 @@ import { TieredFields } from "./TieredFields";
 
 export function AdmissionsForm({ tenant }: { tenant: Tenant }) {
   const { form, formProps, isPending, savedRecently } = useAutosaveForm({
+    label: "Admissions",
     schema: admissionsConfigSchema,
     defaultValues: tenant.admissions_config,
     save: (data) => updateAdmissions(tenant.id, data),

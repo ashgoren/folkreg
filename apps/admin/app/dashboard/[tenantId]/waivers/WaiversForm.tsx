@@ -15,6 +15,7 @@ import { updateWaivers } from "./actions";
 
 export function WaiversForm({ tenant, secrets }: { tenant: Tenant; secrets: TenantSecrets }) {
   const { form, formProps, isPending, savedRecently } = useAutosaveForm({
+    label: "Waivers",
     schema: waiversSchema,
     defaultValues: {
       ...tenant.waiver_config,

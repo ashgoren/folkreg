@@ -51,6 +51,7 @@ export function SpreadsheetForm({ tenant }: { tenant: Tenant }) {
     : availableRegistrantColumns.map((name) => ({ name, visible: true }));
 
   const { form, formProps, isPending, savedRecently } = useAutosaveForm({
+    label: "Spreadsheet",
     schema: spreadsheetConfigSchema,
     defaultValues: {
       sheetId: tenant.spreadsheet_config?.sheetId ?? "",

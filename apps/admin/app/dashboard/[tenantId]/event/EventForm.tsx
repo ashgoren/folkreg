@@ -12,6 +12,7 @@ import { updateEvent } from "./actions";
 
 export function EventForm({ tenant }: { tenant: Tenant }) {
   const { form, formProps, isPending, savedRecently } = useAutosaveForm({
+    label: "Event",
     schema: eventConfigSchema,
     defaultValues: tenant.event_config,
     save: (data) => updateEvent(tenant.id, data),
