@@ -38,7 +38,7 @@ export async function handleAuthSession(request: NextRequest) {
   const user = data?.claims;
   const path = request.nextUrl.pathname;
 
-  if (!user && path !== "/" && !path.startsWith("/login") && !path.startsWith("/auth")) {
+  if (!user && path !== "/" && !path.startsWith("/auth")) {
     // no user; redirect the user to the login page
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";

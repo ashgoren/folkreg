@@ -33,7 +33,8 @@ describe("handleAuthSession", () => {
   });
 
   describe("without a session", () => {
-    it.each(["/dashboard", "/dashboard/00000000-0000-0000-0000-000000000000/general", "/anything-else"])(
+    // /login included: login lives under /auth, so a bare /login is just another unknown path.
+    it.each(["/dashboard", "/dashboard/00000000-0000-0000-0000-000000000000/general", "/anything-else", "/login"])(
       "redirects %s to /auth/login",
       async (path) => {
         const response = await handleAuthSession(request(path));
@@ -49,7 +50,7 @@ describe("handleAuthSession", () => {
 
     // The login page itself (and the root) must stay reachable logged out, or the redirect
     // would loop.
-    it.each(["/", "/auth/login", "/auth/anything", "/login"])("lets %s through", async (path) => {
+    it.each(["/", "/auth/login", "/auth/anything"])("lets %s through", async (path) => {
       expect(passesThrough(await handleAuthSession(request(path)))).toBe(true);
     });
   });
