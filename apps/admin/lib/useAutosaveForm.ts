@@ -42,6 +42,13 @@ export function useAutosaveForm<TInput extends FieldValues, TOutput>({ label, sc
 }) {
   const form = useForm<TInput, unknown, TOutput>({
     mode: "onBlur",
+    // handleSubmit (below) is how every save validates. Once a form has been submitted, RHF
+    // re-validates with reValidateMode -- on every keystroke by default, which would flag an
+    // email as invalid before it's finished. Keep it on blur, like the first validation.
+    reValidateMode: "onBlur",
+    // A failed handleSubmit focuses the first invalid field by default; mid-edit, that would yank
+    // the cursor away from whatever the organizer just clicked.
+    shouldFocusError: false,
     resolver: zodResolver(schema),
     defaultValues,
   });
@@ -54,16 +61,20 @@ export function useAutosaveForm<TInput extends FieldValues, TOutput>({ label, sc
   // The latest change couldn't save because the form was invalid, and no valid save has happened since.
   const unsavedInvalidRef = useRef(false);
 
-  // A change that can't save shows every error, not just the edited field's: onBlur mode only
-  // validates the field that lost focus, and a rule spanning two fields (Admissions' "default must
-  // be between min and max") puts its error on only one of them. Every page loads valid, so the
-  // errors this shows are ones the organizer's own edits caused.
-  const saveIfValid = useCallback((values: unknown) => {
-    const parsed = schema.safeParse(values);
-    unsavedInvalidRef.current = !parsed.success;
-    if (parsed.success) autosave(parsed.data);
-    else void form.trigger();
-  }, [form, schema, autosave]);
+  // Validates the whole form through the resolver, then saves its parsed output (schema transforms
+  // applied). A change that can't save shows every error, not just the edited field's -- onBlur
+  // mode only validates the field that lost focus, and a rule spanning two fields (Admissions'
+  // "default must be between min and max") puts its error on only one of them. Every page loads
+  // valid, so the errors shown are ones the organizer's own edits caused.
+  const saveIfValid = useCallback(() => form.handleSubmit(
+    (data) => {
+      unsavedInvalidRef.current = false;
+      autosave(data);
+    },
+    () => {
+      unsavedInvalidRef.current = true;
+    },
+  )(), [form, autosave]);
 
   // Leaving the page through the app (a sidebar link) unmounts it right after the click's blur
   // shows the errors, so they're never seen. The toast is rendered by the root layout's <Toaster>,
@@ -73,12 +84,12 @@ export function useAutosaveForm<TInput extends FieldValues, TOutput>({ label, sc
   }, [label]);
 
   useEffect(() => {
-    const subscription = form.watch((values) => {
+    const subscription = form.watch(() => {
       if (isTextEntry(document.activeElement)) {
         textEditPendingRef.current = true;
         return;
       }
-      saveIfValid(values);
+      void saveIfValid();
     });
     return () => subscription.unsubscribe();
   }, [form, saveIfValid]);
@@ -86,8 +97,8 @@ export function useAutosaveForm<TInput extends FieldValues, TOutput>({ label, sc
   const onBlur = useCallback(() => {
     if (!textEditPendingRef.current) return;
     textEditPendingRef.current = false;
-    saveIfValid(form.getValues());
-  }, [form, saveIfValid]);
+    void saveIfValid();
+  }, [saveIfValid]);
 
   const onSubmit = useCallback((event: FormEvent) => event.preventDefault(), []);
 

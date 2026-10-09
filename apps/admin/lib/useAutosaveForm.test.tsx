@@ -15,14 +15,16 @@ const schema = z.object({
 });
 const defaultValues = { name: "start", agree: false };
 
-// A minimal page: one text field, one checkbox, and formProps on the <form>, the way every config
-// page wires the hook. When a save happens depends on focus and blur, which only a rendered form
-// has.
+// A minimal page: one text field (showing its error), one checkbox, and formProps on the <form>,
+// the way every config page wires the hook. When a save happens depends on focus and blur, which
+// only a rendered form has. The error is read with useFormState for the reason given on RangeForm.
 function TestForm({ save }: { save: (data: z.output<typeof schema>) => Promise<string | null> }) {
   const { form, formProps } = useAutosaveForm({ label: "Test", schema, defaultValues, save });
+  const { errors } = useFormState({ control: form.control, name: "name" });
   return (
     <form {...formProps}>
       <label>Name <input {...form.register("name")} /></label>
+      {errors.name && <p role="alert">{errors.name.message}</p>}
       <label><input type="checkbox" {...form.register("agree")} /> Agree</label>
     </form>
   );
@@ -114,6 +116,36 @@ describe("useAutosaveForm", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Must be at least low");
     await expectNoSave(save);
+  });
+
+  // A change that can't save shows every error, but mustn't move the cursor: jumping to the
+  // invalid field would interrupt whatever the organizer just clicked or is about to type.
+  it("leaves focus where it is when a change can't save", async () => {
+    const { save, user, name } = renderForm();
+
+    await user.clear(name);
+    const agree = screen.getByLabelText("Agree");
+    await user.click(agree); // blurs the now-invalid name, then saves the click: both fail
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Required");
+    expect(agree).toHaveFocus();
+    await expectNoSave(save);
+  });
+
+  // Errors show when a field is left, not on each keystroke -- also after the form has saved
+  // once, so typing an email doesn't flag it as invalid before it's finished.
+  it("keeps validating on blur, not while typing, after a save", async () => {
+    const { save, user, name } = renderForm();
+
+    await user.type(name, "x");
+    await user.tab();
+    await vi.waitFor(() => expect(save).toHaveBeenCalledOnce());
+
+    await user.clear(name); // invalid, but still being edited
+    expect(screen.queryByRole("alert")).toBeNull();
+
+    await user.tab();
+    expect(await screen.findByRole("alert")).toHaveTextContent("Required");
   });
 
   // Navigating away through the app unmounts the page right after the click's blur shows the
