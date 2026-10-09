@@ -27,9 +27,11 @@ export async function saveTenantConfig<T>(
   const parsed = schema.safeParse(values);
   if (!parsed.success) return "Invalid data";
 
+  // getClaims() verifies the session's JWT locally when the project signs with asymmetric keys (falling back to asking the Auth server otherwise);
+  // PostgREST also only verifies the JWT before applying RLS. This check is for the clearer message; RLS is what actually blocks a logged-out write.
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return "Not authenticated";
+  const { data } = await supabase.auth.getClaims();
+  if (!data?.claims) return "Not authenticated";
 
   try {
     return (await write(createTenantDb(supabase, tenantId), parsed.data)) ?? null;
