@@ -38,9 +38,11 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.0",
     "@playwright/test": "^1.64.0",
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
+    "@rolldown/plugin-babel": "^0.2.4",
     "@supabase/supabase-js": "^2.103.2",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.2",

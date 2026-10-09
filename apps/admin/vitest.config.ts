@@ -1,12 +1,17 @@
 import path from "node:path";
 import { defineConfig } from "vitest/config";
-import react from "@vitejs/plugin-react";
+import react, { reactCompilerPreset } from "@vitejs/plugin-react";
+import babel from "@rolldown/plugin-babel";
 
 // Mirrors tsconfig's `"@/*": ["./*"]` path alias, which Vite doesn't read on its own.
 const alias = { "@": path.resolve(import.meta.dirname) };
 
 export default defineConfig({
-  plugins: [react()],
+  // The React Compiler, through the same Babel plugin Next runs for the app
+  // (next.config.ts `reactCompiler: true`), so components are tested as they ship. Without it,
+  // code the compiler mis-memoizes (e.g. form.watch(name) in a compiled form, which never
+  // updates) passes here and only fails in the real app.
+  plugins: [react(), babel({ presets: [reactCompilerPreset()] })],
   resolve: { alias },
   test: {
     projects: [
