@@ -4,7 +4,7 @@
 // create-tenant scripts call these from plain Node.
 
 import { defaultTenantConfig } from "@repo/tenant-config";
-import type { DbClient, TablesInsert } from "@repo/types";
+import type { DbClient } from "@repo/types";
 import { getTenantBySlug } from "./queries";
 
 // Inserts a tenant with the full default config. The tenants_create_secrets trigger adds its
@@ -13,12 +13,9 @@ export const createTenant = async (
   service: DbClient,
   { slug, ownerId }: { slug: string; ownerId: string | null },
 ): Promise<string> => {
-  // The config interfaces aren't assignable to supabase-js's recursive Json type as-is (same
-  // reason as the casts in updateTenant, queries.ts).
-  const row = { slug, owner_id: ownerId, ...defaultTenantConfig() } as unknown as TablesInsert<"tenants">;
   const { data, error } = await service
     .from("tenants")
-    .insert(row)
+    .insert({ slug, owner_id: ownerId, ...defaultTenantConfig() })
     .select("id")
     .single();
   if (error) throw error;

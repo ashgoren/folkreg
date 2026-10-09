@@ -26,10 +26,9 @@ export const createOrderMethods = (supabase: DbClient, tenantId: string) => {
       if (error.code === "PGRST116") return null; // No row found
       throw error; // Unexpected error
     }
-    // getTenant's equivalent cast (queries.ts) is a plain `as Tenant` -- that works there because
-    // every jsonb column it narrows is a single object. Here, `people`/`payments` narrow jsonb
-    // columns to *arrays* (Person[]/Payment[]), and TS's "as" cast rejects an object-vs-array
-    // mismatch as insufficiently overlapping, hence the extra `unknown` hop.
+    // The jsonb columns come back as generic Json. `people`/`payments` narrow to arrays
+    // (Person[]/Payment[]), which TS's "as" rejects as insufficiently overlapping with Json, hence
+    // the `unknown` hop.
     return data as unknown as Order;
   };
 

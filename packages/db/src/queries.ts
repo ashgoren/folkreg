@@ -1,25 +1,13 @@
-import { parseTenantConfig } from "@repo/tenant-config";
-import type {
-  EventConfig, FieldsConfig, AdmissionsConfig, PaymentsConfig, SpreadsheetConfig, ThemeConfig, WaiverConfig, ReceiptsConfig,
-} from "@repo/tenant-config";
-import type { DbClient, Json, Tenant, TenantSecrets } from "@repo/types";
+import { parseTenantConfig, type TenantConfig } from "@repo/tenant-config";
+import type { DbClient, TablesUpdate, Tenant, TenantSecrets } from "@repo/types";
 import { createOrderMethods } from "./orders";
 import { TenantNotFoundError } from "./errors";
 
-type TenantUpdates = Partial<{
-  slug: string,
-  is_live: boolean,
-  show_preregistration: boolean,
-  owner_id: string,
-  event_config: EventConfig,
-  fields_config: FieldsConfig,
-  admissions_config: AdmissionsConfig,
-  payments_config: PaymentsConfig,
-  theme_config: ThemeConfig,
-  spreadsheet_config: SpreadsheetConfig,
-  waiver_config: WaiverConfig,
-  receipts_config: ReceiptsConfig,
-}>
+// The editable scalar columns plus the jsonb config columns, typed by their schemas rather than as
+// generic Json. The config types are z.infer'd type aliases, which TypeScript accepts as Json
+// as-is, so these values go to supabase-js without a cast.
+type TenantUpdates = Pick<TablesUpdate<"tenants">, "slug" | "is_live" | "show_preregistration" | "owner_id">
+  & Partial<TenantConfig>;
 
 type TenantSecretsUpdates = Partial<Omit<TenantSecrets, 'tenant_id'>>
 
@@ -100,25 +88,11 @@ export const createTenantDb = (supabase: DbClient, tenantId: string) => {
   };
 
   const updateTenant = async (updates: TenantUpdates) => {
-    const { event_config, fields_config, admissions_config, payments_config, theme_config, spreadsheet_config, waiver_config, receipts_config, ...scalars } = updates;
-
-    const payload = {
-      ...scalars,
-      ...(event_config !== undefined && { event_config: event_config as unknown as Json }),
-      ...(fields_config !== undefined && { fields_config: fields_config as unknown as Json }),
-      ...(admissions_config !== undefined && { admissions_config: admissions_config as unknown as Json }),
-      ...(payments_config !== undefined && { payments_config: payments_config as unknown as Json }),
-      ...(theme_config !== undefined && { theme_config: theme_config as unknown as Json }),
-      ...(spreadsheet_config !== undefined && { spreadsheet_config: spreadsheet_config as unknown as Json }),
-      ...(waiver_config !== undefined && { waiver_config: waiver_config as unknown as Json }),
-      ...(receipts_config !== undefined && { receipts_config: receipts_config as unknown as Json }),
-    };
-
     // .select() makes PostgREST return the updated rows, so an update that RLS (or a wrong id)
     // filtered down to nothing is detectable rather than indistinguishable from success.
     const { data, error } = await supabase
       .from("tenants")
-      .update(payload)
+      .update(updates)
       .eq("id", tenantId)
       .select("id");
 

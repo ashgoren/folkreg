@@ -101,6 +101,18 @@ describe("updateTenant", () => {
     expect(tenant?.receipts_config).toEqual({ emailFrom: "a@example.org", emailReplyTo: "" });
   });
 
+  // A key present but set to undefined (e.g. from spreading a partial object) is left out of the
+  // request body when supabase-js serializes it to JSON, so the column keeps its value rather
+  // than being nulled.
+  it("leaves a column untouched when its key is passed as undefined", async () => {
+    await db.updateTenant({ event_config: event });
+    await db.updateTenant({ event_config: undefined, is_live: true });
+
+    const tenant = await db.getTenant();
+    expect(tenant?.event_config).toEqual(event);
+    expect(tenant?.is_live).toBe(true);
+  });
+
   // Checked against other-tenant specifically: the admin app's suites legitimately flip
   // is_live on their own tenants while this suite runs in parallel, but nothing ever sets
   // other-tenant live, so a change there can only come from a mis-scoped update here.
