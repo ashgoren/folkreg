@@ -47,6 +47,13 @@ describe("FieldsForm", () => {
       expect(activeFieldNames()).toEqual([...contactOrder, ...miscOrder]);
     });
 
+    // Like the useAutosaveForm pages: stops Firefox (and sometimes Safari) restoring unsaved field
+    // values on reload, which the page's state wouldn't know about.
+    it("turns off the browser's restoring of field values on reload", () => {
+      const { container } = render(<FieldsForm tenant={makeTenant()} />);
+      expect(container.querySelector("form")).toHaveAttribute("autocomplete", "off");
+    });
+
     it("opens the available-fields list when no fields are active", () => {
       render(<FieldsForm tenant={makeTenant({ fields_config: noneActive })} />);
       expect(activeFieldNames()).toEqual([]);

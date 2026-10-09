@@ -43,6 +43,21 @@ test("another owner's tenant 404s", async ({ page }) => {
   expect(response?.status()).toBe(404);
 });
 
+// Firefox (and sometimes Safari) restores typed values on reload without a change event, so a
+// page would show values its form state doesn't know about. Every config page's form turns that off
+// (autocomplete="off"), and no field may override it -- except SecretInput's "new-password", which
+// keeps password managers from filling API key fields (browsers never restore password fields).
+test("every config page turns off the browser's restoring of field values", async ({ page, dashboardUrl }) => {
+  for (const { section } of SECTIONS) {
+    await page.goto(dashboardUrl(section));
+    const form = page.locator("main form");
+    await expect(form).toHaveAttribute("autocomplete", "off");
+    const overrides = await form.locator("input[autocomplete], textarea[autocomplete]").evaluateAll((fields) =>
+      fields.map((field) => field.getAttribute("autocomplete")).filter((value) => value !== "off" && value !== "new-password"));
+    expect(overrides, section).toEqual([]);
+  }
+});
+
 test("the sidebar links to every config section", async ({ page, dashboardUrl }) => {
   await page.goto(dashboardUrl("general"));
 

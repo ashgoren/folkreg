@@ -76,7 +76,7 @@ export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: Ten
       <Separator />
 
       <FieldGroup>
-        <TextField control={form.control} name="directPaymentUrl" id="payments-direct-url" label="Direct payment URL" type="url" autoComplete="url" />
+        <TextField control={form.control} name="directPaymentUrl" id="payments-direct-url" label="Direct payment URL" type="url" autoComplete="off" />
       </FieldGroup>
 
       <Separator />

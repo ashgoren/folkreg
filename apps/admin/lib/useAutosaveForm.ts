@@ -22,7 +22,8 @@ import { useAutosave } from "./useAutosave";
  *
  * Spread `formProps` onto the page's <form>: React's onBlur on a form fires when any field inside
  * it loses focus, which is what saves a text edit. It also blocks submit, since autosave replaced
- * the Save button but Enter in a field would still submit the form.
+ * the Save button but Enter in a field would still submit the form, and turns off the browser's
+ * restoring of field values on reload (see below).
  *
  * TInput is what the form's fields edit, TOutput what a successful parse produces and save
  * receives. They differ only for a schema with a transform.
@@ -102,5 +103,6 @@ export function useAutosaveForm<TInput extends FieldValues, TOutput>({ label, sc
 
   const onSubmit = useCallback((event: FormEvent) => event.preventDefault(), []);
 
-  return { form, formProps: { onBlur, onSubmit }, isPending, savedRecently };
+  // autoComplete="off" on form stops browser from restoring field values on reload, which would bypass state.
+  return { form, formProps: { onBlur, onSubmit, autoComplete: "off" }, isPending, savedRecently };
 }

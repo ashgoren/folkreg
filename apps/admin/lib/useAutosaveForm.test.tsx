@@ -148,6 +148,13 @@ describe("useAutosaveForm", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Required");
   });
 
+  // Otherwise Firefox (and sometimes Safari) restores typed values on reload without a change
+  // event, showing values react-hook-form doesn't know about.
+  it("turns off the browser's restoring of field values on reload", () => {
+    renderForm();
+    expect(screen.getByLabelText("Name").closest("form")).toHaveAttribute("autocomplete", "off");
+  });
+
   // Navigating away through the app unmounts the page right after the click's blur shows the
   // errors. The toast is what's left to tell the organizer the edit didn't save.
   describe("leaving the page", () => {

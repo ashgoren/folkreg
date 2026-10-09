@@ -66,11 +66,11 @@ export function EventForm({ tenant }: { tenant: Tenant }) {
       <div className="space-y-4">
         <h2 className="text-base font-medium">Links</h2>
         <FieldGroup>
-          <TextField control={form.control} name="links.info" id="event-link-info" label="More info URL" type="url" autoComplete="url" />
+          <TextField control={form.control} name="links.info" id="event-link-info" label="More info URL" type="url" autoComplete="off" />
 
-          <TextField control={form.control} name="links.health" id="event-link-health" label="Health policy URL" type="url" autoComplete="url" />
+          <TextField control={form.control} name="links.health" id="event-link-health" label="Health policy URL" type="url" autoComplete="off" />
 
-          <TextField control={form.control} name="links.safety" id="event-link-safety" label="Safety policy URL" type="url" autoComplete="url" />
+          <TextField control={form.control} name="links.safety" id="event-link-safety" label="Safety policy URL" type="url" autoComplete="off" />
         </FieldGroup>
       </div>
 

@@ -138,7 +138,8 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
     : null;
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} onBlur={saveTextEdit} className="flex gap-8">
+    // autoComplete off stops the browser restoring unsaved field values on reload, which this page's state wouldn't know about.
+    <form onSubmit={(e) => e.preventDefault()} onBlur={saveTextEdit} autoComplete="off" className="flex gap-8">
       {/* Left column: field lists */}
       <div className="w-72 shrink-0 flex flex-col gap-6">
         <div>
