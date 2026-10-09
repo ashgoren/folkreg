@@ -36,64 +36,43 @@ export type Database = {
     Tables: {
       orders: {
         Row: {
-          charged: number | null
-          completed_at: string | null
           created_at: string | null
-          deposit: number | null
           donation: number | null
-          fees: number | null
           id: string
           is_live: boolean
           is_waitlist: boolean
-          payment_email: string | null
-          payment_id: string | null
-          payment_method:
-            | Database["public"]["Enums"]["payment_method_type"]
-            | null
+          lottery: Json | null
+          payments: Json
           people: Json | null
-          status: Database["public"]["Enums"]["order_status_type"] | null
+          registered_at: string | null
           tenant_id: string
-          total: number | null
+          updated_at: string | null
         }
         Insert: {
-          charged?: number | null
-          completed_at?: string | null
           created_at?: string | null
-          deposit?: number | null
           donation?: number | null
-          fees?: number | null
           id?: string
           is_live?: boolean
           is_waitlist?: boolean
-          payment_email?: string | null
-          payment_id?: string | null
-          payment_method?:
-            | Database["public"]["Enums"]["payment_method_type"]
-            | null
+          lottery?: Json | null
+          payments?: Json
           people?: Json | null
-          status?: Database["public"]["Enums"]["order_status_type"] | null
+          registered_at?: string | null
           tenant_id: string
-          total?: number | null
+          updated_at?: string | null
         }
         Update: {
-          charged?: number | null
-          completed_at?: string | null
           created_at?: string | null
-          deposit?: number | null
           donation?: number | null
-          fees?: number | null
           id?: string
           is_live?: boolean
           is_waitlist?: boolean
-          payment_email?: string | null
-          payment_id?: string | null
-          payment_method?:
-            | Database["public"]["Enums"]["payment_method_type"]
-            | null
+          lottery?: Json | null
+          payments?: Json
           people?: Json | null
-          status?: Database["public"]["Enums"]["order_status_type"] | null
+          registered_at?: string | null
           tenant_id?: string
-          total?: number | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -214,8 +193,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      order_status_type: "pending" | "final"
-      payment_method_type: "stripe" | "paypal" | "check"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -345,10 +323,7 @@ export const Constants = {
     Enums: {},
   },
   public: {
-    Enums: {
-      order_status_type: ["pending", "final"],
-      payment_method_type: ["stripe", "paypal", "check"],
-    },
+    Enums: {},
   },
 } as const
 

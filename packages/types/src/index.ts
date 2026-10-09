@@ -1,4 +1,4 @@
-import { Tables, Enums, Database } from "./database.types"
+import { Tables, Database } from "./database.types"
 import { type SupabaseClient } from "@supabase/supabase-js"
 
 export * from "./database.types"
@@ -6,8 +6,7 @@ export * from "./database.types"
 export type DbClient = SupabaseClient<Database>
 
 export type PaymentProcessor = 'stripe' | 'paypal'
-export type PaymentMethod = Enums<'payment_method_type'>
-export type OrderStatus = Enums<'order_status_type'>
+export type PaymentMethod = 'stripe' | 'paypal' | 'check'
 
 export type AgeGroup = '0-2' | '3-5' | '6-12' | '13-17' | 'adult'
 
@@ -31,8 +30,28 @@ export interface Person {
   [key: string]: unknown;
 }
 
-export type Order = Omit<Tables<'orders'>, 'people'> & {
+export interface Payment {
+  method: PaymentMethod;
+  processorId: string | null;
+  admissionAmount: number;
+  donationAmount: number;
+  feeAmount: number;
+  charged: number;
+  payerEmail: string | null;
+  paidAt: string;
+}
+
+export interface LotteryInfo {
+  status: 'registered' | 'selected' | 'invited' | 'waitlisted';
+  tokenHash: string | null;
+  invitedAt: string | null;
+  expiresAt: string | null;
+}
+
+export type Order = Omit<Tables<'orders'>, 'people' | 'payments' | 'lottery'> & {
   people: Person[];
+  payments: Payment[];
+  lottery: LotteryInfo | null;
 }
 
 export interface EventConfig {
