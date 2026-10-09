@@ -56,10 +56,15 @@ export function useAutosaveForm<TInput extends FieldValues, TOutput>({ schema, d
   // A text edit made since the last blur, waiting to be saved when its field loses focus.
   const textEditPendingRef = useRef(false);
 
+  // A change that can't save shows every error, not just the edited field's: onBlur mode only
+  // validates the field that lost focus, and a rule spanning two fields (Admissions' "default must
+  // be between min and max") puts its error on only one of them. Every page loads valid, so the
+  // errors this shows are ones the organizer's own edits caused.
   const saveIfValid = useCallback((values: unknown) => {
     const parsed = schema.safeParse(values);
     if (parsed.success) saveNow(parsed.data);
-  }, [schema, saveNow]);
+    else void form.trigger();
+  }, [form, schema, saveNow]);
 
   useEffect(() => {
     const subscription = form.watch((values) => {

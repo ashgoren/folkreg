@@ -111,6 +111,19 @@ describe("AdmissionsForm", () => {
 
       await expectNoSave(vi.mocked(updateAdmissions));
     });
+
+    // The range rule's error belongs to the default field, which this edit never touches. Saving
+    // is blocked either way, so the error has to show anyway, or nothing on screen explains why.
+    it("shows the default's range error when raising the minimum above it", async () => {
+      const user = userEvent.setup();
+      render(<AdmissionsForm tenant={makeTenant()} />);
+
+      await replace(user, "admissions-cost-min", "400");
+      await user.tab();
+
+      expect(await screen.findByText("Must be between minimum and maximum")).toBeInTheDocument();
+      await expectNoSave(vi.mocked(updateAdmissions));
+    });
   });
 
   describe("shared fields", () => {

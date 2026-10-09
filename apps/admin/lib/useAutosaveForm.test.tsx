@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { act, render, renderHook, screen } from "@testing-library/react";
+import { useFormState } from "react-hook-form";
 import userEvent from "@testing-library/user-event";
 import { z } from "zod";
 import { expectNoSave } from "@/test/autosave";
@@ -22,6 +23,25 @@ function TestForm({ save }: { save: (data: z.output<typeof schema>) => Promise<s
     <form {...formProps}>
       <label>Name <input {...form.register("name")} /></label>
       <label><input type="checkbox" {...form.register("agree")} /> Agree</label>
+    </form>
+  );
+}
+
+// A page with a rule spanning two fields, its error attached to only one of them -- like
+// Admissions' "default must be between min and max". The error is read with useFormState, the
+// hook form: the React Compiler compiles this component, and would memoize a plain
+// form.formState read the same way it does form.watch(name).
+const rangeSchema = z.object({ low: z.number(), high: z.number() })
+  .refine((range) => range.high >= range.low, { message: "Must be at least low", path: ["high"] });
+
+function RangeForm({ save }: { save: (data: z.output<typeof rangeSchema>) => Promise<string | null> }) {
+  const { form, formProps } = useAutosaveForm({ schema: rangeSchema, defaultValues: { low: 1, high: 5 }, save });
+  const { errors } = useFormState({ control: form.control, name: "high" });
+  return (
+    <form {...formProps}>
+      <label>Low <input type="number" {...form.register("low", { valueAsNumber: true })} /></label>
+      <label>High <input type="number" {...form.register("high", { valueAsNumber: true })} /></label>
+      {errors.high && <p role="alert">{errors.high.message}</p>}
     </form>
   );
 }
@@ -75,6 +95,21 @@ describe("useAutosaveForm", () => {
     await user.click(screen.getByLabelText("Agree")); // moves focus off the text field first
 
     await vi.waitFor(() => expect(save).toHaveBeenLastCalledWith({ name: "typed", agree: true }));
+  });
+
+  // onBlur mode only shows the blurred field's own error. A blur that can't save shows every
+  // error, so whatever is blocking the save is on screen even when it belongs to another field.
+  it("shows every error when a blur finds the form invalid, including another field's", async () => {
+    const save = vi.fn().mockResolvedValue(null);
+    render(<RangeForm save={save} />);
+    const user = userEvent.setup();
+
+    await user.clear(screen.getByLabelText("Low"));
+    await user.type(screen.getByLabelText("Low"), "9");
+    await user.tab();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Must be at least low");
+    await expectNoSave(save);
   });
 
   // The same schema drives the inline errors, through the resolver. Read with getFieldState:
