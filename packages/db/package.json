@@ -8,6 +8,10 @@
     "./queries": "./src/queries.ts",
     "./errors": "./src/errors.ts"
   },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "test": "vitest run"
+  },
   "dependencies": {
     "@repo/types": "workspace:*",
     "@supabase/supabase-js": "^2.103.2",
@@ -16,6 +20,8 @@
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "@types/node": "^20",
-    "typescript": "^5"
+    "dotenv": "^18.0.6",
+    "typescript": "^5",
+    "vitest": "^5.0.3"
   }
 }

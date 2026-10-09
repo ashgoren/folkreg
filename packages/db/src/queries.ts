@@ -4,6 +4,7 @@ import type {
   Tenant, TenantSecrets,
   EventConfig, FieldsConfig, AdmissionsConfig, PaymentsConfig, SpreadsheetConfig, ThemeConfig, WaiverConfig, ReceiptsConfig,
 } from "@repo/types";
+import { createOrderMethods } from "./orders";
 
 type TenantUpdates = Partial<{
   slug: string,
@@ -129,5 +130,8 @@ export const createTenantDb = (supabase: DbClient, tenantId: string) => {
     if (error) throw error;
   };
 
-  return { getTenant, getSecrets, getPaymentProcessorCredentials, updateTenant, updateTenantSecrets };
+  return {
+    getTenant, getSecrets, getPaymentProcessorCredentials, updateTenant, updateTenantSecrets,
+    ...createOrderMethods(supabase, tenantId),
+  };
 };

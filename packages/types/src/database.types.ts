@@ -46,7 +46,7 @@ export type Database = {
           people: Json | null
           registered_at: string | null
           tenant_id: string
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
           created_at?: string | null
@@ -59,7 +59,7 @@ export type Database = {
           people?: Json | null
           registered_at?: string | null
           tenant_id: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
           created_at?: string | null
@@ -72,7 +72,7 @@ export type Database = {
           people?: Json | null
           registered_at?: string | null
           tenant_id?: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
