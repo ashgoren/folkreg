@@ -4,24 +4,22 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 /**
- * Debounced/serialized autosave for admin config pages. saveNow/saveDebounced
- * both funnel through the same in-flight guard, so a slow-to-resolve request
- * can never land after (and clobber) a fresher one -- at most one save is
- * ever in flight; a save triggered while one's pending just gets queued to
- * re-fire with the latest data once it resolves.
+ * Serialized autosave for admin config pages: at most one save is ever in flight, so a
+ * slow-to-resolve request can never land after (and clobber) a fresher one. A save requested while
+ * one is in flight is queued, and re-fires with the latest data once it resolves.
  *
- * saveNow/saveDebounced keep the same identity across renders (forms list them in effect
- * dependencies) and still call the saveFn from the latest render: it's read from a ref at call
- * time, so even a debounce started before a re-render uses the current one.
+ * Callers decide when to save (text when its field loses focus, any other change right away; see
+ * text-entry.ts). `save` keeps the same identity across renders (forms list it in effect
+ * dependencies) and still calls the saveFn from the latest render: it's read from a ref at call
+ * time.
  */
-export function useAutosave<T>(saveFn: (data: T) => Promise<string | null>, delay = 500) {
+export function useAutosave<T>(saveFn: (data: T) => Promise<string | null>) {
   const [isPending, startTransition] = useTransition();
   const [savedRecently, setSavedRecently] = useState(false);
 
   const savingRef = useRef(false);
   const pendingRef = useRef(false);
   const latestRef = useRef<T | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Updated after each render rather than during it: React asks that refs not be written while
@@ -39,7 +37,7 @@ export function useAutosave<T>(saveFn: (data: T) => Promise<string | null>, dela
     savedTimerRef.current = setTimeout(() => setSavedRecently(false), 2000);
   }, []);
 
-  const fire = useCallback((data: T) => {
+  const save = useCallback((data: T) => {
     latestRef.current = data;
     if (savingRef.current) {
       pendingRef.current = true;
@@ -68,24 +66,10 @@ export function useAutosave<T>(saveFn: (data: T) => Promise<string | null>, dela
       }
       if (pendingRef.current) {
         pendingRef.current = false;
-        fire(latestRef.current as T);
+        save(latestRef.current as T);
       }
     });
   }, [markSaved]);
 
-  const saveNow = useCallback((data: T) => {
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-      debounceRef.current = null;
-    }
-    fire(data);
-  }, [fire]);
-
-  const saveDebounced = useCallback((data: T) => {
-    latestRef.current = data;
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fire(latestRef.current as T), delay);
-  }, [fire, delay]);
-
-  return { saveNow, saveDebounced, isPending, savedRecently };
+  return { save, isPending, savedRecently };
 }

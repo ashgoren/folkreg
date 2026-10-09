@@ -1,16 +1,14 @@
-// Assertions for config pages' autosave, which runs on real timers in component tests. A
-// useAutosaveForm page calls its (mocked) server action when a typed field loses focus, or right
-// away for a click; Fields goes through useAutosave's 500ms debounce while typing.
+// Assertions for config pages' autosave, which runs on real timers in component tests. A page
+// calls its (mocked) server action when a typed field loses focus, or right away for a click.
 
 import { expect, type Mock } from "vitest";
 import { waitFor } from "@testing-library/react";
 
-// Comfortably past Fields' 500ms debounce (and any save already underway), without slowing the
-// suite much.
+// Comfortably past any save already underway, without slowing the suite much.
 const SETTLE_MS = 800;
 
 // Waits for the most recent save to carry `expected`. Asserting on the last call (rather than
-// any call) matters for forms where several debounced edits coalesce into one save.
+// any call) matters where several edits are saved in turn.
 export const expectLastSave = (action: Mock, tenantId: string, expected: unknown) =>
   waitFor(() => expect(action).toHaveBeenLastCalledWith(tenantId, expected), { timeout: 2000 });
 
@@ -21,7 +19,7 @@ export const expectNoSave = async (action: Mock) => {
   expect(action).not.toHaveBeenCalled();
 };
 
-// useAutosave deliberately doesn't cancel a pending debounced save on unmount (navigating away
-// mid-edit still saves). In tests that means a test whose last edit is still debouncing when it
-// ends can fire into the next test's freshly-reset mock -- so every test that edits a field
-// should end by awaiting expectLastSave/expectNoSave rather than on a bare interaction.
+// A save already in flight keeps going when its page unmounts (navigating away mid-save still
+// saves). In tests that means a test whose last save is still in flight when it ends can resolve
+// into the next test's freshly-reset mock -- so every test that edits a field should end by
+// awaiting expectLastSave/expectNoSave rather than on a bare interaction.

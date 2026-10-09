@@ -6,6 +6,7 @@ import { move } from "@dnd-kit/helpers";
 import { FIELD_DEFS } from "@repo/fields";
 import { defaultFieldConfig } from "@repo/tenant-config";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { isTextEntry } from "@/lib/text-entry";
 import { useAutosave } from "@/lib/useAutosave";
 import { AutosaveStatus } from "@/components/autosave-status";
 import { FieldRow } from "./FieldRow";
@@ -39,9 +40,14 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
     contactOrder.length === 0 && miscOrder.length === 0,
   );
 
-  const { saveNow, saveDebounced, isPending, savedRecently } = useAutosave<FieldsState>(
+  const { save, isPending, savedRecently } = useAutosave<FieldsState>(
     (data) => updateFields(tenant.id, data),
   );
+
+  // A config panel edit typed into a text field, waiting to be saved when that field loses focus.
+  // Same rule as the other config pages (see text-entry.ts): typing saves on blur, a click (the
+  // Required switch, adding or removing an option) saves right away.
+  const textEditPendingRef = useRef(false);
 
   function updateFieldConfig(fieldName: string, updates: Partial<FieldConfig>) {
     const next = {
@@ -50,7 +56,15 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
     };
     setConfig(next);
     stateRef.current = { ...stateRef.current, config: next };
-    saveDebounced(stateRef.current);
+    if (isTextEntry(document.activeElement)) textEditPendingRef.current = true;
+    else save(stateRef.current);
+  }
+
+  // React's onBlur on the form fires when any field inside it loses focus.
+  function saveTextEdit() {
+    if (!textEditPendingRef.current) return;
+    textEditPendingRef.current = false;
+    save(stateRef.current);
   }
 
   function activateField(fieldName: string) {
@@ -77,7 +91,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
       };
     }
     setConfig(newConfig);
-    saveNow(stateRef.current);
+    save(stateRef.current);
   }
 
   function deactivateField(fieldName: string) {
@@ -98,7 +112,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
       config: newConfig,
     };
     if (selectedField === fieldName) setSelectedField(null);
-    saveNow(stateRef.current);
+    save(stateRef.current);
   }
 
   function needsOptions(fieldName: string) {
@@ -124,7 +138,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
     : null;
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="flex gap-8">
+    <form onSubmit={(e) => e.preventDefault()} onBlur={saveTextEdit} className="flex gap-8">
       {/* Left column: field lists */}
       <div className="w-72 shrink-0 flex flex-col gap-6">
         <div>
@@ -146,7 +160,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
                   ...stateRef.current,
                   contactOrder: newOrder,
                 };
-                saveNow(stateRef.current);
+                save(stateRef.current);
               }}
             >
               <div className="flex flex-col gap-1">
@@ -186,7 +200,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
                   ...stateRef.current,
                   miscOrder: newOrder,
                 };
-                saveNow(stateRef.current);
+                save(stateRef.current);
               }}
             >
               <div className="flex flex-col gap-1">

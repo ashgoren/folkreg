@@ -1,4 +1,4 @@
-import { test, expect, service, type Section } from "./fixtures";
+import { test, expect, readTenantConfig, service, waitForSaved, type Section } from "./fixtures";
 import { OTHER_TENANT_SLUG, getTenantIdBySlug } from "../test/supabase";
 
 const SECTIONS: { section: Section; label: string }[] = [
@@ -51,4 +51,30 @@ test("the sidebar links to every config section", async ({ page, dashboardUrl })
     await expect(page).toHaveURL(dashboardUrl(section));
     await expect(page.getByRole("heading", { level: 1, name: label })).toBeVisible();
   }
+});
+
+// KNOWN BUG: Back/forward navigation restores a page from the router's client-side cache, as it
+// was first loaded -- before any edit made since. Back shows the old values, and the next
+// autosave there writes that old copy of the page's config over the edit. Accepted for now (a
+// single admin user, who can reload); fixing it means either invalidating the router cache on
+// every save (revalidatePath, which visibly re-renders the page on each blur) or a version check
+// that refuses stale saves (see the plan's Deferred section).
+test.fail("Back after an edit shows the saved value, not the page as first loaded", async ({ page, tenantId, dashboardUrl }) => {
+  await page.goto(dashboardUrl("event"));
+  await page.locator("#event-title").fill("Edited before leaving");
+  await waitForSaved(page);
+
+  await page.getByRole("link", { name: "Receipts", exact: true }).click();
+  await expect(page).toHaveURL(dashboardUrl("receipts"));
+  await page.goBack();
+  await expect(page).toHaveURL(dashboardUrl("event"));
+  // Short timeout: the restored page renders right away, so a longer wait would only delay this
+  // known failure.
+  await expect(page.locator("#event-title")).toHaveValue("Edited before leaving", { timeout: 2_000 });
+
+  // And editing there keeps the earlier edit rather than overwriting it.
+  await page.locator("#event-location").fill("Grange Hall");
+  await waitForSaved(page);
+  await expect.poll(async () => (await readTenantConfig(tenantId)).event_config)
+    .toMatchObject({ title: "Edited before leaving", location: "Grange Hall" });
 });

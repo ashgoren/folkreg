@@ -8,7 +8,7 @@ import userEvent from "@testing-library/user-event";
 import { FIELD_DEFS } from "@repo/fields";
 import { defaultFieldsConfig } from "@repo/tenant-config";
 import { makeTenant } from "@/test/fixtures";
-import { expectLastSave } from "@/test/autosave";
+import { expectLastSave, expectNoSave } from "@/test/autosave";
 import type { FieldsConfig } from "@repo/tenant-config";
 
 vi.mock("./actions", () => ({ updateFields: vi.fn() }));
@@ -90,7 +90,7 @@ describe("FieldsForm", () => {
       await user.click(within(availableRow("first")).getByRole("button", { name: "Add" }));
 
       expect(activeFieldNames()).toEqual(["first"]);
-      // saveNow, not the debounce: a discrete gesture is saved right away.
+      // A click is a complete gesture, so it's saved right away rather than on a blur.
       await expectLastSave(vi.mocked(updateFields), tenant.id, {
         contactOrder: ["first"],
         miscOrder: [],
@@ -184,14 +184,17 @@ describe("FieldsForm", () => {
       expect(screen.queryByText("Width")).not.toBeInTheDocument();
     });
 
-    it("debounces config edits into one save carrying the merged field config", async () => {
+    // Like the other config pages: typing saves once, when the field loses focus.
+    it("saves a typed config edit once, when the field loses focus, carrying the merged field config", async () => {
       const tenant = makeTenant({ fields_config: config });
       const user = userEvent.setup();
       render(<FieldsForm tenant={tenant} />);
 
       await user.click(screen.getByRole("button", { name: /^email/ }));
       await user.type(screen.getByLabelText("Placeholder"), "you@example.com");
+      await expectNoSave(vi.mocked(updateFields));
 
+      await user.tab();
       await expectLastSave(vi.mocked(updateFields), tenant.id, {
         ...config,
         config: { ...config.config, email: { label: "Email", width: 6, placeholder: "you@example.com" } },

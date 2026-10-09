@@ -30,8 +30,8 @@ test("shows an inline error for an invalid slug and doesn't save it", async ({ p
   await page.getByLabel("Subdomain").blur();
   await expect(page.getByText("Lowercase letters, numbers, and hyphens only")).toBeVisible();
 
-  // Asserting that a save *didn't* happen has no event to wait on; this outlasts the 500ms
-  // autosave debounce plus a round trip, so a save that was going to fire would have landed.
+  // Asserting that a save *didn't* happen has no event to wait on; this outlasts a save's round
+  // trip, so a save that was going to happen would have landed.
   await page.waitForTimeout(1500);
   expect((await readTenantConfig(tenantId)).slug).toBe(E2E_TENANT_SLUG);
 });

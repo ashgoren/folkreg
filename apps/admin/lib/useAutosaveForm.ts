@@ -5,12 +5,8 @@ import { useForm, type DefaultValues, type FieldValues } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import type { z } from "zod";
+import { isTextEntry } from "./text-entry";
 import { useAutosave } from "./useAutosave";
-
-const NON_TEXT_INPUT_TYPES = new Set(["checkbox", "radio", "color", "range", "file", "button", "submit", "reset", "hidden"]);
-
-const isTextEntry = (element: Element | null) =>
-  element instanceof HTMLTextAreaElement || (element instanceof HTMLInputElement && !NON_TEXT_INPUT_TYPES.has(element.type));
 
 /**
  * A react-hook-form form that autosaves through useAutosave: every config page except Fields.
@@ -50,7 +46,7 @@ export function useAutosaveForm<TInput extends FieldValues, TOutput>({ label, sc
     defaultValues,
   });
 
-  const { saveNow, isPending, savedRecently } = useAutosave<TOutput>(save);
+  const { save: autosave, isPending, savedRecently } = useAutosave<TOutput>(save);
 
   // A text edit made since the last blur, waiting to be saved when its field loses focus.
   const textEditPendingRef = useRef(false);
@@ -65,9 +61,9 @@ export function useAutosaveForm<TInput extends FieldValues, TOutput>({ label, sc
   const saveIfValid = useCallback((values: unknown) => {
     const parsed = schema.safeParse(values);
     unsavedInvalidRef.current = !parsed.success;
-    if (parsed.success) saveNow(parsed.data);
+    if (parsed.success) autosave(parsed.data);
     else void form.trigger();
-  }, [form, schema, saveNow]);
+  }, [form, schema, autosave]);
 
   // Leaving the page through the app (a sidebar link) unmounts it right after the click's blur
   // shows the errors, so they're never seen. The toast is rendered by the root layout's <Toaster>,

@@ -16,7 +16,7 @@ function deferred<T>() {
 }
 
 // Advancing fake timers inside an async act() also flushes the microtasks and React updates
-// that the elapsed timers kick off (a debounce firing -> startTransition -> saveFn).
+// that the elapsed timers kick off (e.g. the "Saved ✓" indicator's 2s timer turning it off).
 const advance = (ms: number) => act(async () => {
   await vi.advanceTimersByTimeAsync(ms);
 });
@@ -28,70 +28,12 @@ describe("useAutosave", () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  describe("saveDebounced", () => {
-    it("coalesces a burst of calls into one save with the latest data, after the default 500ms", async () => {
-      const saveFn = vi.fn().mockResolvedValue(null);
-      const { result } = renderHook(() => useAutosave<string>(saveFn));
+  it("saves immediately", async () => {
+    const saveFn = vi.fn().mockResolvedValue(null);
+    const { result } = renderHook(() => useAutosave<string>(saveFn));
 
-      act(() => {
-        result.current.saveDebounced("a");
-        result.current.saveDebounced("ab");
-        result.current.saveDebounced("abc");
-      });
-
-      await advance(499);
-      expect(saveFn).not.toHaveBeenCalled();
-
-      await advance(1);
-      expect(saveFn).toHaveBeenCalledTimes(1);
-      expect(saveFn).toHaveBeenCalledWith("abc");
-    });
-
-    it("restarts the timer on every call, so a save only fires once typing pauses", async () => {
-      const saveFn = vi.fn().mockResolvedValue(null);
-      const { result } = renderHook(() => useAutosave<string>(saveFn));
-
-      act(() => result.current.saveDebounced("a"));
-      await advance(400);
-      act(() => result.current.saveDebounced("ab"));
-      await advance(400);
-      expect(saveFn).not.toHaveBeenCalled();
-
-      await advance(100);
-      expect(saveFn).toHaveBeenCalledExactlyOnceWith("ab");
-    });
-
-    it("honors a custom delay", async () => {
-      const saveFn = vi.fn().mockResolvedValue(null);
-      const { result } = renderHook(() => useAutosave<string>(saveFn, 1000));
-
-      act(() => result.current.saveDebounced("x"));
-      await advance(999);
-      expect(saveFn).not.toHaveBeenCalled();
-      await advance(1);
-      expect(saveFn).toHaveBeenCalledExactlyOnceWith("x");
-    });
-  });
-
-  describe("saveNow", () => {
-    it("saves immediately, without waiting for any delay", async () => {
-      const saveFn = vi.fn().mockResolvedValue(null);
-      const { result } = renderHook(() => useAutosave<string>(saveFn));
-
-      await act(async () => result.current.saveNow("now"));
-      expect(saveFn).toHaveBeenCalledExactlyOnceWith("now");
-    });
-
-    it("cancels a pending debounced save, so the superseded data never gets written", async () => {
-      const saveFn = vi.fn().mockResolvedValue(null);
-      const { result } = renderHook(() => useAutosave<string>(saveFn));
-
-      act(() => result.current.saveDebounced("typed"));
-      await act(async () => result.current.saveNow("committed"));
-      await advance(1000);
-
-      expect(saveFn).toHaveBeenCalledExactlyOnceWith("committed");
-    });
+    await act(async () => result.current.save("now"));
+    expect(saveFn).toHaveBeenCalledExactlyOnceWith("now");
   });
 
   describe("serialization", () => {
@@ -108,10 +50,10 @@ describe("useAutosave", () => {
       });
       const { result } = renderHook(() => useAutosave<string>(saveFn));
 
-      await act(async () => result.current.saveNow("first"));
+      await act(async () => result.current.save("first"));
       await act(async () => {
-        result.current.saveNow("second");
-        result.current.saveNow("third");
+        result.current.save("second");
+        result.current.save("third");
       });
       // Still blocked on the first save -- the later two are queued, not fired.
       expect(saveFn).toHaveBeenCalledTimes(1);
@@ -128,7 +70,7 @@ describe("useAutosave", () => {
       const { result } = renderHook(() => useAutosave<string>(() => save.promise));
 
       expect(result.current.isPending).toBe(false);
-      await act(async () => result.current.saveNow("x"));
+      await act(async () => result.current.save("x"));
       expect(result.current.isPending).toBe(true);
 
       await act(async () => save.resolve(null));
@@ -141,7 +83,7 @@ describe("useAutosave", () => {
       const saveFn = vi.fn().mockResolvedValue("That slug is already taken");
       const { result } = renderHook(() => useAutosave<string>(saveFn));
 
-      await act(async () => result.current.saveNow("x"));
+      await act(async () => result.current.save("x"));
 
       expect(toast.error).toHaveBeenCalledExactlyOnceWith("That slug is already taken");
       expect(result.current.savedRecently).toBe(false);
@@ -151,7 +93,7 @@ describe("useAutosave", () => {
       const saveFn = vi.fn().mockResolvedValue(null);
       const { result } = renderHook(() => useAutosave<string>(saveFn));
 
-      await act(async () => result.current.saveNow("x"));
+      await act(async () => result.current.save("x"));
       expect(result.current.savedRecently).toBe(true);
       expect(toast.error).not.toHaveBeenCalled();
 
@@ -167,9 +109,9 @@ describe("useAutosave", () => {
       const saveFn = vi.fn().mockResolvedValue(null);
       const { result } = renderHook(() => useAutosave<string>(saveFn));
 
-      await act(async () => result.current.saveNow("a"));
+      await act(async () => result.current.save("a"));
       await advance(1000);
-      await act(async () => result.current.saveNow("b"));
+      await act(async () => result.current.save("b"));
       await advance(1500); // t=2500: 1.5s after the latest save
 
       expect(result.current.savedRecently).toBe(true);
@@ -186,41 +128,42 @@ describe("useAutosave", () => {
       .mockResolvedValue(null);
     const { result } = renderHook(() => useAutosave<string>(saveFn));
 
-    await act(async () => result.current.saveNow("first"));
+    await act(async () => result.current.save("first"));
     expect(toast.error).toHaveBeenCalledWith("Couldn't save changes. Please try again.");
 
-    await act(async () => result.current.saveNow("second"));
+    await act(async () => result.current.save("second"));
     expect(saveFn).toHaveBeenCalledTimes(2);
     expect(result.current.savedRecently).toBe(true);
   });
 
   describe("stability", () => {
-    // Forms list saveDebounced in their watch effect's dependencies, so a new function on every
-    // render would tear down and recreate the form's watch subscription each time.
-    it("returns the same saveNow and saveDebounced on every render", () => {
+    // Forms list save in their watch effect's dependencies, so a new function on every render
+    // would tear down and recreate the form's watch subscription each time.
+    it("returns the same save on every render", () => {
       const { result, rerender } = renderHook(() => useAutosave<string>(vi.fn().mockResolvedValue(null)));
-      const { saveNow, saveDebounced } = result.current;
+      const { save } = result.current;
 
       rerender();
-      expect(result.current.saveNow).toBe(saveNow);
-      expect(result.current.saveDebounced).toBe(saveDebounced);
+      expect(result.current.save).toBe(save);
     });
 
-    // The flip side of stable functions: they must still call the saveFn from the latest render,
-    // including from a debounce that started before the re-render.
-    it("calls the latest saveFn, even for a debounce started before a re-render", async () => {
-      const first = vi.fn().mockResolvedValue(null);
+    // The flip side of a stable function: it must still call the saveFn from the latest render,
+    // including for a save queued before the re-render.
+    it("calls the latest saveFn, even for a save queued before a re-render", async () => {
+      const inFlight = deferred<string | null>();
+      const first = vi.fn().mockReturnValue(inFlight.promise);
       const second = vi.fn().mockResolvedValue(null);
       const { result, rerender } = renderHook(({ saveFn }) => useAutosave<string>(saveFn), {
         initialProps: { saveFn: first },
       });
 
-      act(() => result.current.saveDebounced("x"));
+      await act(async () => result.current.save("a"));
+      await act(async () => result.current.save("b")); // queued behind "a"
       rerender({ saveFn: second });
-      await advance(500);
+      await act(async () => inFlight.resolve(null));
 
-      expect(first).not.toHaveBeenCalled();
-      expect(second).toHaveBeenCalledWith("x");
+      expect(first).toHaveBeenCalledExactlyOnceWith("a");
+      expect(second).toHaveBeenCalledExactlyOnceWith("b");
     });
   });
 });
