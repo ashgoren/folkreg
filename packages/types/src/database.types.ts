@@ -37,7 +37,6 @@ export type Database = {
       orders: {
         Row: {
           created_at: string
-          donation: number | null
           id: string
           is_live: boolean
           is_waitlist: boolean
@@ -50,7 +49,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          donation?: number | null
           id?: string
           is_live?: boolean
           is_waitlist?: boolean
@@ -63,7 +61,6 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          donation?: number | null
           id?: string
           is_live?: boolean
           is_waitlist?: boolean
