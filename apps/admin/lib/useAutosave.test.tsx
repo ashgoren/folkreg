@@ -193,4 +193,34 @@ describe("useAutosave", () => {
     expect(saveFn).toHaveBeenCalledTimes(2);
     expect(result.current.savedRecently).toBe(true);
   });
+
+  describe("stability", () => {
+    // Forms list saveDebounced in their watch effect's dependencies, so a new function on every
+    // render would tear down and recreate the form's watch subscription each time.
+    it("returns the same saveNow and saveDebounced on every render", () => {
+      const { result, rerender } = renderHook(() => useAutosave<string>(vi.fn().mockResolvedValue(null)));
+      const { saveNow, saveDebounced } = result.current;
+
+      rerender();
+      expect(result.current.saveNow).toBe(saveNow);
+      expect(result.current.saveDebounced).toBe(saveDebounced);
+    });
+
+    // The flip side of stable functions: they must still call the saveFn from the latest render,
+    // including from a debounce that started before the re-render.
+    it("calls the latest saveFn, even for a debounce started before a re-render", async () => {
+      const first = vi.fn().mockResolvedValue(null);
+      const second = vi.fn().mockResolvedValue(null);
+      const { result, rerender } = renderHook(({ saveFn }) => useAutosave<string>(saveFn), {
+        initialProps: { saveFn: first },
+      });
+
+      act(() => result.current.saveDebounced("x"));
+      rerender({ saveFn: second });
+      await advance(500);
+
+      expect(first).not.toHaveBeenCalled();
+      expect(second).toHaveBeenCalledWith("x");
+    });
+  });
 });
