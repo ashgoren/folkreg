@@ -120,6 +120,7 @@ describe("PaymentsForm", () => {
       // Radix unmounts inactive tab panels; the live values survive in react-hook-form state.
       expect(screen.queryByLabelText("Secret key (Live)")).not.toBeInTheDocument();
       await user.type(screen.getByLabelText("Secret key (Test)"), "sk_test");
+      await user.tab();
 
       await expectLastSave(vi.mocked(updatePayments), tenant.id, {
         ...BLANK, stripe_secret_key_live: "sk_live", stripe_secret_key_test: "sk_test",
@@ -137,6 +138,7 @@ describe("PaymentsForm", () => {
       await user.type(screen.getByLabelText("Webhook ID (Live)"), "wh_live");
       await user.click(screen.getByRole("tab", { name: "Test" }));
       await user.type(screen.getByLabelText("Client ID (Test)"), "client_test");
+      await user.tab();
 
       await expectLastSave(vi.mocked(updatePayments), tenant.id, expect.objectContaining({
         processor: "paypal", paypal_webhook_id_live: "wh_live", paypalClientIdTest: "client_test",
@@ -188,6 +190,7 @@ describe("PaymentsForm", () => {
       await user.click(screen.getByRole("switch", { name: /Allow deposit/ }));
       await user.type(byId("payments-deposit-amount"), "25");
       await user.type(byId("payments-due-date"), "June 1");
+      await user.tab();
 
       await expectLastSave(vi.mocked(updatePayments), tenant.id, {
         ...BLANK, deposit: { enabled: true, amount: 25 }, paymentDueDate: "June 1",
@@ -206,6 +209,7 @@ describe("PaymentsForm", () => {
 
       await user.click(screen.getByRole("switch", { name: /Allow donation/ }));
       await user.type(byId("payments-donation-max"), "500");
+      await user.tab();
       await expectLastSave(vi.mocked(updatePayments), tenant.id, expect.objectContaining({ donation: { enabled: true, max: 500 } }));
     });
 
@@ -247,6 +251,7 @@ describe("PaymentsForm", () => {
       await user.click(screen.getByRole("radio", { name: "Mailing address" }));
       await user.type(byId("payments-checks-payee"), "Example Dance Society");
       await user.type(byId("payments-checks-address"), "1 Main St");
+      await user.tab();
 
       await expectLastSave(vi.mocked(updatePayments), tenant.id, expect.objectContaining({
         checks: { allowed: true, showPostalAddress: true, payee: "Example Dance Society", address: "1 Main St" },

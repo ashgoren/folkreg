@@ -59,7 +59,13 @@ export { expect };
 // Waits for the AutosaveStatus label. "Saved ✓" stays up for ~2s after any save, so on its own
 // it can't tell one save from the next -- specs pair it with an expect.poll on the DB row for
 // the exact values they expect, and only reload once that poll passes.
-export const waitForSaved = (page: Page) => expect(page.getByText("Saved ✓")).toBeVisible();
+// Finishes the edit in progress, then waits for it to save. A typed value only saves when its
+// field loses focus, and Playwright's fill() leaves the field focused, so this blurs it first --
+// what the organizer does by moving on. A no-op after a click, which saves immediately.
+export const waitForSaved = async (page: Page) => {
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await expect(page.getByText("Saved ✓")).toBeVisible();
+};
 
 // Drags a dnd-kit sortable row by its grip handle onto the vertical position of another row.
 // dnd-kit's pointer sensor only starts a drag after the pointer moves a few pixels with the

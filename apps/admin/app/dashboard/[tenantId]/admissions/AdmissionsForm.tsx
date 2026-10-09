@@ -17,7 +17,7 @@ import { FixedFields } from "./FixedFields";
 import { TieredFields } from "./TieredFields";
 
 export function AdmissionsForm({ tenant }: { tenant: Tenant }) {
-  const { form, isPending, savedRecently } = useAutosaveForm({
+  const { form, formProps, isPending, savedRecently } = useAutosaveForm({
     schema: admissionsConfigSchema,
     defaultValues: tenant.admissions_config,
     save: (data) => updateAdmissions(tenant.id, data),
@@ -34,7 +34,7 @@ export function AdmissionsForm({ tenant }: { tenant: Tenant }) {
   }
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
+    <form {...formProps} className="space-y-8">
       <FieldGroup>
         <Controller name="mode" control={form.control} render={({ field }) => (
           <RadioGroup value={field.value} onValueChange={(value) => handleModeChange(value as AdmissionsConfig["mode"])}>

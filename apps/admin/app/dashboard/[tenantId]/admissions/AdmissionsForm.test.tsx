@@ -85,6 +85,7 @@ describe("AdmissionsForm", () => {
       render(<AdmissionsForm tenant={tenant} />);
 
       await replace(user, "admissions-cost-default", "300");
+      await user.tab();
       await expectLastSave(vi.mocked(updateAdmissions), tenant.id, { ...DEFAULTS, costDefault: 300 });
     });
 
@@ -96,6 +97,18 @@ describe("AdmissionsForm", () => {
       await user.tab();
 
       expect(screen.getByRole("alert")).toHaveTextContent("Must be between minimum and maximum");
+      await expectNoSave(vi.mocked(updateAdmissions));
+    });
+
+    // Typing "400" passes through "4" and "40", both valid minimums (at most the 350 default).
+    // Only the value left in the field when it's blurred may be saved, never one of those.
+    it("never saves an intermediate value typed on the way to an invalid one", async () => {
+      const user = userEvent.setup();
+      render(<AdmissionsForm tenant={makeTenant()} />);
+
+      await replace(user, "admissions-cost-min", "400");
+      await user.tab();
+
       await expectNoSave(vi.mocked(updateAdmissions));
     });
   });

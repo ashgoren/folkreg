@@ -31,15 +31,21 @@ describe("GeneralForm", () => {
     const slug = screen.getByLabelText(/Subdomain/);
     await user.clear(slug);
     await user.type(slug, "fall-dance");
+    await user.tab();
     await expectLastSave(vi.mocked(updateGeneral), tenant.id, { slug: "fall-dance", is_live: false, show_preregistration: true });
   });
 
-  it("debounces typing into a single save", async () => {
+  // Text saves when the field loses focus, not while typing: saving mid-word would make each
+  // partial slug ("ab", "abc", ...) the tenant's live subdomain in turn.
+  it("saves typing once, when the field loses focus", async () => {
     const tenant = makeTenant({ slug: "a" });
     const user = userEvent.setup();
     render(<GeneralForm tenant={tenant} />);
 
     await user.type(screen.getByLabelText(/Subdomain/), "bcdef");
+    await expectNoSave(vi.mocked(updateGeneral));
+
+    await user.tab();
     await expectLastSave(vi.mocked(updateGeneral), tenant.id, expect.objectContaining({ slug: "abcdef" }));
     expect(updateGeneral).toHaveBeenCalledTimes(1);
   });

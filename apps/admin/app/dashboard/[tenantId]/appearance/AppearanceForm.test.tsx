@@ -46,6 +46,7 @@ describe("AppearanceForm", () => {
 
     await user.clear(textInput("accentDark"));
     await user.type(textInput("accentDark"), "#123abc");
+    await user.tab();
     await expectLastSave(vi.mocked(updateAppearance), tenant.id, { ...DEFAULTS, accentDark: "#123abc" });
   });
 
@@ -63,6 +64,7 @@ describe("AppearanceForm", () => {
     await user.clear(textInput("backgroundLight"));
     await user.type(textInput("backgroundLight"), "#00ff00");
     expect(lightBackgroundSwatch).toHaveValue("#00ff00");
+    await user.tab();
     await expectLastSave(vi.mocked(updateAppearance), tenant.id, { ...DEFAULTS, backgroundLight: "#00ff00" });
   });
 

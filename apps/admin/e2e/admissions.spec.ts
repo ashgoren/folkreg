@@ -38,11 +38,12 @@ test("a sliding-scale default outside the range shows an error and isn't saved",
   await page.getByLabel("Default").blur();
   await expect(page.getByText("Must be between minimum and maximum")).toBeVisible();
 
-  // No event signals a save that didn't happen; this outlasts the debounce plus a round trip.
+  // No event signals a save that didn't happen; this outlasts a save's round trip.
   await page.waitForTimeout(1500);
   expect(await admissionsConfig(tenantId)).toEqual(defaultAdmissionsConfig());
 
   await page.getByLabel("Maximum").fill("700");
+  await page.getByLabel("Maximum").blur();
   await expect.poll(() => admissionsConfig(tenantId)).toMatchObject({
     mode: "sliding-scale",
     costRange: [120, 700],

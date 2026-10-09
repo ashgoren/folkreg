@@ -31,6 +31,7 @@ test("reveals DocuSeal fields when on, saving the key to tenant_secrets", async 
 test("turning the waiver off hides the fields but keeps their values", async ({ page, tenantId }) => {
   await page.getByRole("switch", { name: "Show waiver?" }).click();
   await page.getByLabel("DocuSeal template ID").fill("tmpl-123");
+  await page.getByLabel("DocuSeal template ID").blur();
   await expect.poll(async () => (await readTenantConfig(tenantId)).waiver_config.docusealTemplateId).toBe("tmpl-123");
 
   await page.getByRole("switch", { name: "Show waiver?" }).click();

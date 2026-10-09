@@ -1,19 +1,35 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef, type FormEvent } from "react";
 import { useForm, type DefaultValues, type FieldValues } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
 import { useAutosave } from "./useAutosave";
 
+// Input types where the organizer types a value, as opposed to clicking one. Everything else that
+// can take focus here (checkbox/radio/color inputs, and the buttons Radix renders for switches,
+// radios, and checkboxes) is a complete gesture.
+const NON_TEXT_INPUT_TYPES = new Set(["checkbox", "radio", "color", "range", "file", "button", "submit", "reset", "hidden"]);
+
+const isTextEntry = (element: Element | null) =>
+  element instanceof HTMLTextAreaElement
+  || (element instanceof HTMLInputElement && !NON_TEXT_INPUT_TYPES.has(element.type));
+
 /**
  * A react-hook-form form that autosaves through useAutosave: every config page except Fields.
  *
- * Validation runs on blur (mode "onBlur"), so a field's error shows as soon as the organizer
- * leaves it -- there's no submit for errors to wait for. Every change is checked against the
- * schema before saving: an invalid value is never sent (its inline error already explains why
- * nothing saved), and a valid one is saved as the schema's *parsed* output, so any transform the
- * schema applies is part of what gets stored rather than silently dropped.
+ * When a change saves depends on how it was made:
+ * - Typing into a text field saves when the field loses focus, the same moment its validation
+ *   runs (mode "onBlur"). What's saved is exactly the value just validated and on screen.
+ * - Other changes (switch, radio, checkbox, drag, add/remove) save immediately.
+ *
+ * A change is only saved if the whole form passes the schema, and as the schema's *parsed* output,
+ * so any transform the schema applies is part of what gets stored rather than silently dropped.
+ * An invalid value is never sent; its inline error explains why nothing saved.
+ *
+ * Spread `formProps` onto the page's <form>: React's onBlur on a form fires when any field inside
+ * it loses focus, which is what saves a text edit. It also blocks submit, since autosave replaced
+ * the Save button but Enter in a field would still submit the form.
  *
  * TInput is what the form's fields edit, TOutput what a successful parse produces and save
  * receives. They differ only for a schema with a transform.
@@ -35,15 +51,34 @@ export function useAutosaveForm<TInput extends FieldValues, TOutput>({ schema, d
     defaultValues,
   });
 
-  const { saveDebounced, isPending, savedRecently } = useAutosave<TOutput>(save);
+  const { saveNow, isPending, savedRecently } = useAutosave<TOutput>(save);
+
+  // A text edit made since the last blur, waiting to be saved when its field loses focus.
+  const textEditPendingRef = useRef(false);
+
+  const saveIfValid = useCallback((values: unknown) => {
+    const parsed = schema.safeParse(values);
+    if (parsed.success) saveNow(parsed.data);
+  }, [schema, saveNow]);
 
   useEffect(() => {
     const subscription = form.watch((values) => {
-      const parsed = schema.safeParse(values);
-      if (parsed.success) saveDebounced(parsed.data);
+      if (isTextEntry(document.activeElement)) {
+        textEditPendingRef.current = true;
+        return;
+      }
+      saveIfValid(values);
     });
     return () => subscription.unsubscribe();
-  }, [form, schema, saveDebounced]);
+  }, [form, saveIfValid]);
 
-  return { form, isPending, savedRecently };
+  const onBlur = useCallback(() => {
+    if (!textEditPendingRef.current) return;
+    textEditPendingRef.current = false;
+    saveIfValid(form.getValues());
+  }, [form, saveIfValid]);
+
+  const onSubmit = useCallback((event: FormEvent) => event.preventDefault(), []);
+
+  return { form, formProps: { onBlur, onSubmit }, isPending, savedRecently };
 }

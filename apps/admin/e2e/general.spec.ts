@@ -39,6 +39,7 @@ test("shows an inline error for an invalid slug and doesn't save it", async ({ p
 test("shows a readable error when the slug belongs to another tenant", async ({ page, tenantId }) => {
   test.setTimeout(20_000);
   await page.getByLabel("Subdomain").fill(OTHER_TENANT_SLUG);
+  await page.getByLabel("Subdomain").blur();
   // Scoped to sonner's toast element, so the assertion can only match the message as the
   // organizer sees it.
   await expect(page.locator("[data-sonner-toast]").filter({ hasText: "That slug is already taken" }))

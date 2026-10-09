@@ -14,7 +14,7 @@ import { generalSchema } from "./schema";
 import { updateGeneral } from "./actions";
 
 export function GeneralForm({ tenant }: { tenant: Tenant }) {
-  const { form, isPending, savedRecently } = useAutosaveForm({
+  const { form, formProps, isPending, savedRecently } = useAutosaveForm({
     schema: generalSchema,
     defaultValues: {
       slug: tenant.slug,
@@ -25,7 +25,7 @@ export function GeneralForm({ tenant }: { tenant: Tenant }) {
   });
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
+    <form {...formProps} className="space-y-8">
       <FieldGroup>
 
         <TextField

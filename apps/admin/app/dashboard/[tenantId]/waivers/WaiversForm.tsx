@@ -14,7 +14,7 @@ import { waiversSchema } from "./schema";
 import { updateWaivers } from "./actions";
 
 export function WaiversForm({ tenant, secrets }: { tenant: Tenant; secrets: TenantSecrets }) {
-  const { form, isPending, savedRecently } = useAutosaveForm({
+  const { form, formProps, isPending, savedRecently } = useAutosaveForm({
     schema: waiversSchema,
     defaultValues: {
       ...tenant.waiver_config,
@@ -26,7 +26,7 @@ export function WaiversForm({ tenant, secrets }: { tenant: Tenant; secrets: Tena
   const showWaiver = useWatch({ control: form.control, name: "show" });
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
+    <form {...formProps} className="space-y-8">
 
       <FieldGroup>
         <Controller name="show" control={form.control} render={({ field, fieldState }) => (

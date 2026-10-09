@@ -41,6 +41,7 @@ describe("WaiversForm", () => {
     await user.click(screen.getByRole("switch", { name: /Show waiver/ }));
     await user.type(screen.getByLabelText("DocuSeal template ID"), "tmpl_9");
     await user.type(screen.getByLabelText("DocuSeal API key"), "key_9");
+    await user.tab();
 
     await expectLastSave(vi.mocked(updateWaivers), tenant.id, { show: true, docusealTemplateId: "tmpl_9", docuseal_key: "key_9" });
   });

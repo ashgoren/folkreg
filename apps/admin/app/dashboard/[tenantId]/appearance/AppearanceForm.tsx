@@ -33,14 +33,14 @@ function ColorField({ name, label, control }: { name: keyof ThemeConfig; label: 
 }
 
 export function AppearanceForm({ tenant }: { tenant: Tenant }) {
-  const { form, isPending, savedRecently } = useAutosaveForm({
+  const { form, formProps, isPending, savedRecently } = useAutosaveForm({
     schema: themeConfigSchema,
     defaultValues: tenant.theme_config,
     save: (data) => updateAppearance(tenant.id, data),
   });
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
+    <form {...formProps} className="space-y-8">
 
       <FieldDescription>
         If applicable, match the static site theme by copying these from the <code>:root</code> block in the static site&apos;s <code>globals.css</code>.

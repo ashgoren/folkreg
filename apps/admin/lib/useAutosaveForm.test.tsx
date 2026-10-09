@@ -1,57 +1,86 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { act, renderHook } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { act, render, renderHook, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { z } from "zod";
+import { expectNoSave } from "@/test/autosave";
 import { useAutosaveForm } from "./useAutosaveForm";
 
-// A schema whose parsed output differs from its input (the transform trims), so the tests can
-// tell which of the two was saved.
-const schema = z.object({ name: z.string().min(1, "Required").transform((name) => name.trim()) });
-
-// Advancing fake timers inside an async act() also flushes what the elapsed debounce kicks off
-// (startTransition -> save). Same helper as useAutosave.test.tsx.
-const advance = (ms: number) => act(async () => {
-  await vi.advanceTimersByTimeAsync(ms);
+// The name's parsed output differs from its input (the transform trims), so the tests can tell
+// which of the two was saved.
+const schema = z.object({
+  name: z.string().min(1, "Required").transform((name) => name.trim()),
+  agree: z.boolean(),
 });
+const defaultValues = { name: "start", agree: false };
 
-const renderForm = (save = vi.fn().mockResolvedValue(null)) => {
-  const { result } = renderHook(() => useAutosaveForm({ schema, defaultValues: { name: "start" }, save }));
-  return { result, save };
+// A minimal page: one text field, one checkbox, and formProps on the <form>, the way every config
+// page wires the hook. When a save happens depends on focus and blur, which only a rendered form
+// has.
+function TestForm({ save }: { save: (data: z.output<typeof schema>) => Promise<string | null> }) {
+  const { form, formProps } = useAutosaveForm({ schema, defaultValues, save });
+  return (
+    <form {...formProps}>
+      <label>Name <input {...form.register("name")} /></label>
+      <label><input type="checkbox" {...form.register("agree")} /> Agree</label>
+    </form>
+  );
+}
+
+const renderForm = () => {
+  const save = vi.fn().mockResolvedValue(null);
+  render(<TestForm save={save} />);
+  return { save, user: userEvent.setup(), name: screen.getByLabelText("Name") };
 };
 
 describe("useAutosaveForm", () => {
-  beforeEach(() => vi.useFakeTimers());
-  afterEach(() => vi.useRealTimers());
-
   it("seeds the form with the default values", () => {
-    const { result } = renderForm();
-    expect(result.current.form.getValues()).toEqual({ name: "start" });
+    const { name } = renderForm();
+    expect(name).toHaveValue("start");
+    expect(screen.getByLabelText("Agree")).not.toBeChecked();
   });
 
-  // Saving the raw value would silently discard whatever the schema's transform does.
-  it("saves a valid edit as the schema's parsed output, after the debounce", async () => {
-    const { result, save } = renderForm();
+  // Saving while typing would save whatever the last valid keystroke left, not the final value.
+  it("saves typed text once, when the field loses focus, as the schema's parsed output", async () => {
+    const { save, user, name } = renderForm();
 
-    act(() => result.current.form.setValue("name", "  edited  "));
-    await advance(499);
-    expect(save).not.toHaveBeenCalled();
+    await user.clear(name);
+    await user.type(name, "  edited  ");
+    await expectNoSave(save);
 
-    await advance(1);
-    expect(save).toHaveBeenCalledExactlyOnceWith({ name: "edited" });
+    await user.tab();
+    await vi.waitFor(() => expect(save).toHaveBeenCalledExactlyOnceWith({ name: "edited", agree: false }));
   });
 
-  it("never saves an invalid edit", async () => {
-    const { result, save } = renderForm();
+  it("never saves typed text that's invalid when the field loses focus", async () => {
+    const { save, user, name } = renderForm();
 
-    act(() => result.current.form.setValue("name", ""));
-    await advance(1000);
-    expect(save).not.toHaveBeenCalled();
+    await user.clear(name);
+    await user.tab();
+    await expectNoSave(save);
+  });
+
+  // A click is already a complete gesture: there's no edit in progress to wait for.
+  it("saves a non-text change, like a checkbox, immediately", async () => {
+    const { save, user } = renderForm();
+
+    await user.click(screen.getByLabelText("Agree"));
+    await vi.waitFor(() => expect(save).toHaveBeenCalledExactlyOnceWith({ name: "start", agree: true }));
+  });
+
+  it("includes an earlier text edit in the next save, once the field has lost focus", async () => {
+    const { save, user, name } = renderForm();
+
+    await user.clear(name);
+    await user.type(name, "typed");
+    await user.click(screen.getByLabelText("Agree")); // moves focus off the text field first
+
+    await vi.waitFor(() => expect(save).toHaveBeenLastCalledWith({ name: "typed", agree: true }));
   });
 
   // The same schema drives the inline errors, through the resolver. Read with getFieldState:
-  // formState is a proxy that only tracks what a component read during render, which this test
-  // doesn't do.
+  // formState is a proxy that only tracks what a component read during render.
   it("validates fields against the schema", async () => {
-    const { result } = renderForm();
+    const { result } = renderHook(() => useAutosaveForm({ schema, defaultValues, save: vi.fn() }));
 
     act(() => result.current.form.setValue("name", ""));
     await act(async () => {

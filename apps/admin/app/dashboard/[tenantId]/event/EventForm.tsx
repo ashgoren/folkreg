@@ -11,14 +11,14 @@ import { eventConfigSchema } from "@repo/tenant-config";
 import { updateEvent } from "./actions";
 
 export function EventForm({ tenant }: { tenant: Tenant }) {
-  const { form, isPending, savedRecently } = useAutosaveForm({
+  const { form, formProps, isPending, savedRecently } = useAutosaveForm({
     schema: eventConfigSchema,
     defaultValues: tenant.event_config,
     save: (data) => updateEvent(tenant.id, data),
   });
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
+    <form {...formProps} className="space-y-8">
 
       <FieldGroup>
         <TextField control={form.control} name="title" id="event-title" label="Title" description="Event name" autoComplete="off" required />

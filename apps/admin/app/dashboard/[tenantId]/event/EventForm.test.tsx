@@ -69,6 +69,7 @@ describe("EventForm", () => {
     await user.type(byId("event-title"), "Fall Dance");
     await user.type(byId("event-cal-location"), "Grange Hall");
     await user.type(byId("event-contact-info"), "info@example.com");
+    await user.tab();
 
     await expectLastSave(vi.mocked(updateEvent), tenant.id, blankValues({
       title: "Fall Dance",
@@ -84,6 +85,7 @@ describe("EventForm", () => {
 
     await user.clear(byId("event-year"));
     await user.type(byId("event-year"), "2030");
+    await user.tab();
     await expectLastSave(vi.mocked(updateEvent), tenant.id, blankValues({ year: 2030 }));
   });
 

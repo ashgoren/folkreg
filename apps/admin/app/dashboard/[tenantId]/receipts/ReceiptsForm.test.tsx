@@ -29,6 +29,7 @@ describe("ReceiptsForm", () => {
     render(<ReceiptsForm tenant={tenant} />);
 
     await user.type(screen.getByLabelText("From address"), "from@example.com");
+    await user.tab();
     await expectLastSave(vi.mocked(updateReceipts), tenant.id, { emailFrom: "from@example.com", emailReplyTo: "" });
   });
 
@@ -38,6 +39,7 @@ describe("ReceiptsForm", () => {
     render(<ReceiptsForm tenant={tenant} />);
 
     await user.clear(screen.getByLabelText(/Reply-to/));
+    await user.tab();
     await expectLastSave(vi.mocked(updateReceipts), tenant.id, { emailFrom: "from@example.com", emailReplyTo: "" });
   });
 

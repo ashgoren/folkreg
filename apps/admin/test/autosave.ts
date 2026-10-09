@@ -1,11 +1,12 @@
-// Assertions for config forms' autosave, which runs on real timers in component tests: the
-// form's watch effect hands parsed values to useAutosave's 500ms debounce, which then calls the
-// (mocked) server action.
+// Assertions for config pages' autosave, which runs on real timers in component tests. A
+// useAutosaveForm page calls its (mocked) server action when a typed field loses focus, or right
+// away for a click; Fields goes through useAutosave's 500ms debounce while typing.
 
 import { expect, type Mock } from "vitest";
 import { waitFor } from "@testing-library/react";
 
-// Comfortably past the 500ms debounce, without slowing the suite much.
+// Comfortably past Fields' 500ms debounce (and any save already underway), without slowing the
+// suite much.
 const SETTLE_MS = 800;
 
 // Waits for the most recent save to carry `expected`. Asserting on the last call (rather than
@@ -13,8 +14,8 @@ const SETTLE_MS = 800;
 export const expectLastSave = (action: Mock, tenantId: string, expected: unknown) =>
   waitFor(() => expect(action).toHaveBeenLastCalledWith(tenantId, expected), { timeout: 2000 });
 
-// Waits out the debounce and confirms no save went out -- used for invalid input, which the
-// watch effect drops before it ever reaches useAutosave.
+// Waits a while and confirms no save went out -- used for invalid input, which is never sent,
+// and for typing that hasn't left its field yet.
 export const expectNoSave = async (action: Mock) => {
   await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
   expect(action).not.toHaveBeenCalled();

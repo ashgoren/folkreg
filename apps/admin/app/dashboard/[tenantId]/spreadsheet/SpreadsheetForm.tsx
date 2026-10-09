@@ -50,7 +50,7 @@ export function SpreadsheetForm({ tenant }: { tenant: Tenant }) {
       ]
     : availableRegistrantColumns.map((name) => ({ name, visible: true }));
 
-  const { form, isPending, savedRecently } = useAutosaveForm({
+  const { form, formProps, isPending, savedRecently } = useAutosaveForm({
     schema: spreadsheetConfigSchema,
     defaultValues: {
       sheetId: tenant.spreadsheet_config?.sheetId ?? "",
@@ -70,7 +70,7 @@ export function SpreadsheetForm({ tenant }: { tenant: Tenant }) {
   }
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
+    <form {...formProps} className="space-y-8">
 
       <FieldGroup>
         <TextField control={form.control} name="sheetId" id="spreadsheet-sheet-id" label="Spreadsheet URL or ID" autoComplete="off" />

@@ -31,7 +31,7 @@ const toFormValues = (tenant: Tenant, secrets: TenantSecrets): PaymentsValues =>
 });
 
 export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: TenantSecrets }) {
-  const { form, isPending, savedRecently } = useAutosaveForm({
+  const { form, formProps, isPending, savedRecently } = useAutosaveForm({
     schema: paymentsSchema,
     defaultValues: toFormValues(tenant, secrets),
     save: (data) => updatePayments(tenant.id, data),
@@ -47,7 +47,7 @@ export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: Ten
   const showPostalAddress = useWatch({ control: form.control, name: "checks.showPostalAddress" });
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
+    <form {...formProps} className="space-y-8">
       <FieldGroup>
         <Controller name="processor" control={form.control} render={({ field }) => (
           <RadioGroup value={field.value} onValueChange={field.onChange}>

@@ -41,6 +41,7 @@ test("saves Stripe credentials from both the Live and Test tabs", async ({ page,
 // are still there after a reload and a switch back.
 test("switching to PayPal keeps the Stripe credentials", async ({ page, tenantId }) => {
   await page.getByLabel("Secret key (Live)").fill("sk_live_123");
+  await page.getByLabel("Secret key (Live)").blur();
   await expect.poll(async () => (await readSecrets(service, tenantId)).stripe_secret_key_live).toBe("sk_live_123");
 
   await page.getByRole("radio", { name: "PayPal" }).click();

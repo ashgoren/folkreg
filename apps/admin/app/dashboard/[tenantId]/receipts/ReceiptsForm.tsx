@@ -9,14 +9,14 @@ import { receiptsConfigSchema } from "@repo/tenant-config";
 import { updateReceipts } from "./actions";
 
 export function ReceiptsForm({ tenant }: { tenant: Tenant }) {
-  const { form, isPending, savedRecently } = useAutosaveForm({
+  const { form, formProps, isPending, savedRecently } = useAutosaveForm({
     schema: receiptsConfigSchema,
     defaultValues: tenant.receipts_config,
     save: (data) => updateReceipts(tenant.id, data),
   });
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
+    <form {...formProps} className="space-y-8">
 
       <FieldGroup>
         <TextField control={form.control} name="emailFrom" id="receipts-email-from" label="From address" type="email" autoComplete="off" />

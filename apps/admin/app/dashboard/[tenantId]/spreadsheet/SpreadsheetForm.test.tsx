@@ -124,6 +124,7 @@ describe("SpreadsheetForm", () => {
 
       const url = "https://docs.google.com/spreadsheets/d/1AbC_dEf-123/edit#gid=0";
       await user.type(screen.getByLabelText("Spreadsheet URL or ID"), url);
+      await user.tab();
       await expectLastSave(vi.mocked(updateSpreadsheet), tenant.id, { sheetId: url, columns: [{ name: "first", visible: true }] });
     });
   });
