@@ -1,37 +1,21 @@
 "use client";
 
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { FieldGroup } from "@/components/ui/field";
 import { AutosaveStatus } from "@/components/autosave-status";
 import { NumberField } from "@/components/form-number-field";
 import { TextField } from "@/components/form-text-field";
 import { Separator } from "@/components/ui/separator";
-import { useAutosave } from "@/lib/useAutosave";
+import { useAutosaveForm } from "@/lib/useAutosaveForm";
 import type { Tenant } from "@repo/types";
-import { eventConfigSchema, type EventConfig } from "@repo/tenant-config";
+import { eventConfigSchema } from "@repo/tenant-config";
 import { updateEvent } from "./actions";
 
 export function EventForm({ tenant }: { tenant: Tenant }) {
-  const form = useForm<EventConfig>({
-    mode: "onBlur",
-    resolver: zodResolver(eventConfigSchema),
+  const { form, isPending, savedRecently } = useAutosaveForm({
+    schema: eventConfigSchema,
     defaultValues: tenant.event_config,
+    save: (data) => updateEvent(tenant.id, data),
   });
-
-  const { saveDebounced, isPending, savedRecently } = useAutosave<EventConfig>(
-    (data) => updateEvent(tenant.id, data),
-  );
-
-  useEffect(() => {
-    const subscription = form.watch((values) => {
-      const parsed = eventConfigSchema.safeParse(values);
-      if (!parsed.success) return;
-      saveDebounced(parsed.data);
-    });
-    return () => subscription.unsubscribe();
-  }, [form, saveDebounced]);
 
   return (
     <form onSubmit={(e) => e.preventDefault()} className="space-y-8">

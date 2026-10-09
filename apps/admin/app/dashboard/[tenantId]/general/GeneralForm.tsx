@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller } from "react-hook-form";
 import { Badge } from "@/components/ui/badge";
 import { Field, FieldContent, FieldDescription, FieldGroup } from "@/components/ui/field";
 import { AutosaveStatus } from "@/components/autosave-status";
@@ -10,34 +8,21 @@ import { FormLabel } from "@/components/form-label";
 import { TextField } from "@/components/form-text-field";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { useAutosave } from "@/lib/useAutosave";
+import { useAutosaveForm } from "@/lib/useAutosaveForm";
 import type { Tenant } from "@repo/types";
-import { generalSchema, type GeneralValues } from "./schema";
+import { generalSchema } from "./schema";
 import { updateGeneral } from "./actions";
 
 export function GeneralForm({ tenant }: { tenant: Tenant }) {
-  const form = useForm<GeneralValues>({
-    mode: "onBlur",
-    resolver: zodResolver(generalSchema),
+  const { form, isPending, savedRecently } = useAutosaveForm({
+    schema: generalSchema,
     defaultValues: {
       slug: tenant.slug,
       is_live: tenant.is_live,
       show_preregistration: tenant.show_preregistration,
     },
+    save: (data) => updateGeneral(tenant.id, data),
   });
-
-  const { saveDebounced, isPending, savedRecently } = useAutosave<GeneralValues>(
-    (data) => updateGeneral(tenant.id, data),
-  );
-
-  useEffect(() => {
-    const subscription = form.watch((values) => {
-      const parsed = generalSchema.safeParse(values);
-      if (!parsed.success) return;
-      saveDebounced(parsed.data);
-    });
-    return () => subscription.unsubscribe();
-  }, [form, saveDebounced]);
 
   return (
     <form onSubmit={(e) => e.preventDefault()} className="space-y-8">

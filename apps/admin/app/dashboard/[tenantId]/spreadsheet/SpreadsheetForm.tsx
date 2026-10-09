@@ -1,19 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
+import { useWatch } from "react-hook-form";
 import { DragDropProvider } from "@dnd-kit/react";
 import { move } from "@dnd-kit/helpers";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { FIELD_DEFS } from "@repo/fields";
 import { FieldGroup } from "@/components/ui/field";
 import { AutosaveStatus } from "@/components/autosave-status";
 import { FormLabel } from "@/components/form-label";
 import { TextField } from "@/components/form-text-field";
-import { useAutosave } from "@/lib/useAutosave";
+import { useAutosaveForm } from "@/lib/useAutosaveForm";
 import type { Tenant } from "@repo/types";
 import { SPREADSHEET_SYSTEM_COLUMNS } from "@repo/types";
-import { spreadsheetConfigSchema, type SpreadsheetConfig } from "@repo/tenant-config";
+import { spreadsheetConfigSchema } from "@repo/tenant-config";
 import { updateSpreadsheet } from "./actions";
 import { SpreadsheetFieldRow } from "./SpreadsheetFieldRow";
 
@@ -52,29 +50,16 @@ export function SpreadsheetForm({ tenant }: { tenant: Tenant }) {
       ]
     : availableRegistrantColumns.map((name) => ({ name, visible: true }));
 
-  const form = useForm<SpreadsheetConfig>({
-    mode: "onBlur",
-    resolver: zodResolver(spreadsheetConfigSchema),
+  const { form, isPending, savedRecently } = useAutosaveForm({
+    schema: spreadsheetConfigSchema,
     defaultValues: {
       sheetId: tenant.spreadsheet_config?.sheetId ?? "",
       columns: initialColumns,
     },
+    save: (data) => updateSpreadsheet(tenant.id, data),
   });
 
-  const { saveDebounced, isPending, savedRecently } = useAutosave<SpreadsheetConfig>(
-    (data) => updateSpreadsheet(tenant.id, data),
-  );
-
-  useEffect(() => {
-    const subscription = form.watch((values) => {
-      const parsed = spreadsheetConfigSchema.safeParse(values);
-      if (!parsed.success) return;
-      saveDebounced(parsed.data);
-    });
-    return () => subscription.unsubscribe();
-  }, [form, saveDebounced]);
-
-  const columns = form.watch("columns");
+  const columns = useWatch({ control: form.control, name: "columns" });
   const systemColumns = SPREADSHEET_SYSTEM_COLUMNS.filter((column) => isSystemColumnRelevant(column, tenant));
 
   function toggleVisible(name: string) {

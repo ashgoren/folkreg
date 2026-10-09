@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useWatch } from "react-hook-form";
 import { AutosaveStatus } from "@/components/autosave-status";
 import { Field, FieldContent, FieldDescription, FieldGroup } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
@@ -10,7 +8,7 @@ import { NumberField } from "@/components/form-number-field";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { useAutosave } from "@/lib/useAutosave";
+import { useAutosaveForm } from "@/lib/useAutosaveForm";
 import type { Tenant } from "@repo/types";
 import { admissionsConfigSchema, type AdmissionsConfig } from "@repo/tenant-config";
 import { updateAdmissions } from "./actions";
@@ -19,26 +17,13 @@ import { FixedFields } from "./FixedFields";
 import { TieredFields } from "./TieredFields";
 
 export function AdmissionsForm({ tenant }: { tenant: Tenant }) {
-  const form = useForm<AdmissionsConfig>({
-    mode: "onBlur",
-    resolver: zodResolver(admissionsConfigSchema),
+  const { form, isPending, savedRecently } = useAutosaveForm({
+    schema: admissionsConfigSchema,
     defaultValues: tenant.admissions_config,
+    save: (data) => updateAdmissions(tenant.id, data),
   });
 
-  const { saveDebounced, isPending, savedRecently } = useAutosave<AdmissionsConfig>(
-    (data) => updateAdmissions(tenant.id, data),
-  );
-
-  useEffect(() => {
-    const subscription = form.watch((values) => {
-      const parsed = admissionsConfigSchema.safeParse(values);
-      if (!parsed.success) return;
-      saveDebounced(parsed.data);
-    });
-    return () => subscription.unsubscribe();
-  }, [form, saveDebounced]);
-
-  const mode = form.watch("mode");
+  const mode = useWatch({ control: form.control, name: "mode" });
 
   // Switching only changes `mode`: every mode's values stay in the form and are saved, so an
   // accidental switch loses nothing. It waits until the current values are valid, since once a

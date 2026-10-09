@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
-import { Controller, useForm, type Control } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, type Control } from "react-hook-form";
 import { Field, FieldDescription, FieldError, FieldGroup } from "@/components/ui/field";
 import { AutosaveStatus } from "@/components/autosave-status";
 import { FormLabel } from "@/components/form-label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { useAutosave } from "@/lib/useAutosave";
+import { useAutosaveForm } from "@/lib/useAutosaveForm";
 import type { Tenant } from "@repo/types";
 import { themeConfigSchema, type ThemeConfig } from "@repo/tenant-config";
 import { updateAppearance } from "./actions";
@@ -35,24 +33,11 @@ function ColorField({ name, label, control }: { name: keyof ThemeConfig; label: 
 }
 
 export function AppearanceForm({ tenant }: { tenant: Tenant }) {
-  const form = useForm<ThemeConfig>({
-    mode: "onBlur",
-    resolver: zodResolver(themeConfigSchema),
+  const { form, isPending, savedRecently } = useAutosaveForm({
+    schema: themeConfigSchema,
     defaultValues: tenant.theme_config,
+    save: (data) => updateAppearance(tenant.id, data),
   });
-
-  const { saveDebounced, isPending, savedRecently } = useAutosave<ThemeConfig>(
-    (data) => updateAppearance(tenant.id, data),
-  );
-
-  useEffect(() => {
-    const subscription = form.watch((values) => {
-      const parsed = themeConfigSchema.safeParse(values);
-      if (!parsed.success) return;
-      saveDebounced(parsed.data);
-    });
-    return () => subscription.unsubscribe();
-  }, [form, saveDebounced]);
 
   return (
     <form onSubmit={(e) => e.preventDefault()} className="space-y-8">

@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useWatch } from "react-hook-form";
 import { Field, FieldContent, FieldDescription, FieldError, FieldGroup } from "@/components/ui/field";
 import { AutosaveStatus } from "@/components/autosave-status";
 import { FormLabel } from "@/components/form-label";
@@ -10,35 +8,22 @@ import { TextField } from "@/components/form-text-field";
 import { SecretInput } from "@/components/ui/secret-input";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { useAutosave } from "@/lib/useAutosave";
+import { useAutosaveForm } from "@/lib/useAutosaveForm";
 import type { Tenant, TenantSecrets } from "@repo/types";
-import { waiversSchema, type WaiversValues } from "./schema";
+import { waiversSchema } from "./schema";
 import { updateWaivers } from "./actions";
 
 export function WaiversForm({ tenant, secrets }: { tenant: Tenant; secrets: TenantSecrets }) {
-  const form = useForm<WaiversValues>({
-    mode: "onBlur",
-    resolver: zodResolver(waiversSchema),
+  const { form, isPending, savedRecently } = useAutosaveForm({
+    schema: waiversSchema,
     defaultValues: {
       ...tenant.waiver_config,
       docuseal_key: secrets.docuseal_key ?? "",
     },
+    save: (data) => updateWaivers(tenant.id, data),
   });
 
-  const { saveDebounced, isPending, savedRecently } = useAutosave<WaiversValues>(
-    (data) => updateWaivers(tenant.id, data),
-  );
-
-  const showWaiver = form.watch("show");
-
-  useEffect(() => {
-    const subscription = form.watch((values) => {
-      const parsed = waiversSchema.safeParse(values);
-      if (!parsed.success) return;
-      saveDebounced(parsed.data);
-    });
-    return () => subscription.unsubscribe();
-  }, [form, saveDebounced]);
+  const showWaiver = useWatch({ control: form.control, name: "show" });
 
   return (
     <form onSubmit={(e) => e.preventDefault()} className="space-y-8">

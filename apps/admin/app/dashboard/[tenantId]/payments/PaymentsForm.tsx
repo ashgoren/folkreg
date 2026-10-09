@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useWatch } from "react-hook-form";
 import { AutosaveStatus } from "@/components/autosave-status";
 import { Field, FieldContent, FieldDescription, FieldGroup } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
@@ -11,7 +9,7 @@ import { TextField } from "@/components/form-text-field";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { useAutosave } from "@/lib/useAutosave";
+import { useAutosaveForm } from "@/lib/useAutosaveForm";
 import type { Tenant, TenantSecrets } from "@repo/types";
 import { paymentsSchema, type PaymentsValues } from "./schema";
 import { updatePayments } from "./actions";
@@ -33,33 +31,20 @@ const toFormValues = (tenant: Tenant, secrets: TenantSecrets): PaymentsValues =>
 });
 
 export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: TenantSecrets }) {
-  const form = useForm<PaymentsValues>({
-    mode: "onBlur",
-    resolver: zodResolver(paymentsSchema),
+  const { form, isPending, savedRecently } = useAutosaveForm({
+    schema: paymentsSchema,
     defaultValues: toFormValues(tenant, secrets),
+    save: (data) => updatePayments(tenant.id, data),
   });
-
-  const { saveDebounced, isPending, savedRecently } = useAutosave<PaymentsValues>(
-    (data) => updatePayments(tenant.id, data),
-  );
-
-  useEffect(() => {
-    const subscription = form.watch((values) => {
-      const parsed = paymentsSchema.safeParse(values);
-      if (!parsed.success) return;
-      saveDebounced(parsed.data);
-    });
-    return () => subscription.unsubscribe();
-  }, [form, saveDebounced]);
 
   // Only the active processor's credentials are shown; the other's stay in the form (and are
   // saved) as they were.
-  const processor = form.watch("processor");
+  const processor = useWatch({ control: form.control, name: "processor" });
 
-  const depositEnabled = form.watch("deposit.enabled");
-  const donationEnabled = form.watch("donation.enabled");
-  const checksAllowed = form.watch("checks.allowed");
-  const showPostalAddress = form.watch("checks.showPostalAddress");
+  const depositEnabled = useWatch({ control: form.control, name: "deposit.enabled" });
+  const donationEnabled = useWatch({ control: form.control, name: "donation.enabled" });
+  const checksAllowed = useWatch({ control: form.control, name: "checks.allowed" });
+  const showPostalAddress = useWatch({ control: form.control, name: "checks.showPostalAddress" });
 
   return (
     <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
