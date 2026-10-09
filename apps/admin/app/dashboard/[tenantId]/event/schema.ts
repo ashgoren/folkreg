@@ -15,7 +15,7 @@ export const eventSchema = z.object({
   }),
   contacts: z.object({
     info: z.union([z.literal(""), z.string().email("Must be a valid email")]),
-    housing: z.string(),
+    housing: z.union([z.literal(""), z.string().email("Must be a valid email")]),
   }),
   links: z.object({
     info: z.string(),

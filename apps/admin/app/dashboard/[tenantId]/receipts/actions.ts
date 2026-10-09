@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createTenantDb } from "@repo/db/queries";
+import { TenantNotFoundError } from "@repo/db/errors";
 import type { ReceiptsConfig } from "@repo/types";
 import { receiptsSchema, type ReceiptsValues } from "./schema";
 
@@ -21,7 +22,12 @@ export async function updateReceipts(tenantId: string, values: ReceiptsValues): 
     emailReplyTo: data.emailReplyTo || null,
   };
 
-  await db.updateTenant({ receipts_config });
+  try {
+    await db.updateTenant({ receipts_config });
+  } catch (error: unknown) {
+    if (error instanceof TenantNotFoundError) return "No tenant found";
+    throw error;
+  }
 
   return null;
 }

@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createTenantDb } from "@repo/db/queries";
+import { TenantNotFoundError } from "@repo/db/errors";
 import type { ThemeConfig } from "@repo/types";
 import { appearanceSchema, type AppearanceValues } from "./schema";
 
@@ -17,7 +18,12 @@ export async function updateAppearance(tenantId: string, values: AppearanceValue
 
   const theme_config: ThemeConfig = { ...parsed.data };
 
-  await db.updateTenant({ theme_config });
+  try {
+    await db.updateTenant({ theme_config });
+  } catch (error: unknown) {
+    if (error instanceof TenantNotFoundError) return "No tenant found";
+    throw error;
+  }
 
   return null;
 }

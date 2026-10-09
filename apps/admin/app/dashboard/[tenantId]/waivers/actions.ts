@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createTenantDb } from "@repo/db/queries";
+import { TenantNotFoundError } from "@repo/db/errors";
 import type { WaiverConfig } from "@repo/types";
 import { waiversSchema, type WaiversValues } from "./schema";
 
@@ -21,8 +22,13 @@ export async function updateWaivers(tenantId: string, values: WaiversValues): Pr
     docusealTemplateId: data.docusealTemplateId || null,
   };
 
-  await db.updateTenant({ waiver_config });
-  await db.updateTenantSecrets({ docuseal_key: data.docuseal_key || null });
+  try {
+    await db.updateTenant({ waiver_config });
+    await db.updateTenantSecrets({ docuseal_key: data.docuseal_key || null });
+  } catch (error: unknown) {
+    if (error instanceof TenantNotFoundError) return "No tenant found";
+    throw error;
+  }
 
   return null;
 }

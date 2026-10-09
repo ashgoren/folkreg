@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createTenantDb } from "@repo/db/queries";
+import { TenantNotFoundError } from "@repo/db/errors";
 import { fieldsSchema, type FieldsValues } from "./schema";
 
 export async function updateFields(tenantId: string, values: FieldsValues): Promise<string | null> {
@@ -13,12 +14,15 @@ export async function updateFields(tenantId: string, values: FieldsValues): Prom
   if (!user) return "Not authenticated";
 
   const db = createTenantDb(supabase, tenantId);
-  const current = await db.getTenant();
-  if (!current) return "No tenant found";
 
-  await db.updateTenant({
-    fields_config: parsed.data,
-  });
+  try {
+    await db.updateTenant({
+      fields_config: parsed.data,
+    });
+  } catch (error: unknown) {
+    if (error instanceof TenantNotFoundError) return "No tenant found";
+    throw error;
+  }
 
   return null;
 }

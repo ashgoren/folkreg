@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createTenantDb } from "@repo/db/queries";
-import { isPostgresError } from "@repo/db/errors";
+import { isPostgresError, TenantNotFoundError } from "@repo/db/errors";
 import { generalSchema, type GeneralValues } from "./schema";
 
 export async function updateGeneral(tenantId: string, values: GeneralValues): Promise<string | null> {
@@ -23,8 +23,10 @@ export async function updateGeneral(tenantId: string, values: GeneralValues): Pr
       show_preregistration: data.show_preregistration,
     });
   } catch (error: unknown) {
+    if (error instanceof TenantNotFoundError) return "No tenant found";
     if (isPostgresError(error) && error.code === '23505') { // Uniqueness violation
-      if (error.detail.includes('slug')) return "That slug is already taken";
+      // The violated constraint is named in `message`; `details` comes back null here.
+      if (error.message.includes('tenants_slug_key')) return "That slug is already taken";
       return "A uniqueness constraint was violated";
     }
     throw error;

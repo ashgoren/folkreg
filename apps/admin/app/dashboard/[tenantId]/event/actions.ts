@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createTenantDb } from "@repo/db/queries";
+import { TenantNotFoundError } from "@repo/db/errors";
 import type { EventConfig } from "@repo/types";
 import { eventSchema, type EventValues } from "./schema";
 
@@ -36,7 +37,12 @@ export async function updateEvent(tenantId: string, values: EventValues): Promis
     },
   };
 
-  await db.updateTenant({ event_config });
+  try {
+    await db.updateTenant({ event_config });
+  } catch (error: unknown) {
+    if (error instanceof TenantNotFoundError) return "No tenant found";
+    throw error;
+  }
 
   return null;
 }

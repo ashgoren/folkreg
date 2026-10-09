@@ -5,6 +5,7 @@ import type {
   EventConfig, FieldsConfig, AdmissionsConfig, PaymentsConfig, SpreadsheetConfig, ThemeConfig, WaiverConfig, ReceiptsConfig,
 } from "@repo/types";
 import { createOrderMethods } from "./orders";
+import { TenantNotFoundError } from "./errors";
 
 type TenantUpdates = Partial<{
   slug: string,
@@ -114,20 +115,27 @@ export const createTenantDb = (supabase: DbClient, tenantId: string) => {
       ...(receipts_config !== undefined && { receipts_config: receipts_config as unknown as Json }),
     };
 
-    const { error } = await supabase
+    // .select() makes PostgREST return the updated rows, so an update that RLS (or a wrong id)
+    // filtered down to nothing is detectable rather than indistinguishable from success.
+    const { data, error } = await supabase
       .from("tenants")
       .update(payload)
-      .eq("id", tenantId);
+      .eq("id", tenantId)
+      .select("id");
 
     if (error) throw error;
+    if (data.length === 0) throw new TenantNotFoundError(tenantId);
   };
 
   const updateTenantSecrets = async (secrets: TenantSecretsUpdates) => {
-    const { error } = await supabase
+    // Same zero-rows check as updateTenant.
+    const { data, error } = await supabase
       .from("tenant_secrets")
       .update(secrets)
-      .eq("tenant_id", tenantId);
+      .eq("tenant_id", tenantId)
+      .select("tenant_id");
     if (error) throw error;
+    if (data.length === 0) throw new TenantNotFoundError(tenantId);
   };
 
   return {
