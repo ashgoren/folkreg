@@ -1,14 +1,12 @@
 import { Tables, Database } from "./database.types"
 import { type SupabaseClient } from "@supabase/supabase-js"
+import type { AgeGroup, TenantConfig } from "@repo/tenant-config"
 
 export * from "./database.types"
 
 export type DbClient = SupabaseClient<Database>
 
-export type PaymentProcessor = 'stripe' | 'paypal'
 export type PaymentMethod = 'stripe' | 'paypal' | 'check'
-
-export type AgeGroup = '0-2' | '3-5' | '6-12' | '13-17' | 'adult'
 
 // Can add additional specific fields to avoid needing casting etc
 export interface Person {
@@ -54,116 +52,6 @@ export type Order = Omit<Tables<'orders'>, 'people' | 'payments' | 'lottery'> & 
   lottery: LotteryInfo | null;
 }
 
-// The jsonb config shapes below store unset text as "" and keep every key present, the same
-// values the admin forms edit -- so a form can be seeded straight from its stored config and save
-// what it validated, with no null/"" conversion in either direction. (tenant_secrets, a regular
-// table, uses null for an unset column.)
-
-export interface EventConfig {
-  title: string;
-  year: number;
-  location: string;
-  date: string;
-  timezone: string;
-  calendar: {
-    title: string;
-    description: string;
-    location: string;
-    start: string;
-    end: string;
-  };
-  contacts: {
-    info: string;
-    housing: string;
-  };
-  links: {
-    info: string;
-    health: string;
-    safety: string;
-  };
-}
-
-export interface FieldConfig {
-  title?: string;
-  label?: string;
-  placeholder?: string;
-  options?: { label: string; value: string }[];
-  defaultValue?: string;
-  rows?: number;
-  width?: number;
-  required?: boolean;
-  includeOnNametag?: boolean;
-}
-
-export interface FieldsConfig {
-  contactOrder: string[];
-  miscOrder: string[];
-  config: Record<string, FieldConfig>;
-}
-
-export interface WaiverConfig {
-  show: boolean;
-  docusealTemplateId: string;
-}
-
-export interface TieredCategory {
-  label: string;
-  ageGroups: AgeGroup[];
-  early: number;
-  later: number;
-}
-
-// Every pricing mode's values are kept regardless of which is active, so switching `mode` (even by
-// accident) never discards prices or categories an organizer entered for another mode.
-export interface AdmissionsConfig {
-  mode: 'sliding-scale' | 'fixed' | 'tiered';
-  // sliding-scale
-  costRange: [number, number];
-  costDefault: number;
-  // fixed
-  cost: number;
-  // tiered
-  earlybirdCutoff: string;
-  categories: TieredCategory[];
-  admissionQuantityMax: number;
-  waitlistCutoff: number;
-  forceWaitlist: boolean;
-}
-
-// Both processors' public keys are kept regardless of which is active, so switching `processor`
-// (even by accident) never discards what an organizer entered for the other one.
-export interface PaymentsConfig {
-  processor: PaymentProcessor;
-  stripePublishableKeyLive: string;
-  stripePublishableKeyTest: string;
-  paypalClientIdLive: string;
-  paypalClientIdTest: string;
-  paymentDueDate: string;
-  directPaymentUrl: string;
-  coverFeesCheckbox: boolean;
-  showPaymentSummary: boolean;
-  deposit: {
-    enabled: boolean;
-    amount: number;
-  };
-  donation: {
-    enabled: boolean;
-    max: number;
-  };
-  checks: {
-    allowed: boolean;
-    showPostalAddress: boolean;
-    payee: string;
-    address: string;
-  };
-  statementDescriptorSuffix: string;
-}
-
-export interface SpreadsheetConfig {
-  sheetId: string;
-  columns: { name: string; visible: boolean }[];
-}
-
 // Computed order/payment columns the spreadsheet sync writes alongside registrant
 // fields -- not user-entered, so not part of the FieldDef catalog in @repo/fields.
 // `waiver`/`deposit`/`donation`/`fees` are only relevant when the corresponding
@@ -175,29 +63,8 @@ export const SPREADSHEET_SYSTEM_COLUMNS = [
   'waiver', 'environment',
 ] as const;
 
-export interface ReceiptsConfig {
-  emailFrom: string;
-  emailReplyTo: string;
-}
-
-export interface ThemeConfig {
-  backgroundLight: string;
-  backgroundDark: string;
-  foregroundLight: string;
-  foregroundDark: string;
-  accentLight: string;
-  accentDark: string;
-}
-
-export type Tenant = Omit<Tables<'tenants'>, 'event_config' | 'fields_config' | 'admissions_config' | 'payments_config' | 'theme_config' | 'spreadsheet_config' | 'waiver_config' | 'receipts_config'> & {
-  event_config: EventConfig
-  fields_config: FieldsConfig
-  admissions_config: AdmissionsConfig
-  payments_config: PaymentsConfig
-  spreadsheet_config: SpreadsheetConfig | null
-  theme_config: ThemeConfig
-  waiver_config: WaiverConfig
-  receipts_config: ReceiptsConfig
-}
+// A tenants row with its jsonb config columns typed (and, when read through createTenantDb's
+// getTenant(), parsed) by the schemas in @repo/tenant-config.
+export type Tenant = Omit<Tables<'tenants'>, keyof TenantConfig> & TenantConfig
 
 export type TenantSecrets = Tables<'tenant_secrets'>

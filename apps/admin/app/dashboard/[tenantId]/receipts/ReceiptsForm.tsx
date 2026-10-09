@@ -8,23 +8,23 @@ import { AutosaveStatus } from "@/components/autosave-status";
 import { TextField } from "@/components/form-text-field";
 import { useAutosave } from "@/lib/useAutosave";
 import type { Tenant } from "@repo/types";
-import { receiptsSchema, type ReceiptsValues } from "./schema";
+import { receiptsConfigSchema, type ReceiptsConfig } from "@repo/tenant-config";
 import { updateReceipts } from "./actions";
 
 export function ReceiptsForm({ tenant }: { tenant: Tenant }) {
-  const form = useForm<ReceiptsValues>({
+  const form = useForm<ReceiptsConfig>({
     mode: "onBlur",
-    resolver: zodResolver(receiptsSchema),
+    resolver: zodResolver(receiptsConfigSchema),
     defaultValues: tenant.receipts_config,
   });
 
-  const { saveDebounced, isPending, savedRecently } = useAutosave<ReceiptsValues>(
+  const { saveDebounced, isPending, savedRecently } = useAutosave<ReceiptsConfig>(
     (data) => updateReceipts(tenant.id, data),
   );
 
   useEffect(() => {
     const subscription = form.watch((values) => {
-      const parsed = receiptsSchema.safeParse(values);
+      const parsed = receiptsConfigSchema.safeParse(values);
       if (!parsed.success) return;
       saveDebounced(parsed.data);
     });

@@ -3,11 +3,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { createTenantDb } from "@repo/db/queries";
 import { TenantNotFoundError } from "@repo/db/errors";
-import type { SpreadsheetConfig } from "@repo/types";
-import { spreadsheetSchema, type SpreadsheetValues } from "./schema";
+import { spreadsheetConfigSchema, type SpreadsheetConfig } from "@repo/tenant-config";
 
-export async function updateSpreadsheet(tenantId: string, values: SpreadsheetValues): Promise<string | null> {
-  const parsed = spreadsheetSchema.safeParse(values);
+export async function updateSpreadsheet(tenantId: string, values: SpreadsheetConfig): Promise<string | null> {
+  const parsed = spreadsheetConfigSchema.safeParse(values);
   if (!parsed.success) return "Invalid data";
 
   const supabase = await createClient();
@@ -16,10 +15,8 @@ export async function updateSpreadsheet(tenantId: string, values: SpreadsheetVal
 
   const db = createTenantDb(supabase, tenantId);
 
-  const spreadsheet_config: SpreadsheetConfig = parsed.data;
-
   try {
-    await db.updateTenant({ spreadsheet_config });
+    await db.updateTenant({ spreadsheet_config: parsed.data });
   } catch (error: unknown) {
     if (error instanceof TenantNotFoundError) return "No tenant found";
     throw error;

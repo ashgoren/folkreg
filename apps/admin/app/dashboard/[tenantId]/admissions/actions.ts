@@ -3,11 +3,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { createTenantDb } from "@repo/db/queries";
 import { TenantNotFoundError } from "@repo/db/errors";
-import type { AdmissionsConfig } from "@repo/types";
-import { admissionsSchema, type AdmissionsValues } from "./schema";
+import { admissionsConfigSchema, type AdmissionsConfig } from "@repo/tenant-config";
 
-export async function updateAdmissions(tenantId: string, values: AdmissionsValues): Promise<string | null> {
-  const parsed = admissionsSchema.safeParse(values);
+export async function updateAdmissions(tenantId: string, values: AdmissionsConfig): Promise<string | null> {
+  const parsed = admissionsConfigSchema.safeParse(values);
   if (!parsed.success) return "Invalid data";
 
   const supabase = await createClient();
@@ -16,10 +15,8 @@ export async function updateAdmissions(tenantId: string, values: AdmissionsValue
 
   const db = createTenantDb(supabase, tenantId);
 
-  const admissions_config: AdmissionsConfig = parsed.data;
-
   try {
-    await db.updateTenant({ admissions_config });
+    await db.updateTenant({ admissions_config: parsed.data });
   } catch (error: unknown) {
     if (error instanceof TenantNotFoundError) return "No tenant found";
     throw error;

@@ -3,7 +3,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createTenantDb } from "@repo/db/queries";
 import { TenantNotFoundError } from "@repo/db/errors";
-import type { WaiverConfig } from "@repo/types";
 import { waiversSchema, type WaiversValues } from "./schema";
 
 export async function updateWaivers(tenantId: string, values: WaiversValues): Promise<string | null> {
@@ -18,10 +17,9 @@ export async function updateWaivers(tenantId: string, values: WaiversValues): Pr
 
   // The API key goes to tenant_secrets, where an unset column is null; the rest is waiver_config.
   const { docuseal_key, ...config } = parsed.data;
-  const waiver_config: WaiverConfig = config;
 
   try {
-    await db.updateTenant({ waiver_config });
+    await db.updateTenant({ waiver_config: config });
     await db.updateTenantSecrets({ docuseal_key: docuseal_key || null });
   } catch (error: unknown) {
     if (error instanceof TenantNotFoundError) return "No tenant found";

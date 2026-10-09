@@ -6,10 +6,10 @@ import { move as reorder } from "@dnd-kit/helpers";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FieldDescription } from "@/components/ui/field";
-import type { AdmissionsValues } from "./schema";
+import type { AdmissionsConfig } from "@repo/tenant-config";
 import { TieredCategoryCard } from "./TieredCategoryCard";
 
-export function TieredCategories({ form }: { form: UseFormReturn<AdmissionsValues> }) {
+export function TieredCategories({ form }: { form: UseFormReturn<AdmissionsConfig> }) {
   const { fields, append, remove, move } = useFieldArray({ control: form.control, name: "categories" });
 
   return (

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { defaultAdmissionsConfig } from "@repo/tenant-config";
-import type { AdmissionsConfig } from "@repo/types";
-import { admissionsSchema } from "./schema";
+import { defaultAdmissionsConfig } from "./defaults";
+import type { AdmissionsConfig } from "./schemas";
+import { admissionsConfigSchema } from "./schemas";
 
 // Every mode's values are always present; `mode` picks which one applies.
 const base: AdmissionsConfig = {
@@ -18,15 +18,15 @@ const fixed = { ...base, mode: "fixed" as const };
 const tiered = { ...base, mode: "tiered" as const };
 
 const issuePaths = (value: unknown) =>
-  admissionsSchema.safeParse(value).error?.issues.map((issue) => issue.path.join(".")) ?? [];
+  admissionsConfigSchema.safeParse(value).error?.issues.map((issue) => issue.path.join(".")) ?? [];
 
-describe("admissionsSchema", () => {
+describe("admissionsConfigSchema", () => {
   it.each([["sliding-scale", slidingScale], ["fixed", fixed], ["tiered", tiered]])("accepts a valid %s config", (_, value) => {
-    expect(admissionsSchema.safeParse(value).success).toBe(true);
+    expect(admissionsConfigSchema.safeParse(value).success).toBe(true);
   });
 
   it("rejects an unknown mode", () => {
-    expect(admissionsSchema.safeParse({ ...fixed, mode: "pay-what-you-want" }).success).toBe(false);
+    expect(admissionsConfigSchema.safeParse({ ...fixed, mode: "pay-what-you-want" }).success).toBe(false);
   });
 
   // The other modes' values are kept (so switching never loses them) and validated too: the form
@@ -38,11 +38,11 @@ describe("admissionsSchema", () => {
 
   describe("sliding scale", () => {
     it.each([20, 60, 100])("accepts a default of %s within (or on the edge of) the range", (costDefault) => {
-      expect(admissionsSchema.safeParse({ ...slidingScale, costDefault }).success).toBe(true);
+      expect(admissionsConfigSchema.safeParse({ ...slidingScale, costDefault }).success).toBe(true);
     });
 
     it.each([19, 101])("rejects a default of %s outside the range, attached to costDefault", (costDefault) => {
-      const result = admissionsSchema.safeParse({ ...slidingScale, costDefault });
+      const result = admissionsConfigSchema.safeParse({ ...slidingScale, costDefault });
       expect(result.success).toBe(false);
       expect(result.error?.issues[0]?.path).toEqual(["costDefault"]);
       expect(result.error?.issues[0]?.message).toBe("Must be between minimum and maximum");
@@ -55,13 +55,13 @@ describe("admissionsSchema", () => {
     // NumberField maps a cleared input to NaN; it has to fail validation (inline "Required")
     // rather than saving.
     it("rejects a cleared (NaN) range bound", () => {
-      expect(admissionsSchema.safeParse({ ...slidingScale, costRange: [NaN, 100] }).success).toBe(false);
+      expect(admissionsConfigSchema.safeParse({ ...slidingScale, costRange: [NaN, 100] }).success).toBe(false);
     });
   });
 
   describe("fixed", () => {
     it("accepts a free event", () => {
-      expect(admissionsSchema.safeParse({ ...fixed, cost: 0 }).success).toBe(true);
+      expect(admissionsConfigSchema.safeParse({ ...fixed, cost: 0 }).success).toBe(true);
     });
 
     it("rejects a cleared (NaN) cost", () => {
@@ -71,12 +71,12 @@ describe("admissionsSchema", () => {
 
   describe("tiered", () => {
     it("accepts no categories and a blank cutoff", () => {
-      expect(admissionsSchema.safeParse({ ...tiered, categories: [], earlybirdCutoff: "" }).success).toBe(true);
+      expect(admissionsConfigSchema.safeParse({ ...tiered, categories: [], earlybirdCutoff: "" }).success).toBe(true);
     });
 
     it("accepts a category with every age group", () => {
       const category = { label: "Any", ageGroups: ["0-2", "3-5", "6-12", "13-17", "adult"], early: 0, later: 0 };
-      expect(admissionsSchema.safeParse({ ...tiered, categories: [category] }).success).toBe(true);
+      expect(admissionsConfigSchema.safeParse({ ...tiered, categories: [category] }).success).toBe(true);
     });
 
     it("rejects an unknown age group", () => {
@@ -102,18 +102,12 @@ describe("admissionsSchema", () => {
     });
 
     it("uses the Required message for a cleared number", () => {
-      const result = admissionsSchema.safeParse({ ...fixed, admissionQuantityMax: NaN });
+      const result = admissionsConfigSchema.safeParse({ ...fixed, admissionQuantityMax: NaN });
       expect(result.error?.issues[0]?.message).toBe("Required");
     });
 
     it("requires forceWaitlist", () => {
       expect(issuePaths({ ...fixed, forceWaitlist: undefined })).toEqual(["forceWaitlist"]);
     });
-  });
-
-  // Every new tenant is created with this, so it has to pass the same validation as anything an
-  // organizer types -- in any mode, since switching keeps the other modes' starting values.
-  it.each(["sliding-scale", "fixed", "tiered"] as const)("accepts the @repo/tenant-config default in %s mode", (mode) => {
-    expect(admissionsSchema.safeParse({ ...defaultAdmissionsConfig(), mode }).success).toBe(true);
   });
 });

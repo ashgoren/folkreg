@@ -6,9 +6,9 @@ import { itGuardsTheAction, useActionHarness } from "@/test/action-harness";
 vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
 import { createClient } from "@/lib/supabase/server";
 import { updateFields } from "./actions";
-import type { FieldsValues } from "./schema";
+import type { FieldsConfig } from "@repo/tenant-config";
 
-const config = (): FieldsValues => ({
+const config = (): FieldsConfig => ({
   contactOrder: ["first", "last", "email"],
   miscOrder: ["age"],
   config: {

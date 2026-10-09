@@ -10,10 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useAutosave } from "@/lib/useAutosave";
 import type { Tenant } from "@repo/types";
-import { appearanceSchema, type AppearanceValues } from "./schema";
+import { themeConfigSchema, type ThemeConfig } from "@repo/tenant-config";
 import { updateAppearance } from "./actions";
 
-function ColorField({ name, label, control }: { name: keyof AppearanceValues; label: string; control: Control<AppearanceValues> }) {
+function ColorField({ name, label, control }: { name: keyof ThemeConfig; label: string; control: Control<ThemeConfig> }) {
   return (
     <Controller name={name} control={control} render={({ field, fieldState }) => (
       <Field data-invalid={fieldState.invalid}>
@@ -35,19 +35,19 @@ function ColorField({ name, label, control }: { name: keyof AppearanceValues; la
 }
 
 export function AppearanceForm({ tenant }: { tenant: Tenant }) {
-  const form = useForm<AppearanceValues>({
+  const form = useForm<ThemeConfig>({
     mode: "onBlur",
-    resolver: zodResolver(appearanceSchema),
+    resolver: zodResolver(themeConfigSchema),
     defaultValues: tenant.theme_config,
   });
 
-  const { saveDebounced, isPending, savedRecently } = useAutosave<AppearanceValues>(
+  const { saveDebounced, isPending, savedRecently } = useAutosave<ThemeConfig>(
     (data) => updateAppearance(tenant.id, data),
   );
 
   useEffect(() => {
     const subscription = form.watch((values) => {
-      const parsed = appearanceSchema.safeParse(values);
+      const parsed = themeConfigSchema.safeParse(values);
       if (!parsed.success) return;
       saveDebounced(parsed.data);
     });

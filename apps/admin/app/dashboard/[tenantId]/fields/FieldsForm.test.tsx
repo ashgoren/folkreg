@@ -9,7 +9,7 @@ import { FIELD_DEFS } from "@repo/fields";
 import { defaultFieldsConfig } from "@repo/tenant-config";
 import { makeTenant } from "@/test/fixtures";
 import { expectLastSave } from "@/test/autosave";
-import type { FieldsConfig } from "@repo/types";
+import type { FieldsConfig } from "@repo/tenant-config";
 
 vi.mock("./actions", () => ({ updateFields: vi.fn() }));
 import { updateFields } from "./actions";

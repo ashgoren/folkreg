@@ -10,23 +10,23 @@ import { TextField } from "@/components/form-text-field";
 import { Separator } from "@/components/ui/separator";
 import { useAutosave } from "@/lib/useAutosave";
 import type { Tenant } from "@repo/types";
-import { eventSchema, type EventValues } from "./schema";
+import { eventConfigSchema, type EventConfig } from "@repo/tenant-config";
 import { updateEvent } from "./actions";
 
 export function EventForm({ tenant }: { tenant: Tenant }) {
-  const form = useForm<EventValues>({
+  const form = useForm<EventConfig>({
     mode: "onBlur",
-    resolver: zodResolver(eventSchema),
+    resolver: zodResolver(eventConfigSchema),
     defaultValues: tenant.event_config,
   });
 
-  const { saveDebounced, isPending, savedRecently } = useAutosave<EventValues>(
+  const { saveDebounced, isPending, savedRecently } = useAutosave<EventConfig>(
     (data) => updateEvent(tenant.id, data),
   );
 
   useEffect(() => {
     const subscription = form.watch((values) => {
-      const parsed = eventSchema.safeParse(values);
+      const parsed = eventConfigSchema.safeParse(values);
       if (!parsed.success) return;
       saveDebounced(parsed.data);
     });

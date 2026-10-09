@@ -3,10 +3,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { createTenantDb } from "@repo/db/queries";
 import { TenantNotFoundError } from "@repo/db/errors";
-import { fieldsSchema, type FieldsValues } from "./schema";
+import { fieldsConfigSchema, type FieldsConfig } from "@repo/tenant-config";
 
-export async function updateFields(tenantId: string, values: FieldsValues): Promise<string | null> {
-  const parsed = fieldsSchema.safeParse(values);
+export async function updateFields(tenantId: string, values: FieldsConfig): Promise<string | null> {
+  const parsed = fieldsConfigSchema.safeParse(values);
   if (!parsed.success) return "Invalid data";
 
   const supabase = await createClient();

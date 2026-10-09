@@ -13,7 +13,7 @@ import { TextField } from "@/components/form-text-field";
 import { useAutosave } from "@/lib/useAutosave";
 import type { Tenant } from "@repo/types";
 import { SPREADSHEET_SYSTEM_COLUMNS } from "@repo/types";
-import { spreadsheetSchema, type SpreadsheetValues } from "./schema";
+import { spreadsheetConfigSchema, type SpreadsheetConfig } from "@repo/tenant-config";
 import { updateSpreadsheet } from "./actions";
 import { SpreadsheetFieldRow } from "./SpreadsheetFieldRow";
 
@@ -52,22 +52,22 @@ export function SpreadsheetForm({ tenant }: { tenant: Tenant }) {
       ]
     : availableRegistrantColumns.map((name) => ({ name, visible: true }));
 
-  const form = useForm<SpreadsheetValues>({
+  const form = useForm<SpreadsheetConfig>({
     mode: "onBlur",
-    resolver: zodResolver(spreadsheetSchema),
+    resolver: zodResolver(spreadsheetConfigSchema),
     defaultValues: {
       sheetId: tenant.spreadsheet_config?.sheetId ?? "",
       columns: initialColumns,
     },
   });
 
-  const { saveDebounced, isPending, savedRecently } = useAutosave<SpreadsheetValues>(
+  const { saveDebounced, isPending, savedRecently } = useAutosave<SpreadsheetConfig>(
     (data) => updateSpreadsheet(tenant.id, data),
   );
 
   useEffect(() => {
     const subscription = form.watch((values) => {
-      const parsed = spreadsheetSchema.safeParse(values);
+      const parsed = spreadsheetConfigSchema.safeParse(values);
       if (!parsed.success) return;
       saveDebounced(parsed.data);
     });

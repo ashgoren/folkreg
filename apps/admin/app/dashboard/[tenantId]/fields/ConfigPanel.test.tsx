@@ -6,7 +6,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { FieldConfig } from "@repo/types";
+import type { FieldConfig } from "@repo/tenant-config";
 import { ConfigPanel } from "./ConfigPanel";
 
 const renderPanel = (fieldName: string, group: "contact" | "misc", config: FieldConfig = {}) => {

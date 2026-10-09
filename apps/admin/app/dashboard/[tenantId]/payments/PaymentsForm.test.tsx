@@ -7,7 +7,7 @@ import userEvent from "@testing-library/user-event";
 import { makeSecrets, makeTenant } from "@/test/fixtures";
 import { expectLastSave, expectNoSave } from "@/test/autosave";
 import { defaultPaymentsConfig } from "@repo/tenant-config";
-import type { PaymentsConfig } from "@repo/types";
+import type { PaymentsConfig } from "@repo/tenant-config";
 
 vi.mock("./actions", () => ({ updatePayments: vi.fn() }));
 import { updatePayments } from "./actions";

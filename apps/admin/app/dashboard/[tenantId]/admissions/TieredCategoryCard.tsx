@@ -9,8 +9,8 @@ import { FormLabel } from "@/components/form-label";
 import { NumberField } from "@/components/form-number-field";
 import { TextField } from "@/components/form-text-field";
 import { cn } from "@/lib/utils";
-import type { AgeGroup } from "@repo/types";
-import type { AdmissionsValues } from "./schema";
+import type { AgeGroup } from "@repo/tenant-config";
+import type { AdmissionsConfig } from "@repo/tenant-config";
 
 const AGE_GROUPS: { value: AgeGroup; label: string }[] = [
   { value: "0-2", label: "0-2 yr old" },
@@ -26,7 +26,7 @@ export function TieredCategoryCard({
   index,
   onRemove,
 }: {
-  form: UseFormReturn<AdmissionsValues>;
+  form: UseFormReturn<AdmissionsConfig>;
   fieldId: string;
   index: number;
   onRemove: () => void;

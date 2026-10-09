@@ -1,9 +1,8 @@
+import { parseTenantConfig } from "@repo/tenant-config";
 import type {
-  DbClient,
-  Json,
-  Tenant, TenantSecrets,
   EventConfig, FieldsConfig, AdmissionsConfig, PaymentsConfig, SpreadsheetConfig, ThemeConfig, WaiverConfig, ReceiptsConfig,
-} from "@repo/types";
+} from "@repo/tenant-config";
+import type { DbClient, Json, Tenant, TenantSecrets } from "@repo/types";
 import { createOrderMethods } from "./orders";
 import { TenantNotFoundError } from "./errors";
 
@@ -43,17 +42,16 @@ const resolvePaymentProcessorCredentials = (tenant: Tenant, secrets: TenantSecre
       throw new Error(`Tenant ${tenant.id} is missing Stripe ${mode} credentials`);
     }
     return { processor, secretKey, webhookSecret, publishableKey };
-  } else if (processor === 'paypal') {
-    const secret = tenant.is_live ? secrets.paypal_secret_live : secrets.paypal_secret_test;
-    const webhookId = tenant.is_live ? secrets.paypal_webhook_id_live : secrets.paypal_webhook_id_test;
-    const clientId = tenant.is_live ? paymentsConfig.paypalClientIdLive : paymentsConfig.paypalClientIdTest;
-    if (!secret || !webhookId || !clientId) {
-      throw new Error(`Tenant ${tenant.id} is missing PayPal ${mode} credentials`);
-    }
-    return { processor, clientId, secret, webhookId };
-  } else {
-    throw new Error(`Tenant ${tenant.id} has unknown payment processor: ${processor}`);
   }
+
+  // processor is "stripe" | "paypal" (getTenant() parsed it), so anything else is PayPal.
+  const secret = tenant.is_live ? secrets.paypal_secret_live : secrets.paypal_secret_test;
+  const webhookId = tenant.is_live ? secrets.paypal_webhook_id_live : secrets.paypal_webhook_id_test;
+  const clientId = tenant.is_live ? paymentsConfig.paypalClientIdLive : paymentsConfig.paypalClientIdTest;
+  if (!secret || !webhookId || !clientId) {
+    throw new Error(`Tenant ${tenant.id} is missing PayPal ${mode} credentials`);
+  }
+  return { processor, clientId, secret, webhookId };
 }
 
 export const getTenantBySlug = async (supabase: DbClient, slug: string) => {
@@ -80,9 +78,9 @@ export const createTenantDb = (supabase: DbClient, tenantId: string) => {
       if (error.code === "PGRST116") return null; // No row found
       throw error; // Unexpected error
     }
-    // Through `unknown` for the same reason as getOrder (orders.ts): the jsonb columns come back
-    // as non-null Json, which TS won't narrow directly to config types that contain arrays.
-    return data as unknown as Tenant;
+    // The jsonb columns come back typed as generic Json; parsing checks each against its schema
+    // (throwing if a row doesn't match) and gives them their real types.
+    return { ...data, ...parseTenantConfig(tenantId, data) } satisfies Tenant;
   };
 
   const getSecrets = async () => {

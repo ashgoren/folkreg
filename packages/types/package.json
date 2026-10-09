@@ -14,5 +14,8 @@
     "@repo/typescript-config": "workspace:*",
     "@supabase/supabase-js": "^2.103.2",
     "typescript": "^5"
+  },
+  "dependencies": {
+    "@repo/tenant-config": "workspace:*"
   }
 }

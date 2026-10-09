@@ -11,7 +11,8 @@ import { AutosaveStatus } from "@/components/autosave-status";
 import { FieldRow } from "./FieldRow";
 import { ConfigPanel } from "./ConfigPanel";
 import { updateFields } from "./actions";
-import type { FieldConfig, Tenant } from "@repo/types";
+import type { Tenant } from "@repo/types";
+import type { FieldConfig } from "@repo/tenant-config";
 
 type FieldsState = {
   contactOrder: string[];

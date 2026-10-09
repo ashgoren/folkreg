@@ -1,10 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { defaultFieldsConfig } from "@repo/tenant-config";
-import { fieldsSchema } from "./schema";
+import { fieldsConfigSchema } from "./schemas";
 
-describe("fieldsSchema", () => {
+describe("fieldsConfigSchema", () => {
   it("accepts an empty configuration", () => {
-    expect(fieldsSchema.safeParse({ contactOrder: [], miscOrder: [], config: {} }).success).toBe(true);
+    expect(fieldsConfigSchema.safeParse({ contactOrder: [], miscOrder: [], config: {} }).success).toBe(true);
   });
 
   it("accepts per-field config with every optional property set", () => {
@@ -24,24 +23,21 @@ describe("fieldsSchema", () => {
         },
       },
     };
-    expect(fieldsSchema.safeParse(value).success).toBe(true);
+    expect(fieldsConfigSchema.safeParse(value).success).toBe(true);
   });
 
   it("accepts a field config with no properties at all", () => {
-    expect(fieldsSchema.safeParse({ contactOrder: ["first"], miscOrder: [], config: { first: {} } }).success).toBe(true);
+    expect(fieldsConfigSchema.safeParse({ contactOrder: ["first"], miscOrder: [], config: { first: {} } }).success).toBe(true);
   });
 
   it("rejects malformed options", () => {
     const value = { contactOrder: [], miscOrder: ["age"], config: { age: { options: [{ label: "Adult" }] } } };
-    expect(fieldsSchema.safeParse(value).success).toBe(false);
+    expect(fieldsConfigSchema.safeParse(value).success).toBe(false);
   });
 
   it("rejects a non-numeric width", () => {
     const value = { contactOrder: ["first"], miscOrder: [], config: { first: { width: "6" } } };
-    expect(fieldsSchema.safeParse(value).success).toBe(false);
+    expect(fieldsConfigSchema.safeParse(value).success).toBe(false);
   });
 
-  it("accepts the @repo/tenant-config default field set", () => {
-    expect(fieldsSchema.safeParse(defaultFieldsConfig()).success).toBe(true);
-  });
 });

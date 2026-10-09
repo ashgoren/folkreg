@@ -3,9 +3,9 @@
 import type { UseFormReturn } from "react-hook-form";
 import { FieldGroup } from "@/components/ui/field";
 import { NumberField } from "@/components/form-number-field";
-import type { AdmissionsValues } from "./schema";
+import type { AdmissionsConfig } from "@repo/tenant-config";
 
-export function SlidingScaleFields({ form }: { form: UseFormReturn<AdmissionsValues> }) {
+export function SlidingScaleFields({ form }: { form: UseFormReturn<AdmissionsConfig> }) {
   return (
     <FieldGroup>
       <NumberField control={form.control} name="costRange.0" id="admissions-cost-min" label="Minimum" required />

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
-import { defaultEventConfig, defaultPaymentsConfig, defaultReceiptsConfig, defaultThemeConfig } from "@repo/tenant-config";
-import type { PaymentsConfig, TenantSecrets } from "@repo/types";
+import { defaultEventConfig, defaultPaymentsConfig, defaultReceiptsConfig, defaultThemeConfig, type PaymentsConfig } from "@repo/tenant-config";
+import type { TenantSecrets } from "@repo/types";
 import { createTestClient, getTestTenantId } from "./test-helpers";
 import { createTenantDb, getTenantBySlug } from "./queries";
 import { TenantNotFoundError } from "./errors";
@@ -54,6 +54,14 @@ describe("getTenantBySlug", () => {
 describe("getTenant / getSecrets", () => {
   it("returns the tenant row", async () => {
     expect((await db.getTenant())?.slug).toBe("test-tenant");
+  });
+
+  // A row whose jsonb doesn't match its schema (written by an older shape of the code, or edited
+  // by hand) fails at the read with every invalid field named, rather than surfacing later as a
+  // missing value. Written straight through the client to get past updateTenant's typing.
+  it("rejects a config column that doesn't match its schema, naming the field", async () => {
+    await supabase.from("tenants").update({ event_config: { ...defaultEventConfig(), calendar: "not an object" } }).eq("id", tenantId);
+    await expect(db.getTenant()).rejects.toThrow(/Tenant .* has invalid config:[\s\S]*event_config\.calendar/);
   });
 
   it("returns null for a tenant that doesn't exist", async () => {
@@ -200,8 +208,10 @@ describe("getPaymentProcessorCredentials", () => {
     await expect(db.getPaymentProcessorCredentials()).rejects.toThrow("missing Stripe test credentials");
   });
 
+  // getTenant() parses payments_config, so an unknown processor is rejected at the read, before
+  // the resolver ever sees it.
   it("throws for an unknown processor", async () => {
     await db.updateTenant({ payments_config: paymentsConfig({ processor: "square" as never }) });
-    await expect(db.getPaymentProcessorCredentials()).rejects.toThrow("unknown payment processor: square");
+    await expect(db.getPaymentProcessorCredentials()).rejects.toThrow(`Tenant ${tenantId} has invalid config`);
   });
 });

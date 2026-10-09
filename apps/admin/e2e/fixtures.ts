@@ -1,13 +1,17 @@
 import { test as base, expect, type Page } from "@playwright/test";
+import { parseTenantConfig } from "@repo/tenant-config";
 import type { Tenant } from "@repo/types";
 import { E2E_OWNER_EMAIL, E2E_TENANT_SLUG, createServiceClient, readTenant, resetTenant } from "../test/supabase";
 
 export const service = createServiceClient();
 
-// readTenant returns the raw row, whose jsonb columns are typed as generic Json. Specs assert on
-// specific config fields, so this narrows the row to Tenant -- the same cast createTenantDb's
-// getTenant() applies in app code.
-export const readTenantConfig = async (tenantId: string) => (await readTenant(service, tenantId)) as unknown as Tenant;
+// readTenant returns the raw row, whose jsonb columns are typed as generic Json. This parses them
+// the way createTenantDb's getTenant() does in app code, so every spec that reads config back also
+// checks that what the page saved matches its schema.
+export const readTenantConfig = async (tenantId: string): Promise<Tenant> => {
+  const row = await readTenant(service, tenantId);
+  return { ...row, ...parseTenantConfig(tenantId, row) };
+};
 
 // Looked up by owner rather than slug: general.spec.ts renames the slug, and a run that dies
 // mid-test would otherwise leave every later lookup-by-slug unable to find the tenant to reset.

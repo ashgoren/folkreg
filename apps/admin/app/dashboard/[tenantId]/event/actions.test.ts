@@ -6,9 +6,9 @@ import { itGuardsTheAction, useActionHarness } from "@/test/action-harness";
 vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
 import { createClient } from "@/lib/supabase/server";
 import { updateEvent } from "./actions";
-import type { EventValues } from "./schema";
+import type { EventConfig } from "@repo/tenant-config";
 
-const blank = (): EventValues => ({
+const blank = (): EventConfig => ({
   title: "Spring Dance Weekend",
   year: 2026,
   location: "Grange Hall",
@@ -30,7 +30,7 @@ describe("updateEvent", () => {
   });
 
   it("saves filled-in calendar, contact, and link fields", async () => {
-    const values: EventValues = {
+    const values: EventConfig = {
       ...blank(),
       calendar: { title: "SDW", description: "", location: "", start: "", end: "" },
       contacts: { info: "info@example.org", housing: "housing@example.org" },

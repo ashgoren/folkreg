@@ -3,10 +3,10 @@
 import { type UseFormReturn } from "react-hook-form";
 import { FieldGroup } from "@/components/ui/field";
 import { TextField } from "@/components/form-text-field";
-import type { AdmissionsValues } from "./schema";
+import type { AdmissionsConfig } from "@repo/tenant-config";
 import { TieredCategories } from "./TieredCategories";
 
-export function TieredFields({ form }: { form: UseFormReturn<AdmissionsValues> }) {
+export function TieredFields({ form }: { form: UseFormReturn<AdmissionsConfig> }) {
   return (
     <div className="space-y-6">
       <FieldGroup>

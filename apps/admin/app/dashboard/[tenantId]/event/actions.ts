@@ -3,11 +3,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { createTenantDb } from "@repo/db/queries";
 import { TenantNotFoundError } from "@repo/db/errors";
-import type { EventConfig } from "@repo/types";
-import { eventSchema, type EventValues } from "./schema";
+import { eventConfigSchema, type EventConfig } from "@repo/tenant-config";
 
-export async function updateEvent(tenantId: string, values: EventValues): Promise<string | null> {
-  const parsed = eventSchema.safeParse(values);
+export async function updateEvent(tenantId: string, values: EventConfig): Promise<string | null> {
+  const parsed = eventConfigSchema.safeParse(values);
   if (!parsed.success) return "Invalid data";
 
   const supabase = await createClient();
@@ -16,10 +15,8 @@ export async function updateEvent(tenantId: string, values: EventValues): Promis
 
   const db = createTenantDb(supabase, tenantId);
 
-  const event_config: EventConfig = parsed.data;
-
   try {
-    await db.updateTenant({ event_config });
+    await db.updateTenant({ event_config: parsed.data });
   } catch (error: unknown) {
     if (error instanceof TenantNotFoundError) return "No tenant found";
     throw error;

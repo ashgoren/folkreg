@@ -3,7 +3,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createTenantDb } from "@repo/db/queries";
 import { TenantNotFoundError } from "@repo/db/errors";
-import type { PaymentsConfig } from "@repo/types";
 import { paymentsSchema, type PaymentsValues } from "./schema";
 
 export async function updatePayments(tenantId: string, values: PaymentsValues): Promise<string | null> {
@@ -25,10 +24,8 @@ export async function updatePayments(tenantId: string, values: PaymentsValues): 
     ...config
   } = parsed.data;
 
-  const payments_config: PaymentsConfig = config;
-
   try {
-    await db.updateTenant({ payments_config });
+    await db.updateTenant({ payments_config: config });
     await db.updateTenantSecrets({
       stripe_secret_key_live: stripe_secret_key_live || null,
       stripe_webhook_secret_live: stripe_webhook_secret_live || null,

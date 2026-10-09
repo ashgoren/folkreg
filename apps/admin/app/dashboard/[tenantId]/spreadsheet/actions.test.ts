@@ -6,9 +6,9 @@ import { itGuardsTheAction, useActionHarness } from "@/test/action-harness";
 vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
 import { createClient } from "@/lib/supabase/server";
 import { updateSpreadsheet } from "./actions";
-import type { SpreadsheetValues } from "./schema";
+import type { SpreadsheetConfig } from "@repo/tenant-config";
 
-const config = (): SpreadsheetValues => ({
+const config = (): SpreadsheetConfig => ({
   sheetId: "https://docs.google.com/spreadsheets/d/1AbC_dEf-123/edit",
   columns: [{ name: "email", visible: true }, { name: "first", visible: false }],
 });

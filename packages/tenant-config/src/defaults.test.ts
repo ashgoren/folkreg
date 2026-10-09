@@ -1,6 +1,20 @@
 import { describe, it, expect } from "vitest";
 import { FIELD_DEFS } from "@repo/fields";
-import { defaultAdmissionsConfig, defaultFieldConfig, defaultFieldsConfig, defaultTenantConfig } from "./index";
+import { defaultAdmissionsConfig, defaultFieldConfig, defaultFieldsConfig, defaultTenantConfig } from "./defaults";
+import { admissionsConfigSchema, tenantConfigSchema } from "./schemas";
+
+// Every new tenant is created with these, and getTenant() parses every row it reads, so the
+// defaults have to pass the same schemas as anything an organizer saves.
+describe("defaultTenantConfig", () => {
+  it("passes every config schema", () => {
+    expect(tenantConfigSchema.safeParse({ ...defaultTenantConfig(), spreadsheet_config: null }).error).toBeUndefined();
+  });
+
+  // Switching Admissions modes keeps the other modes' starting values, so each has to be valid.
+  it.each(["sliding-scale", "fixed", "tiered"] as const)("has valid admissions values in %s mode", (mode) => {
+    expect(admissionsConfigSchema.safeParse({ ...defaultAdmissionsConfig(), mode }).success).toBe(true);
+  });
+});
 
 describe("defaultFieldsConfig", () => {
   // contactOrder and miscOrder render as separate sections of the registration form, so a field

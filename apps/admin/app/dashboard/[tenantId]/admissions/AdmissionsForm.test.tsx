@@ -9,7 +9,7 @@ import userEvent from "@testing-library/user-event";
 import { makeTenant } from "@/test/fixtures";
 import { expectLastSave, expectNoSave } from "@/test/autosave";
 import { defaultAdmissionsConfig } from "@repo/tenant-config";
-import type { AdmissionsConfig } from "@repo/types";
+import type { AdmissionsConfig } from "@repo/tenant-config";
 
 vi.mock("./actions", () => ({ updateAdmissions: vi.fn() }));
 import { updateAdmissions } from "./actions";

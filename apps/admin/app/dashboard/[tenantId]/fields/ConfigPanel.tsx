@@ -1,7 +1,7 @@
 "use client";
 
 import { FIELD_DEFS } from "@repo/fields";
-import type { FieldConfig } from "@repo/types";
+import type { FieldConfig } from "@repo/tenant-config";
 import { Field, FieldContent, FieldGroup } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
 import { Input } from "@/components/ui/input";

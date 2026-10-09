@@ -1,8 +1,9 @@
 import { z } from "zod";
+import { waiverConfigSchema } from "@repo/tenant-config";
 
-export const waiversSchema = z.object({
-  show: z.boolean(),
-  docusealTemplateId: z.string(),
+// waiver_config plus the DocuSeal API key, which the same form edits but which lives in
+// tenant_secrets.
+export const waiversSchema = waiverConfigSchema.extend({
   docuseal_key: z.string(),
 });
 

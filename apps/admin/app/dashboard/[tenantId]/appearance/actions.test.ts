@@ -6,9 +6,9 @@ import { itGuardsTheAction, useActionHarness } from "@/test/action-harness";
 vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
 import { createClient } from "@/lib/supabase/server";
 import { updateAppearance } from "./actions";
-import type { AppearanceValues } from "./schema";
+import type { ThemeConfig } from "@repo/tenant-config";
 
-const theme = (): AppearanceValues => ({
+const theme = (): ThemeConfig => ({
   backgroundLight: "#ffffff",
   backgroundDark: "#111111",
   foregroundLight: "#222222",

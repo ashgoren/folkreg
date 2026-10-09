@@ -12,26 +12,26 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useAutosave } from "@/lib/useAutosave";
 import type { Tenant } from "@repo/types";
-import { admissionsSchema, type AdmissionsValues } from "./schema";
+import { admissionsConfigSchema, type AdmissionsConfig } from "@repo/tenant-config";
 import { updateAdmissions } from "./actions";
 import { SlidingScaleFields } from "./SlidingScaleFields";
 import { FixedFields } from "./FixedFields";
 import { TieredFields } from "./TieredFields";
 
 export function AdmissionsForm({ tenant }: { tenant: Tenant }) {
-  const form = useForm<AdmissionsValues>({
+  const form = useForm<AdmissionsConfig>({
     mode: "onBlur",
-    resolver: zodResolver(admissionsSchema),
+    resolver: zodResolver(admissionsConfigSchema),
     defaultValues: tenant.admissions_config,
   });
 
-  const { saveDebounced, isPending, savedRecently } = useAutosave<AdmissionsValues>(
+  const { saveDebounced, isPending, savedRecently } = useAutosave<AdmissionsConfig>(
     (data) => updateAdmissions(tenant.id, data),
   );
 
   useEffect(() => {
     const subscription = form.watch((values) => {
-      const parsed = admissionsSchema.safeParse(values);
+      const parsed = admissionsConfigSchema.safeParse(values);
       if (!parsed.success) return;
       saveDebounced(parsed.data);
     });
@@ -44,7 +44,7 @@ export function AdmissionsForm({ tenant }: { tenant: Tenant }) {
   // accidental switch loses nothing. It waits until the current values are valid, since once a
   // mode's fields are hidden, an error left in one would block every later save with nothing on
   // screen to explain why -- whereas here the error is still showing next to the field.
-  async function handleModeChange(newMode: AdmissionsValues["mode"]) {
+  async function handleModeChange(newMode: AdmissionsConfig["mode"]) {
     if (await form.trigger()) form.setValue("mode", newMode);
   }
 
@@ -52,7 +52,7 @@ export function AdmissionsForm({ tenant }: { tenant: Tenant }) {
     <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
       <FieldGroup>
         <Controller name="mode" control={form.control} render={({ field }) => (
-          <RadioGroup value={field.value} onValueChange={(value) => handleModeChange(value as AdmissionsValues["mode"])}>
+          <RadioGroup value={field.value} onValueChange={(value) => handleModeChange(value as AdmissionsConfig["mode"])}>
             <Field orientation="horizontal">
               <RadioGroupItem value="fixed" id="admissions-mode-fixed" />
               <FieldContent>

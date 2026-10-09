@@ -2,7 +2,7 @@
 
 import { useSortable } from "@dnd-kit/react/sortable";
 import { GripVertical, X, TriangleAlert } from "lucide-react";
-import type { FieldConfig } from "@repo/types";
+import type { FieldConfig } from "@repo/tenant-config";
 import { cn } from "@/lib/utils";
 
 interface FieldRowProps {

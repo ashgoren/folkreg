@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { makeTenant } from "@/test/fixtures";
 import { expectLastSave, expectNoSave } from "@/test/autosave";
-import type { ThemeConfig } from "@repo/types";
+import type { ThemeConfig } from "@repo/tenant-config";
 
 vi.mock("./actions", () => ({ updateAppearance: vi.fn() }));
 import { updateAppearance } from "./actions";
