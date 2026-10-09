@@ -13,8 +13,8 @@ describe("ReceiptsForm", () => {
     vi.mocked(updateReceipts).mockReset().mockResolvedValue(null);
   });
 
-  it("populates from receipts_config, or blank when it's null", () => {
-    const { unmount } = render(<ReceiptsForm tenant={makeTenant({ receipts_config: { emailFrom: "from@example.com", emailReplyTo: null } })} />);
+  it("populates from receipts_config, or blank for a new tenant", () => {
+    const { unmount } = render(<ReceiptsForm tenant={makeTenant({ receipts_config: { emailFrom: "from@example.com", emailReplyTo: "" } })} />);
     expect(screen.getByLabelText("From address")).toHaveValue("from@example.com");
     expect(screen.getByLabelText(/Reply-to/)).toHaveValue("");
     unmount();

@@ -59,7 +59,9 @@ schema_paths = []
 
 [db.seed]
 # If enabled, seeds the database after migrations during a db reset.
-enabled = true
+# Disabled: fixtures are created by packages/db/scripts/seed.ts (`pnpm db:reset` runs the reset
+# and then the seed), so tenants get their config from the same TypeScript defaults as real ones.
+enabled = false
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
 sql_paths = ["./seed.sql"]

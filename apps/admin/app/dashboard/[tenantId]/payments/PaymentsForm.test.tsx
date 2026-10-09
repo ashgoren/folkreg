@@ -2,58 +2,38 @@
 // pieces of this form's state.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { makeSecrets, makeTenant } from "@/test/fixtures";
 import { expectLastSave, expectNoSave } from "@/test/autosave";
+import { defaultPaymentsConfig } from "@repo/tenant-config";
 import type { PaymentsConfig } from "@repo/types";
 
 vi.mock("./actions", () => ({ updatePayments: vi.fn() }));
 import { updatePayments } from "./actions";
 import { PaymentsForm } from "./PaymentsForm";
-import type { PaymentsSharedValues } from "./schema";
+import type { PaymentsValues } from "./schema";
 
 const byId = (id: string) => document.getElementById(id) as HTMLInputElement;
 
-// The form's own defaults for a tenant with no payments_config. NaN (not 0) for the optional
-// amounts is what NumberField uses to represent "blank".
-const SHARED_DEFAULTS: PaymentsSharedValues = {
-  paymentDueDate: "",
-  directPaymentUrl: "",
-  coverFeesCheckbox: false,
-  showPaymentSummary: true,
-  deposit: { enabled: false, amount: NaN },
-  donation: { enabled: false, max: NaN },
-  checks: { allowed: false, showPostalAddress: false, payee: "", address: "" },
-};
-
-const STRIPE_BLANK = {
-  processor: "stripe",
-  stripePublishableKeyLive: "",
-  stripePublishableKeyTest: "",
+// What a new tenant's form starts with, and so what an edit to it saves: the default
+// payments_config plus blank secrets.
+const BLANK: PaymentsValues = {
+  ...defaultPaymentsConfig(),
   stripe_secret_key_live: "",
   stripe_webhook_secret_live: "",
   stripe_secret_key_test: "",
   stripe_webhook_secret_test: "",
-  statementDescriptorSuffix: "",
-} as const;
-
-const PAYPAL_BLANK = {
-  processor: "paypal",
-  paypalClientIdLive: "",
-  paypalClientIdTest: "",
   paypal_secret_live: "",
   paypal_webhook_id_live: "",
   paypal_secret_test: "",
   paypal_webhook_id_test: "",
-} as const;
+};
 
 const storedConfig = (overrides: Partial<PaymentsConfig> = {}): PaymentsConfig => ({
-  processor: "stripe",
+  ...defaultPaymentsConfig(),
   stripePublishableKeyLive: "pk_live",
   stripePublishableKeyTest: "pk_test",
-  paypalClientIdLive: null,
-  paypalClientIdTest: null,
   paymentDueDate: "May 1",
   directPaymentUrl: "https://example.com/pay",
   coverFeesCheckbox: true,
@@ -142,7 +122,7 @@ describe("PaymentsForm", () => {
       await user.type(screen.getByLabelText("Secret key (Test)"), "sk_test");
 
       await expectLastSave(vi.mocked(updatePayments), tenant.id, {
-        ...STRIPE_BLANK, stripe_secret_key_live: "sk_live", stripe_secret_key_test: "sk_test", ...SHARED_DEFAULTS,
+        ...BLANK, stripe_secret_key_live: "sk_live", stripe_secret_key_test: "sk_test",
       });
 
       await user.click(screen.getByRole("tab", { name: "Live" }));
@@ -165,7 +145,9 @@ describe("PaymentsForm", () => {
   });
 
   describe("switching processors", () => {
-    it("resets to the new processor's blank credentials but keeps shared settings", async () => {
+    // Only the processor changes: the other processor's credentials stay in the form and in the
+    // save, so an accidental click on the other processor loses nothing.
+    it("shows the new processor's credentials and keeps the previous one's in the save", async () => {
       const tenant = makeTenant();
       const user = userEvent.setup();
       render(<PaymentsForm tenant={tenant} secrets={makeSecrets()} />);
@@ -177,14 +159,14 @@ describe("PaymentsForm", () => {
       expect(screen.queryByLabelText("Secret key (Live)")).not.toBeInTheDocument();
       expect(screen.getByLabelText("Client ID (Live)")).toHaveValue("");
       expect(screen.getByRole("switch", { name: /cover fees/ })).toBeChecked();
-      // The parsed save is strictly the PayPal branch of the union -- no Stripe keys tag along.
-      await expectLastSave(vi.mocked(updatePayments), tenant.id, { ...PAYPAL_BLANK, ...SHARED_DEFAULTS, coverFeesCheckbox: true });
+      await expectLastSave(vi.mocked(updatePayments), tenant.id, {
+        ...BLANK, processor: "paypal", stripe_secret_key_live: "sk_live", coverFeesCheckbox: true,
+      });
     });
 
-    it("restores a processor's credentials when switching back in the same session", async () => {
-      const tenant = makeTenant();
+    it("shows each processor's values again when switching back", async () => {
       const user = userEvent.setup();
-      render(<PaymentsForm tenant={tenant} secrets={makeSecrets()} />);
+      render(<PaymentsForm tenant={makeTenant()} secrets={makeSecrets()} />);
 
       await user.type(screen.getByLabelText("Secret key (Live)"), "sk_live");
       await user.click(screen.getByRole("radio", { name: "PayPal" }));
@@ -194,19 +176,6 @@ describe("PaymentsForm", () => {
 
       await user.click(screen.getByRole("radio", { name: "PayPal" }));
       expect(screen.getByLabelText("Client ID (Live)")).toHaveValue("client_live");
-      await expectLastSave(vi.mocked(updatePayments), tenant.id, expect.objectContaining({ processor: "paypal", paypalClientIdLive: "client_live" }));
-    });
-
-    it("carries shared edits made under one processor into a restored one", async () => {
-      const tenant = makeTenant();
-      const user = userEvent.setup();
-      render(<PaymentsForm tenant={tenant} secrets={makeSecrets()} />);
-
-      await user.click(screen.getByRole("radio", { name: "PayPal" }));
-      await user.type(byId("payments-direct-url"), "https://example.com/pay");
-      await user.click(screen.getByRole("radio", { name: "Stripe" }));
-
-      await expectLastSave(vi.mocked(updatePayments), tenant.id, { ...STRIPE_BLANK, ...SHARED_DEFAULTS, directPaymentUrl: "https://example.com/pay" });
     });
   });
 
@@ -221,7 +190,7 @@ describe("PaymentsForm", () => {
       await user.type(byId("payments-due-date"), "June 1");
 
       await expectLastSave(vi.mocked(updatePayments), tenant.id, {
-        ...STRIPE_BLANK, ...SHARED_DEFAULTS, deposit: { enabled: true, amount: 25 }, paymentDueDate: "June 1",
+        ...BLANK, deposit: { enabled: true, amount: 25 }, paymentDueDate: "June 1",
       });
 
       await user.click(screen.getByRole("switch", { name: /Allow deposit/ }));
@@ -244,12 +213,24 @@ describe("PaymentsForm", () => {
       const user = userEvent.setup();
       render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={makeSecrets()} />);
 
-      // Set in one step: clearing first would pass through NaN, which optionalNumber accepts as
-      // "blank" and autosaves -- correct behavior, but not the case under test.
-      await user.click(byId("payments-deposit-amount"));
-      fireEvent.change(byId("payments-deposit-amount"), { target: { value: "-5" } });
+      await user.clear(byId("payments-deposit-amount"));
+      await user.type(byId("payments-deposit-amount"), "-5");
       await user.tab();
 
+      expect(byId("payments-deposit-amount")).toHaveAttribute("aria-invalid", "true");
+      await expectNoSave(vi.mocked(updatePayments));
+    });
+
+    // Turning deposits off would hide the invalid amount while its error still blocked every
+    // save, so the switch waits for the error to be fixed.
+    it("keeps deposits on while the deposit amount has an error", async () => {
+      const user = userEvent.setup();
+      render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={makeSecrets()} />);
+
+      await user.clear(byId("payments-deposit-amount"));
+      await user.click(screen.getByRole("switch", { name: /Allow deposit/ }));
+
+      expect(screen.getByRole("switch", { name: /Allow deposit/ })).toBeChecked();
       expect(byId("payments-deposit-amount")).toHaveAttribute("aria-invalid", "true");
       await expectNoSave(vi.mocked(updatePayments));
     });

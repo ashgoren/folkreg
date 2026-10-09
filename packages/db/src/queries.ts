@@ -31,7 +31,6 @@ export type PaymentProcessorCredentials =
 // tenant/secrets are already-fetched rows; is_live picks which live/test variant is "active"
 const resolvePaymentProcessorCredentials = (tenant: Tenant, secrets: TenantSecrets): PaymentProcessorCredentials => {
   const paymentsConfig = tenant.payments_config;
-  if (!paymentsConfig) throw new Error(`Tenant ${tenant.id} has no payments_config`);
 
   const { processor } = paymentsConfig;
   const mode = tenant.is_live ? 'live' : 'test';
@@ -81,7 +80,9 @@ export const createTenantDb = (supabase: DbClient, tenantId: string) => {
       if (error.code === "PGRST116") return null; // No row found
       throw error; // Unexpected error
     }
-    return data as Tenant;
+    // Through `unknown` for the same reason as getOrder (orders.ts): the jsonb columns come back
+    // as non-null Json, which TS won't narrow directly to config types that contain arrays.
+    return data as unknown as Tenant;
   };
 
   const getSecrets = async () => {

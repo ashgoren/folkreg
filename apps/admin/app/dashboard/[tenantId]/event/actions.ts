@@ -15,27 +15,8 @@ export async function updateEvent(tenantId: string, values: EventValues): Promis
   if (!user) return "Not authenticated";
 
   const db = createTenantDb(supabase, tenantId);
-  const data = parsed.data;
 
-  const hasCalendar = Object.values(data.calendar).some(v => !!v);
-
-  const event_config: EventConfig = {
-    title: data.title,
-    year: data.year,
-    location: data.location,
-    date: data.date,
-    timezone: data.timezone,
-    ...(hasCalendar && { calendar: data.calendar }),
-    contacts: {
-      info: data.contacts.info,
-      ...(data.contacts.housing && { housing: data.contacts.housing }),
-    },
-    links: {
-      ...(data.links.info && { info: data.links.info }),
-      ...(data.links.health && { health: data.links.health }),
-      ...(data.links.safety && { safety: data.links.safety }),
-    },
-  };
+  const event_config: EventConfig = parsed.data;
 
   try {
     await db.updateTenant({ event_config });

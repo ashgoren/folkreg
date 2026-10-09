@@ -26,7 +26,7 @@ export interface FieldDefaults {
   rows?: number;
   width?: number;
   options?: { label: string; value: string }[];
-  value?: string;
+  defaultValue?: string;
 }
 
 export interface FieldDef {

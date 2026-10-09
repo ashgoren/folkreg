@@ -15,10 +15,7 @@ export function ReceiptsForm({ tenant }: { tenant: Tenant }) {
   const form = useForm<ReceiptsValues>({
     mode: "onBlur",
     resolver: zodResolver(receiptsSchema),
-    defaultValues: {
-      emailFrom: tenant.receipts_config?.emailFrom ?? "",
-      emailReplyTo: tenant.receipts_config?.emailReplyTo ?? "",
-    },
+    defaultValues: tenant.receipts_config,
   });
 
   const { saveDebounced, isPending, savedRecently } = useAutosave<ReceiptsValues>(

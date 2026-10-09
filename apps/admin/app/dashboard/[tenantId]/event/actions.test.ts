@@ -23,39 +23,21 @@ describe("updateEvent", () => {
   const harness = useActionHarness(createClient);
   const savedConfig = async () => (await readTenant(harness.service, harness.tenantId)).event_config;
 
-  // Optional sub-objects/keys are omitted entirely when blank (rather than stored as ""), so
-  // the registration app can treat "absent" as "not configured" without checking for "".
-  it("omits the calendar, housing contact, and links when they're blank", async () => {
+  // The stored config is the form's values as entered: every key present, blanks as "".
+  it("saves every field as entered, keeping blanks as \"\"", async () => {
     expect(await updateEvent(harness.tenantId, blank())).toBeNull();
-    expect(await savedConfig()).toEqual({
-      title: "Spring Dance Weekend",
-      year: 2026,
-      location: "Grange Hall",
-      date: "April 3-5",
-      timezone: "America/Los_Angeles",
-      contacts: { info: "" },
-      links: {},
-    });
+    expect(await savedConfig()).toEqual(blank());
   });
 
-  it("stores the whole calendar block once any calendar field is filled in", async () => {
-    const values = { ...blank(), calendar: { title: "SDW", description: "", location: "", start: "", end: "" } };
-    await updateEvent(harness.tenantId, values);
-    expect(await savedConfig()).toMatchObject({ calendar: values.calendar });
-  });
-
-  it("stores only the links and contacts that are filled in", async () => {
-    await updateEvent(harness.tenantId, {
+  it("saves filled-in calendar, contact, and link fields", async () => {
+    const values: EventValues = {
       ...blank(),
+      calendar: { title: "SDW", description: "", location: "", start: "", end: "" },
       contacts: { info: "info@example.org", housing: "housing@example.org" },
       links: { info: "https://example.org", health: "", safety: "https://example.org/safety" },
-    });
-    const config = await savedConfig();
-    expect(config).toMatchObject({
-      contacts: { info: "info@example.org", housing: "housing@example.org" },
-      links: { info: "https://example.org", safety: "https://example.org/safety" },
-    });
-    expect(config).not.toHaveProperty("links.health");
+    };
+    await updateEvent(harness.tenantId, values);
+    expect(await savedConfig()).toEqual(values);
   });
 
   it("replaces the column wholesale, dropping keys that were cleared", async () => {

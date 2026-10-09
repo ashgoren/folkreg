@@ -28,7 +28,7 @@ test("saves Stripe credentials from both the Live and Test tabs", async ({ page,
     processor: "stripe",
     statementDescriptorSuffix: "FOLKREG",
     stripePublishableKeyTest: "pk_test_123",
-    stripePublishableKeyLive: null,
+    stripePublishableKeyLive: "",
   });
 
   await page.reload();
@@ -37,7 +37,9 @@ test("saves Stripe credentials from both the Live and Test tabs", async ({ page,
   await expect(page.getByLabel("Secret key (Test)")).toHaveValue("sk_test_123");
 });
 
-test("switching to PayPal clears the Stripe credentials from the database", async ({ page, tenantId }) => {
+// Switching processors only changes which one is active: the Stripe credentials stay saved, and
+// are still there after a reload and a switch back.
+test("switching to PayPal keeps the Stripe credentials", async ({ page, tenantId }) => {
   await page.getByLabel("Secret key (Live)").fill("sk_live_123");
   await expect.poll(async () => (await readSecrets(service, tenantId)).stripe_secret_key_live).toBe("sk_live_123");
 
@@ -47,19 +49,16 @@ test("switching to PayPal clears the Stripe credentials from the database", asyn
   await waitForSaved(page);
 
   await expect.poll(() => readSecrets(service, tenantId)).toMatchObject({
-    stripe_secret_key_live: null,
+    stripe_secret_key_live: "sk_live_123",
     paypal_secret_live: "paypal-secret-live",
   });
-  await expect.poll(() => paymentsConfig(tenantId)).toMatchObject({
-    processor: "paypal",
-    paypalClientIdLive: "paypal-client-live",
-    stripePublishableKeyLive: null,
-    statementDescriptorSuffix: null,
-  });
+  await expect.poll(() => paymentsConfig(tenantId)).toMatchObject({ processor: "paypal", paypalClientIdLive: "paypal-client-live" });
 
   await page.reload();
   await expect(page.getByRole("radio", { name: "PayPal" })).toBeChecked();
   await expect(page.getByLabel("Client ID (Live)")).toHaveValue("paypal-client-live");
+  await page.getByRole("radio", { name: "Stripe" }).click();
+  await expect(page.getByLabel("Secret key (Live)")).toHaveValue("sk_live_123");
 });
 
 test("deposit, donation, and check options reveal and save their details", async ({ page, tenantId }) => {

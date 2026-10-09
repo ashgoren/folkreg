@@ -133,55 +133,55 @@ export type Database = {
       }
       tenants: {
         Row: {
-          admissions_config: Json | null
+          admissions_config: Json
           created_at: string | null
-          event_config: Json | null
-          fields_config: Json | null
+          event_config: Json
+          fields_config: Json
           id: string
           is_live: boolean
           owner_id: string | null
-          payments_config: Json | null
-          receipts_config: Json | null
+          payments_config: Json
+          receipts_config: Json
           show_preregistration: boolean
           slug: string
           spreadsheet_config: Json | null
-          theme_config: Json | null
+          theme_config: Json
           updated_at: string | null
-          waiver_config: Json | null
+          waiver_config: Json
         }
         Insert: {
-          admissions_config?: Json | null
+          admissions_config: Json
           created_at?: string | null
-          event_config?: Json | null
-          fields_config?: Json | null
+          event_config: Json
+          fields_config: Json
           id?: string
           is_live?: boolean
           owner_id?: string | null
-          payments_config?: Json | null
-          receipts_config?: Json | null
+          payments_config: Json
+          receipts_config: Json
           show_preregistration?: boolean
           slug: string
           spreadsheet_config?: Json | null
-          theme_config?: Json | null
+          theme_config: Json
           updated_at?: string | null
-          waiver_config?: Json | null
+          waiver_config: Json
         }
         Update: {
-          admissions_config?: Json | null
+          admissions_config?: Json
           created_at?: string | null
-          event_config?: Json | null
-          fields_config?: Json | null
+          event_config?: Json
+          fields_config?: Json
           id?: string
           is_live?: boolean
           owner_id?: string | null
-          payments_config?: Json | null
-          receipts_config?: Json | null
+          payments_config?: Json
+          receipts_config?: Json
           show_preregistration?: boolean
           slug?: string
           spreadsheet_config?: Json | null
-          theme_config?: Json | null
+          theme_config?: Json
           updated_at?: string | null
-          waiver_config?: Json | null
+          waiver_config?: Json
         }
         Relationships: []
       }

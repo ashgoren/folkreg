@@ -61,13 +61,6 @@ describe("EventForm", () => {
     expect(byId("event-link-safety")).toHaveValue("https://example.com/safety");
   });
 
-  it("fills in blanks for optional sections missing from a stored config", () => {
-    const sparseConfig: EventConfig = { ...fullConfig, calendar: undefined, contacts: { info: "info@example.com" }, links: {} };
-    render(<EventForm tenant={makeTenant({ event_config: sparseConfig })} />);
-    expect(byId("event-cal-title")).toHaveValue("");
-    expect(byId("event-contact-housing")).toHaveValue("");
-    expect(byId("event-link-info")).toHaveValue("");
-  });
 
   it("autosaves the whole form, including nested sections, as typed values", async () => {
     const tenant = makeTenant();

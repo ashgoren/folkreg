@@ -8,6 +8,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { makeTenant } from "@/test/fixtures";
 import { expectLastSave, expectNoSave } from "@/test/autosave";
+import { defaultAdmissionsConfig } from "@repo/tenant-config";
 import type { AdmissionsConfig } from "@repo/types";
 
 vi.mock("./actions", () => ({ updateAdmissions: vi.fn() }));
@@ -16,7 +17,10 @@ import { AdmissionsForm } from "./AdmissionsForm";
 
 const byId = (id: string) => document.getElementById(id) as HTMLInputElement;
 
-const SHARED_DEFAULTS = { admissionQuantityMax: 4, waitlistCutoff: 999, forceWaitlist: false };
+// A new tenant's config -- and so the base of what any edit to it saves, since every mode's values
+// are part of it.
+const DEFAULTS = defaultAdmissionsConfig();
+const stored = (overrides: Partial<AdmissionsConfig>): AdmissionsConfig => ({ ...defaultAdmissionsConfig(), ...overrides });
 
 const replace = async (user: ReturnType<typeof userEvent.setup>, id: string, text: string) => {
   await user.clear(byId(id));
@@ -29,19 +33,19 @@ describe("AdmissionsForm", () => {
   });
 
   describe("initial state", () => {
-    it("defaults a new tenant to sliding scale with the standard range and shared defaults", () => {
+    it("starts a new tenant on sliding scale with the default range and shared settings", () => {
       render(<AdmissionsForm tenant={makeTenant()} />);
       expect(screen.getByRole("radio", { name: "Sliding scale" })).toBeChecked();
-      expect(byId("admissions-cost-min")).toHaveValue(20);
-      expect(byId("admissions-cost-max")).toHaveValue(100);
-      expect(byId("admissions-cost-default")).toHaveValue(60);
+      expect(byId("admissions-cost-min")).toHaveValue(120);
+      expect(byId("admissions-cost-max")).toHaveValue(500);
+      expect(byId("admissions-cost-default")).toHaveValue(350);
       expect(byId("admissions-quantity-max")).toHaveValue(4);
       expect(byId("admissions-waitlist-cutoff")).toHaveValue(999);
       expect(screen.getByRole("switch", { name: /Force waitlist/ })).not.toBeChecked();
     });
 
     it("populates a stored fixed config", () => {
-      const config: AdmissionsConfig = { mode: "fixed", cost: 45, admissionQuantityMax: 2, waitlistCutoff: 150, forceWaitlist: true };
+      const config = stored({ mode: "fixed", cost: 45, admissionQuantityMax: 2, waitlistCutoff: 150, forceWaitlist: true });
       render(<AdmissionsForm tenant={makeTenant({ admissions_config: config })} />);
       expect(screen.getByRole("radio", { name: "Fixed" })).toBeChecked();
       expect(byId("admissions-fixed-cost")).toHaveValue(45);
@@ -51,15 +55,14 @@ describe("AdmissionsForm", () => {
     });
 
     it("populates a stored tiered config, one card per category", () => {
-      const config: AdmissionsConfig = {
+      const config = stored({
         mode: "tiered",
         earlybirdCutoff: "2027-01-15",
         categories: [
           { label: "Basic", ageGroups: ["adult"], early: 80, later: 100 },
           { label: "Youth", ageGroups: ["6-12", "13-17"], early: 40, later: 50 },
         ],
-        ...SHARED_DEFAULTS,
-      };
+      });
       render(<AdmissionsForm tenant={makeTenant({ admissions_config: config })} />);
 
       expect(byId("admissions-earlybird-cutoff")).toHaveValue("2027-01-15");
@@ -81,17 +84,15 @@ describe("AdmissionsForm", () => {
       const user = userEvent.setup();
       render(<AdmissionsForm tenant={tenant} />);
 
-      await replace(user, "admissions-cost-default", "80");
-      await expectLastSave(vi.mocked(updateAdmissions), tenant.id, {
-        mode: "sliding-scale", costRange: [20, 100], costDefault: 80, ...SHARED_DEFAULTS,
-      });
+      await replace(user, "admissions-cost-default", "300");
+      await expectLastSave(vi.mocked(updateAdmissions), tenant.id, { ...DEFAULTS, costDefault: 300 });
     });
 
     it("rejects a default outside the min/max range", async () => {
       const user = userEvent.setup();
       render(<AdmissionsForm tenant={makeTenant()} />);
 
-      await replace(user, "admissions-cost-default", "150");
+      await replace(user, "admissions-cost-default", "600");
       await user.tab();
 
       expect(screen.getByRole("alert")).toHaveTextContent("Must be between minimum and maximum");
@@ -122,7 +123,9 @@ describe("AdmissionsForm", () => {
   });
 
   describe("switching modes", () => {
-    it("resets to the new mode's defaults but carries the shared fields across", async () => {
+    // Only `mode` changes: each mode's values stay in the form and in the save, so an accidental
+    // switch loses nothing.
+    it("shows the new mode's values and saves the change, keeping everything else", async () => {
       const tenant = makeTenant();
       const user = userEvent.setup();
       render(<AdmissionsForm tenant={tenant} />);
@@ -131,42 +134,43 @@ describe("AdmissionsForm", () => {
       await user.click(screen.getByRole("switch", { name: /Force waitlist/ }));
       await user.click(screen.getByRole("radio", { name: "Fixed" }));
 
-      expect(byId("admissions-fixed-cost")).toHaveValue(60);
+      expect(byId("admissions-fixed-cost")).toHaveValue(200);
       expect(byId("admissions-cost-min")).toBeNull();
       expect(byId("admissions-quantity-max")).toHaveValue(6);
       await expectLastSave(vi.mocked(updateAdmissions), tenant.id, {
-        mode: "fixed", cost: 60, admissionQuantityMax: 6, waitlistCutoff: 999, forceWaitlist: true,
+        ...DEFAULTS, mode: "fixed", admissionQuantityMax: 6, forceWaitlist: true,
       });
     });
 
-    it("restores a mode's earlier edits when switching back to it in the same session", async () => {
+    it("shows each mode's earlier edits when switching back", async () => {
       const tenant = makeTenant();
       const user = userEvent.setup();
       render(<AdmissionsForm tenant={tenant} />);
 
-      await replace(user, "admissions-cost-default", "70");
+      await replace(user, "admissions-cost-default", "300");
       await user.click(screen.getByRole("radio", { name: "Fixed" }));
       await replace(user, "admissions-fixed-cost", "55");
       await user.click(screen.getByRole("radio", { name: "Sliding scale" }));
-      expect(byId("admissions-cost-default")).toHaveValue(70);
+      expect(byId("admissions-cost-default")).toHaveValue(300);
 
       await user.click(screen.getByRole("radio", { name: "Fixed" }));
       expect(byId("admissions-fixed-cost")).toHaveValue(55);
-      await expectLastSave(vi.mocked(updateAdmissions), tenant.id, expect.objectContaining({ mode: "fixed", cost: 55 }));
+      await expectLastSave(vi.mocked(updateAdmissions), tenant.id, { ...DEFAULTS, mode: "fixed", cost: 55, costDefault: 300 });
     });
 
-    it("carries shared-field edits made in another mode into a restored mode", async () => {
-      const tenant = makeTenant();
+    // Switching would hide the invalid field while its error still blocked every save, with
+    // nothing on screen to explain why -- so the switch waits for the error to be fixed.
+    it("stays on the current mode while it has an error", async () => {
       const user = userEvent.setup();
-      render(<AdmissionsForm tenant={tenant} />);
+      render(<AdmissionsForm tenant={makeTenant()} />);
 
+      await user.clear(byId("admissions-cost-default"));
       await user.click(screen.getByRole("radio", { name: "Fixed" }));
-      await replace(user, "admissions-waitlist-cutoff", "200");
-      await user.click(screen.getByRole("radio", { name: "Sliding scale" }));
 
-      await expectLastSave(vi.mocked(updateAdmissions), tenant.id, {
-        mode: "sliding-scale", costRange: [20, 100], costDefault: 60, admissionQuantityMax: 4, waitlistCutoff: 200, forceWaitlist: false,
-      });
+      expect(screen.getByRole("radio", { name: "Sliding scale" })).toBeChecked();
+      expect(byId("admissions-fixed-cost")).toBeNull();
+      expect(screen.getByRole("alert")).toHaveTextContent("Required");
+      await expectNoSave(vi.mocked(updateAdmissions));
     });
   });
 
@@ -188,10 +192,10 @@ describe("AdmissionsForm", () => {
       await user.click(screen.getByRole("checkbox", { name: "13-17 yr old" }));
 
       await expectLastSave(vi.mocked(updateAdmissions), tenant.id, {
+        ...DEFAULTS,
         mode: "tiered",
         earlybirdCutoff: "2027-01-15",
         categories: [{ label: "Basic", ageGroups: ["adult", "13-17"], early: 80, later: 100 }],
-        ...SHARED_DEFAULTS,
       });
 
       await user.click(screen.getByRole("checkbox", { name: "Adult" }));
@@ -204,16 +208,14 @@ describe("AdmissionsForm", () => {
     });
 
     it("removes the right category from the middle of the list", async () => {
-      const config: AdmissionsConfig = {
+      const config = stored({
         mode: "tiered",
-        earlybirdCutoff: "",
         categories: [
           { label: "A", ageGroups: [], early: 1, later: 1 },
           { label: "B", ageGroups: [], early: 2, later: 2 },
           { label: "C", ageGroups: [], early: 3, later: 3 },
         ],
-        ...SHARED_DEFAULTS,
-      };
+      });
       const tenant = makeTenant({ admissions_config: config });
       const user = userEvent.setup();
       render(<AdmissionsForm tenant={tenant} />);
@@ -228,9 +230,7 @@ describe("AdmissionsForm", () => {
     });
 
     it("flags a cleared category price and doesn't save it", async () => {
-      const config: AdmissionsConfig = {
-        mode: "tiered", earlybirdCutoff: "", categories: [{ label: "A", ageGroups: [], early: 1, later: 1 }], ...SHARED_DEFAULTS,
-      };
+      const config = stored({ mode: "tiered", categories: [{ label: "A", ageGroups: [], early: 1, later: 1 }] });
       const user = userEvent.setup();
       render(<AdmissionsForm tenant={makeTenant({ admissions_config: config })} />);
 

@@ -7,7 +7,7 @@ export const service = createServiceClient();
 // readTenant returns the raw row, whose jsonb columns are typed as generic Json. Specs assert on
 // specific config fields, so this narrows the row to Tenant -- the same cast createTenantDb's
 // getTenant() applies in app code.
-export const readTenantConfig = async (tenantId: string) => (await readTenant(service, tenantId)) as Tenant;
+export const readTenantConfig = async (tenantId: string) => (await readTenant(service, tenantId)) as unknown as Tenant;
 
 // Looked up by owner rather than slug: general.spec.ts renames the slug, and a run that dies
 // mid-test would otherwise leave every later lookup-by-slug unable to find the tenant to reset.
@@ -15,10 +15,10 @@ const getE2eTenantId = async () => {
   const { data: users, error: usersError } = await service.auth.admin.listUsers();
   if (usersError) throw usersError;
   const owner = users.users.find((user) => user.email === E2E_OWNER_EMAIL);
-  if (!owner) throw new Error(`Seed user ${E2E_OWNER_EMAIL} not found -- run \`supabase db reset\``);
+  if (!owner) throw new Error(`Seed user ${E2E_OWNER_EMAIL} not found -- run \`pnpm db:reset\``);
 
   const { data, error } = await service.from("tenants").select("id").eq("owner_id", owner.id).single();
-  if (error) throw new Error(`No tenant owned by ${E2E_OWNER_EMAIL} -- run \`supabase db reset\`: ${error.message}`);
+  if (error) throw new Error(`No tenant owned by ${E2E_OWNER_EMAIL} -- run \`pnpm db:reset\`: ${error.message}`);
   return data.id;
 };
 

@@ -15,16 +15,14 @@ export async function updateWaivers(tenantId: string, values: WaiversValues): Pr
   if (!user) return "Not authenticated";
 
   const db = createTenantDb(supabase, tenantId);
-  const data = parsed.data;
 
-  const waiver_config: WaiverConfig = {
-    show: data.show,
-    docusealTemplateId: data.docusealTemplateId || null,
-  };
+  // The API key goes to tenant_secrets, where an unset column is null; the rest is waiver_config.
+  const { docuseal_key, ...config } = parsed.data;
+  const waiver_config: WaiverConfig = config;
 
   try {
     await db.updateTenant({ waiver_config });
-    await db.updateTenantSecrets({ docuseal_key: data.docuseal_key || null });
+    await db.updateTenantSecrets({ docuseal_key: docuseal_key || null });
   } catch (error: unknown) {
     if (error instanceof TenantNotFoundError) return "No tenant found";
     throw error;

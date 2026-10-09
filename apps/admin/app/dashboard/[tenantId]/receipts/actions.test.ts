@@ -16,9 +16,9 @@ describe("updateReceipts", () => {
     expect(await savedConfig()).toEqual({ emailFrom: "reg@example.org", emailReplyTo: "info@example.org" });
   });
 
-  it("stores blank addresses as null", async () => {
+  it("stores blank addresses as \"\"", async () => {
     await updateReceipts(harness.tenantId, { emailFrom: "", emailReplyTo: "" });
-    expect(await savedConfig()).toEqual({ emailFrom: null, emailReplyTo: null });
+    expect(await savedConfig()).toEqual({ emailFrom: "", emailReplyTo: "" });
   });
 
   itGuardsTheAction({

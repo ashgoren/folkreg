@@ -18,17 +18,17 @@ import { updateSpreadsheet } from "./actions";
 import { SpreadsheetFieldRow } from "./SpreadsheetFieldRow";
 
 function isSystemColumnRelevant(column: string, tenant: Tenant): boolean {
-  if (column === "waiver") return tenant.waiver_config?.show ?? false;
-  if (column === "deposit") return tenant.payments_config?.deposit?.enabled ?? false;
-  if (column === "donation") return tenant.payments_config?.donation?.enabled ?? false;
-  if (column === "fees") return tenant.payments_config?.coverFeesCheckbox ?? false;
+  if (column === "waiver") return tenant.waiver_config.show;
+  if (column === "deposit") return tenant.payments_config.deposit.enabled;
+  if (column === "donation") return tenant.payments_config.donation.enabled;
+  if (column === "fees") return tenant.payments_config.coverFeesCheckbox;
   return true;
 }
 
 export function SpreadsheetForm({ tenant }: { tenant: Tenant }) {
   const activeFieldNames = [
-    ...(tenant.fields_config?.contactOrder ?? []),
-    ...(tenant.fields_config?.miscOrder ?? []),
+    ...tenant.fields_config.contactOrder,
+    ...tenant.fields_config.miscOrder,
   ];
 
   const availableRegistrantColumns: string[] = [];

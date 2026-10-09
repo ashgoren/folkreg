@@ -1,13 +1,19 @@
+import { defaultFieldsConfig } from "@repo/tenant-config";
 import { test, expect, readTenantConfig, waitForSaved, dragRowOnto } from "./fixtures";
 import type { Page } from "@playwright/test";
 
 const fieldsConfig = async (tenantId: string) => (await readTenantConfig(tenantId)).fields_config;
 
+// A new tenant starts with the default field set active, so these specs work from that: adding
+// a field that isn't in it, removing and editing ones that are.
+const defaults = defaultFieldsConfig();
+
 // An "Available fields" row is a <span>{name}</span> next to an "Add" button; an active row's
 // select button is labelled by the field name, with the drag handle and remove button beside
-// it in the same row element.
-const addField = (page: Page, name: string) =>
-  page.getByText(name, { exact: true }).locator("..").getByRole("button", { name: "Add" }).click();
+// it in the same row element. With fields active, the available list starts collapsed.
+const expandAvailable = (page: Page) => page.getByRole("button", { name: /Available fields/ }).click();
+const availableAddButton = (page: Page, name: string) =>
+  page.getByText(name, { exact: true }).locator("..").getByRole("button", { name: "Add" });
 const activeRow = (page: Page, name: string) => page.getByRole("button", { name, exact: true }).locator("..");
 
 test.beforeEach(async ({ page, dashboardUrl }) => {
@@ -15,16 +21,15 @@ test.beforeEach(async ({ page, dashboardUrl }) => {
 });
 
 test("adding a field saves it with its default config", async ({ page, tenantId }) => {
-  // With nothing active, the available list starts expanded.
-  await addField(page, "first");
-  await addField(page, "age");
+  await expandAvailable(page);
+  await availableAddButton(page, "age").click();
   await waitForSaved(page);
 
   await expect.poll(() => fieldsConfig(tenantId)).toEqual({
-    contactOrder: ["first"],
-    miscOrder: ["age"],
+    contactOrder: defaults.contactOrder,
+    miscOrder: [...defaults.miscOrder, "age"],
     config: {
-      first: { label: "First name", width: 6 },
+      ...defaults.config,
       age: {
         title: "Age",
         label: "Please choose one.",
@@ -42,22 +47,19 @@ test("adding a field saves it with its default config", async ({ page, tenantId 
 });
 
 test("removing a field drops it from both the order and the config", async ({ page, tenantId }) => {
-  await addField(page, "first");
-  await addField(page, "last");
-  await expect.poll(async () => (await fieldsConfig(tenantId))?.contactOrder).toEqual(["first", "last"]);
-
   await activeRow(page, "last").getByRole("button", { name: "Remove field" }).click();
+
   await expect.poll(() => fieldsConfig(tenantId)).toEqual({
-    contactOrder: ["first"],
-    miscOrder: [],
-    config: { first: { label: "First name", width: 6 } },
+    contactOrder: defaults.contactOrder.filter((name) => name !== "last"),
+    miscOrder: defaults.miscOrder,
+    config: Object.fromEntries(Object.entries(defaults.config).filter(([name]) => name !== "last")),
   });
   // It's back in the available list.
-  await expect(page.getByText("last", { exact: true }).locator("..").getByRole("button", { name: "Add" })).toBeVisible();
+  await expandAvailable(page);
+  await expect(availableAddButton(page, "last")).toBeVisible();
 });
 
 test("editing a field in the config panel saves its config", async ({ page, tenantId }) => {
-  await addField(page, "first");
   await activeRow(page, "first").getByRole("button", { name: "first", exact: true }).click();
   await expect(page.getByRole("heading", { name: "first" })).toBeVisible();
 
@@ -67,7 +69,7 @@ test("editing a field in the config panel saves its config", async ({ page, tena
   await page.locator("#config-required-first").click();
   await waitForSaved(page);
 
-  await expect.poll(async () => (await fieldsConfig(tenantId))?.config.first)
+  await expect.poll(async () => (await fieldsConfig(tenantId)).config.first)
     .toEqual({ label: "Given name", width: 6, required: true });
 
   await page.reload();
@@ -77,14 +79,10 @@ test("editing a field in the config panel saves its config", async ({ page, tena
 });
 
 test("dragging a row reorders the contact fields", async ({ page, tenantId }) => {
-  await addField(page, "first");
-  await addField(page, "last");
-  await addField(page, "email");
-  await expect.poll(async () => (await fieldsConfig(tenantId))?.contactOrder).toEqual(["first", "last", "email"]);
-
   await dragRowOnto(page, activeRow(page, "email").getByRole("button", { name: "Drag to reorder" }), activeRow(page, "first"));
 
-  await expect.poll(async () => (await fieldsConfig(tenantId))?.contactOrder).toEqual(["email", "first", "last"]);
+  const expected = ["email", ...defaults.contactOrder.filter((name) => name !== "email")];
+  await expect.poll(async () => (await fieldsConfig(tenantId)).contactOrder).toEqual(expected);
 
   await page.reload();
   const rowNames = page.getByRole("button", { name: /^(first|last|email)$/ });

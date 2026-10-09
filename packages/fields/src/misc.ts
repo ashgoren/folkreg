@@ -15,7 +15,7 @@ export const MISC_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
         { label: "3-5 yr old", value: "3-5" },
         { label: "0-2 yr old", value: "0-2" },
       ],
-      value: "adult",
+      defaultValue: "adult",
     },
   },
   share: {
@@ -31,7 +31,7 @@ export const MISC_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
         { label: "Include my phone number in the roster", value: "phone" },
         { label: "Include my address in the roster", value: "address" },
       ],
-      value: "name, pronouns, email, phone, address",
+      defaultValue: "name, pronouns, email, phone, address",
     },
   },
   carpool: {

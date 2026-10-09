@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AutosaveStatus } from "@/components/autosave-status";
@@ -18,35 +18,11 @@ import { SlidingScaleFields } from "./SlidingScaleFields";
 import { FixedFields } from "./FixedFields";
 import { TieredFields } from "./TieredFields";
 
-function getDefaultsForMode(
-  mode: AdmissionsValues["mode"],
-  shared: { admissionQuantityMax: number; waitlistCutoff: number; forceWaitlist: boolean },
-): AdmissionsValues {
-  switch (mode) {
-    case "fixed":
-      return { mode, cost: 60, ...shared };
-    case "sliding-scale":
-      return { mode, costRange: [20, 100], costDefault: 60, ...shared };
-    case "tiered":
-      return { mode, earlybirdCutoff: "", categories: [], ...shared };
-  }
-}
-
 export function AdmissionsForm({ tenant }: { tenant: Tenant }) {
-  const admissionsConfig = tenant.admissions_config;
-  const initialShared = {
-    admissionQuantityMax: admissionsConfig?.admissionQuantityMax ?? 4,
-    waitlistCutoff: admissionsConfig?.waitlistCutoff ?? 999,
-    forceWaitlist: admissionsConfig?.forceWaitlist ?? false,
-  };
-  const initialValues: AdmissionsValues = admissionsConfig
-    ? { ...admissionsConfig, ...initialShared }
-    : getDefaultsForMode("sliding-scale", initialShared);
-
   const form = useForm<AdmissionsValues>({
     mode: "onBlur",
     resolver: zodResolver(admissionsSchema),
-    defaultValues: initialValues,
+    defaultValues: tenant.admissions_config,
   });
 
   const { saveDebounced, isPending, savedRecently } = useAutosave<AdmissionsValues>(
@@ -64,19 +40,12 @@ export function AdmissionsForm({ tenant }: { tenant: Tenant }) {
 
   const mode = form.watch("mode");
 
-  const modeCache = useRef<Partial<Record<AdmissionsValues["mode"], AdmissionsValues>>>({});
-
-  function handleModeChange(newMode: AdmissionsValues["mode"]) {
-    const current = form.getValues();
-    modeCache.current[current.mode] = current;
-
-    const shared = {
-      admissionQuantityMax: current.admissionQuantityMax,
-      waitlistCutoff: current.waitlistCutoff,
-      forceWaitlist: current.forceWaitlist,
-    };
-    const cached = modeCache.current[newMode];
-    form.reset(cached ? { ...cached, ...shared } : getDefaultsForMode(newMode, shared));
+  // Switching only changes `mode`: every mode's values stay in the form and are saved, so an
+  // accidental switch loses nothing. It waits until the current values are valid, since once a
+  // mode's fields are hidden, an error left in one would block every later save with nothing on
+  // screen to explain why -- whereas here the error is still showing next to the field.
+  async function handleModeChange(newMode: AdmissionsValues["mode"]) {
+    if (await form.trigger()) form.setValue("mode", newMode);
   }
 
   return (

@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FIELD_DEFS } from "@repo/fields";
+import { defaultFieldsConfig } from "@repo/tenant-config";
 import { makeTenant } from "@/test/fixtures";
 import { expectLastSave } from "@/test/autosave";
 import type { FieldsConfig } from "@repo/types";
@@ -31,14 +32,23 @@ const config: FieldsConfig = {
   },
 };
 
+// What the page looks like once an organizer has deactivated every field.
+const noneActive: FieldsConfig = { contactOrder: [], miscOrder: [], config: {} };
+
 describe("FieldsForm", () => {
   beforeEach(() => {
     vi.mocked(updateFields).mockReset().mockResolvedValue(null);
   });
 
   describe("initial state", () => {
-    it("opens the available-fields list for a tenant with nothing active yet", () => {
+    it("starts a new tenant with the default field set active, contact fields first", () => {
       render(<FieldsForm tenant={makeTenant()} />);
+      const { contactOrder, miscOrder } = defaultFieldsConfig();
+      expect(activeFieldNames()).toEqual([...contactOrder, ...miscOrder]);
+    });
+
+    it("opens the available-fields list when no fields are active", () => {
+      render(<FieldsForm tenant={makeTenant({ fields_config: noneActive })} />);
       expect(activeFieldNames()).toEqual([]);
       expect(screen.getAllByRole("button", { name: "Add" })).toHaveLength(Object.keys(FIELD_DEFS).length);
       expect(screen.getByText("Select a field to configure it.")).toBeInTheDocument();
@@ -73,7 +83,7 @@ describe("FieldsForm", () => {
 
   describe("activating and deactivating", () => {
     it("activates a contact field into the contact group with its code-defined defaults, saving immediately", async () => {
-      const tenant = makeTenant();
+      const tenant = makeTenant({ fields_config: noneActive });
       const user = userEvent.setup();
       render(<FieldsForm tenant={tenant} />);
 
@@ -89,7 +99,7 @@ describe("FieldsForm", () => {
     });
 
     it("activates a misc field into the misc group, translating `value` defaults into defaultValue", async () => {
-      const tenant = makeTenant();
+      const tenant = makeTenant({ fields_config: noneActive });
       const user = userEvent.setup();
       render(<FieldsForm tenant={tenant} />);
 

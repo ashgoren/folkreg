@@ -1,10 +1,11 @@
+import { defaultEventConfig } from "@repo/tenant-config";
 import { test, expect, readTenantConfig, waitForSaved } from "./fixtures";
 
 test.beforeEach(async ({ page, dashboardUrl }) => {
   await page.goto(dashboardUrl("event"));
 });
 
-test("autosaves event details, omitting the calendar block and blank links", async ({ page, tenantId }) => {
+test("autosaves event details, keeping untouched fields blank", async ({ page, tenantId }) => {
   // Several labels repeat across sections (e.g. "Title" for both the event and the calendar
   // entry), so fields are addressed by id.
   await page.locator("#event-title").fill("Fall Dance Weekend");
@@ -15,16 +16,16 @@ test("autosaves event details, omitting the calendar block and blank links", asy
   await page.locator("#event-link-safety").fill("https://example.com/safety");
   await waitForSaved(page);
 
-  // updateEvent only includes `calendar` when at least one calendar field is filled in, and
-  // only includes links that are non-blank.
+  // The stored config is the form's values: what was typed, and "" for everything left blank.
+  const defaults = defaultEventConfig();
   await expect.poll(async () => (await readTenantConfig(tenantId)).event_config).toEqual({
+    ...defaults,
     title: "Fall Dance Weekend",
     year: 2027,
     location: "Example Hall, Portland, OR",
     date: "October 1-3, 2027",
-    timezone: "America/Los_Angeles",
-    contacts: { info: "info@example.com" },
-    links: { safety: "https://example.com/safety" },
+    contacts: { ...defaults.contacts, info: "info@example.com" },
+    links: { ...defaults.links, safety: "https://example.com/safety" },
   });
 
   await page.reload();
@@ -33,11 +34,11 @@ test("autosaves event details, omitting the calendar block and blank links", asy
   await expect(page.locator("#event-link-safety")).toHaveValue("https://example.com/safety");
 });
 
-test("includes the calendar block once any calendar field is filled", async ({ page, tenantId }) => {
+test("saves a calendar field alongside the blank ones", async ({ page, tenantId }) => {
   await page.locator("#event-cal-title").fill("Fall Dance Weekend");
   await waitForSaved(page);
 
-  await expect.poll(async () => (await readTenantConfig(tenantId)).event_config?.calendar).toEqual({
+  await expect.poll(async () => (await readTenantConfig(tenantId)).event_config.calendar).toEqual({
     title: "Fall Dance Weekend",
     description: "",
     location: "",

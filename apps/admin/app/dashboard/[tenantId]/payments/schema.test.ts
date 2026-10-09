@@ -1,91 +1,57 @@
 import { describe, it, expect } from "vitest";
-import { paymentsSchema, sharedSchema, type PaymentsSharedValues } from "./schema";
+import { defaultPaymentsConfig } from "@repo/tenant-config";
+import { paymentsSchema, type PaymentsValues } from "./schema";
 
-const shared: PaymentsSharedValues = {
-  paymentDueDate: "",
-  directPaymentUrl: "",
-  coverFeesCheckbox: false,
-  showPaymentSummary: true,
-  deposit: { enabled: false, amount: NaN },
-  donation: { enabled: false, max: NaN },
-  checks: { allowed: false, showPostalAddress: false, payee: "", address: "" },
-};
-
-const stripe = {
-  processor: "stripe" as const,
-  stripePublishableKeyLive: "",
-  stripePublishableKeyTest: "",
+// A new tenant's form values: the default payments_config plus blank secrets.
+const blank: PaymentsValues = {
+  ...defaultPaymentsConfig(),
   stripe_secret_key_live: "",
   stripe_webhook_secret_live: "",
   stripe_secret_key_test: "",
   stripe_webhook_secret_test: "",
-  statementDescriptorSuffix: "",
-  ...shared,
-};
-
-const paypal = {
-  processor: "paypal" as const,
-  paypalClientIdLive: "",
-  paypalClientIdTest: "",
   paypal_secret_live: "",
   paypal_webhook_id_live: "",
   paypal_secret_test: "",
   paypal_webhook_id_test: "",
-  ...shared,
 };
 
 describe("paymentsSchema", () => {
-  it("accepts a blank Stripe config", () => {
-    expect(paymentsSchema.safeParse(stripe).success).toBe(true);
-  });
-
-  it("accepts a blank PayPal config", () => {
-    expect(paymentsSchema.safeParse(paypal).success).toBe(true);
+  it("accepts a new tenant's blank values, for either processor", () => {
+    expect(paymentsSchema.safeParse(blank).success).toBe(true);
+    expect(paymentsSchema.safeParse({ ...blank, processor: "paypal" }).success).toBe(true);
   });
 
   it("rejects an unknown processor", () => {
-    expect(paymentsSchema.safeParse({ ...stripe, processor: "square" }).success).toBe(false);
+    expect(paymentsSchema.safeParse({ ...blank, processor: "square" }).success).toBe(false);
   });
 
-  it("requires the active processor's own credential fields", () => {
-    expect(paymentsSchema.safeParse({ ...stripe, processor: "paypal" }).success).toBe(false);
-    expect(paymentsSchema.safeParse({ ...paypal, processor: "stripe" }).success).toBe(false);
+  // Both processors' fields are part of the one shape, so the inactive processor's values reach
+  // parsed.data (and get saved) instead of being dropped when the other processor is selected.
+  it("keeps the inactive processor's fields in the parsed output", () => {
+    const result = paymentsSchema.safeParse({ ...blank, processor: "paypal", stripe_secret_key_live: "sk_live", stripePublishableKeyLive: "pk_live" });
+    expect(result.data).toMatchObject({ processor: "paypal", stripe_secret_key_live: "sk_live", stripePublishableKeyLive: "pk_live" });
   });
 
-  // z.object strips unknown keys, so the inactive processor's fields never reach parsed.data --
-  // which is what the action builds its writes from.
-  it("strips the inactive processor's fields from the parsed output", () => {
-    const result = paymentsSchema.safeParse({ ...paypal, stripe_secret_key_live: "sk_live_leftover", statementDescriptorSuffix: "X" });
-    expect(result.success).toBe(true);
-    expect(result.data).not.toHaveProperty("stripe_secret_key_live");
-    expect(result.data).not.toHaveProperty("statementDescriptorSuffix");
-  });
-
-  // NumberField maps a cleared input to NaN. For deposit/donation amounts that's a valid
-  // "not set" value (the action stores 0), unlike Admissions' required numbers.
-  it("accepts NaN for a cleared deposit amount or donation max", () => {
-    expect(paymentsSchema.safeParse({ ...stripe, deposit: { enabled: true, amount: NaN }, donation: { enabled: true, max: NaN } }).success).toBe(true);
+  // NumberField maps a cleared input to NaN, which fails validation with an inline "Required"
+  // rather than saving -- the same as Admissions' prices.
+  it("rejects a cleared (NaN) deposit amount or donation max as Required", () => {
+    const result = paymentsSchema.safeParse({ ...blank, deposit: { enabled: true, amount: NaN }, donation: { enabled: true, max: NaN } });
+    expect(result.error?.issues.map((issue) => [issue.path.join("."), issue.message])).toEqual([
+      ["deposit.amount", "Required"],
+      ["donation.max", "Required"],
+    ]);
   });
 
   it("accepts zero and positive amounts", () => {
-    expect(paymentsSchema.safeParse({ ...stripe, deposit: { enabled: true, amount: 0 }, donation: { enabled: true, max: 250 } }).success).toBe(true);
+    expect(paymentsSchema.safeParse({ ...blank, deposit: { enabled: true, amount: 0 }, donation: { enabled: true, max: 250 } }).success).toBe(true);
   });
 
   it("rejects negative amounts", () => {
-    expect(paymentsSchema.safeParse({ ...stripe, deposit: { enabled: true, amount: -1 } }).success).toBe(false);
-    expect(paymentsSchema.safeParse({ ...stripe, donation: { enabled: true, max: -5 } }).success).toBe(false);
+    expect(paymentsSchema.safeParse({ ...blank, deposit: { enabled: true, amount: -1 } }).success).toBe(false);
+    expect(paymentsSchema.safeParse({ ...blank, donation: { enabled: true, max: -5 } }).success).toBe(false);
   });
 
   it("requires every checks sub-field", () => {
-    expect(paymentsSchema.safeParse({ ...stripe, checks: { allowed: true } }).success).toBe(false);
-  });
-});
-
-describe("sharedSchema", () => {
-  // PaymentsForm uses sharedSchema.parse() to carry processor-independent settings across a
-  // processor switch, so it has to drop every processor-specific key.
-  it("extracts only the processor-independent fields", () => {
-    expect(sharedSchema.parse({ ...stripe, deposit: { enabled: true, amount: 25 } })).toEqual({ ...shared, deposit: { enabled: true, amount: 25 } });
-    expect(sharedSchema.parse(paypal)).toEqual(shared);
+    expect(paymentsSchema.safeParse({ ...blank, checks: { allowed: true } }).success).toBe(false);
   });
 });

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
+import { defaultEventConfig, defaultPaymentsConfig, defaultReceiptsConfig, defaultThemeConfig } from "@repo/tenant-config";
 import type { PaymentsConfig, TenantSecrets } from "@repo/types";
 import { createTestClient, getTestTenantId } from "./test-helpers";
 import { createTenantDb, getTenantBySlug } from "./queries";
@@ -20,17 +21,16 @@ const emptySecrets: Omit<TenantSecrets, "tenant_id"> = {
   docuseal_key: null,
 };
 
-// Returns test-tenant to its seeded state. The orders suite shares this tenant but only
-// touches the orders table, so resetting config here can't disturb it.
+// Returns test-tenant to its seeded state, for the columns this suite writes. The orders suite
+// shares this tenant but only touches the orders table, so resetting config here can't disturb it.
 const resetTenant = async () => {
-  const { error } = await supabase.from("tenants").update({
+  await db.updateTenant({
     is_live: false,
-    event_config: null,
-    payments_config: null,
-    theme_config: null,
-    receipts_config: null,
-  }).eq("id", tenantId);
-  if (error) throw error;
+    event_config: defaultEventConfig(),
+    payments_config: defaultPaymentsConfig(),
+    theme_config: defaultThemeConfig(),
+    receipts_config: defaultReceiptsConfig(),
+  });
   await db.updateTenantSecrets(emptySecrets);
 };
 
@@ -72,7 +72,7 @@ describe("getTenant / getSecrets", () => {
 });
 
 describe("updateTenant", () => {
-  const event = { title: "Dance", year: 2026, location: "", date: "", timezone: "", contacts: { info: "" }, links: {} };
+  const event = { ...defaultEventConfig(), title: "Dance", year: 2026 };
 
   it("writes only the columns passed, leaving the rest untouched", async () => {
     await db.updateTenant({ event_config: event });
@@ -81,16 +81,16 @@ describe("updateTenant", () => {
     const tenant = await db.getTenant();
     expect(tenant?.event_config).toEqual(event);
     expect(tenant?.is_live).toBe(true);
-    expect(tenant?.payments_config).toBeNull();
+    expect(tenant?.payments_config).toEqual(defaultPaymentsConfig());
   });
 
   it("round-trips jsonb columns as their typed shape", async () => {
     const theme = { backgroundLight: "#ffffff", backgroundDark: "#000000", foregroundLight: "#111111", foregroundDark: "#eeeeee", accentLight: "#d97706", accentDark: "#f59e0b" };
-    await db.updateTenant({ theme_config: theme, receipts_config: { emailFrom: "a@example.org", emailReplyTo: null } });
+    await db.updateTenant({ theme_config: theme, receipts_config: { emailFrom: "a@example.org", emailReplyTo: "" } });
 
     const tenant = await db.getTenant();
     expect(tenant?.theme_config).toEqual(theme);
-    expect(tenant?.receipts_config).toEqual({ emailFrom: "a@example.org", emailReplyTo: null });
+    expect(tenant?.receipts_config).toEqual({ emailFrom: "a@example.org", emailReplyTo: "" });
   });
 
   // Checked against other-tenant specifically: the admin app's suites legitimately flip
@@ -131,19 +131,11 @@ describe("updateTenantSecrets", () => {
 
 describe("getPaymentProcessorCredentials", () => {
   const paymentsConfig = (overrides: Partial<PaymentsConfig> = {}): PaymentsConfig => ({
-    processor: "stripe",
+    ...defaultPaymentsConfig(),
     stripePublishableKeyLive: "pk_live",
     stripePublishableKeyTest: "pk_test",
     paypalClientIdLive: "client_live",
     paypalClientIdTest: "client_test",
-    paymentDueDate: null,
-    directPaymentUrl: null,
-    coverFeesCheckbox: false,
-    showPaymentSummary: true,
-    deposit: { enabled: false, amount: 0 },
-    donation: { enabled: false, max: 0 },
-    checks: { allowed: false },
-    statementDescriptorSuffix: null,
     ...overrides,
   });
 
@@ -171,10 +163,6 @@ describe("getPaymentProcessorCredentials", () => {
     expect(await db.getPaymentProcessorCredentials()).toEqual(expected);
   });
 
-  it("throws when the tenant has no payments_config", async () => {
-    await expect(db.getPaymentProcessorCredentials()).rejects.toThrow(`Tenant ${tenantId} has no payments_config`);
-  });
-
   it("throws when the tenant doesn't exist", async () => {
     const missing = "00000000-0000-0000-0000-000000000000";
     // getSecrets() rejects first for a missing tenant (no secrets row either), so this asserts
@@ -196,8 +184,8 @@ describe("getPaymentProcessorCredentials", () => {
   });
 
   it.each([
-    ["stripe", true, { stripePublishableKeyLive: null }, "Stripe live"],
-    ["paypal", false, { paypalClientIdTest: null }, "PayPal test"],
+    ["stripe", true, { stripePublishableKeyLive: "" }, "Stripe live"],
+    ["paypal", false, { paypalClientIdTest: "" }, "PayPal test"],
   ] as const)("throws when the %s public key is missing (is_live=%s)", async (processor, isLive, missing, label) => {
     await db.updateTenant({ is_live: isLive, payments_config: paymentsConfig({ processor, ...missing }) });
     await db.updateTenantSecrets(allSecrets);

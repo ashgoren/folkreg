@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AutosaveStatus } from "@/components/autosave-status";
@@ -13,96 +13,24 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useAutosave } from "@/lib/useAutosave";
 import type { Tenant, TenantSecrets } from "@repo/types";
-import { paymentsSchema, sharedSchema, type PaymentsValues, type PaymentsSharedValues } from "./schema";
+import { paymentsSchema, type PaymentsValues } from "./schema";
 import { updatePayments } from "./actions";
 import { StripeCredentials } from "./StripeCredentials";
 import { PaypalCredentials } from "./PaypalCredentials";
 
-const defaultShared: PaymentsSharedValues = {
-  paymentDueDate: "",
-  directPaymentUrl: "",
-  coverFeesCheckbox: false,
-  showPaymentSummary: true,
-  deposit: { enabled: false, amount: NaN },
-  donation: { enabled: false, max: NaN },
-  checks: { allowed: false, showPostalAddress: false, payee: "", address: "" },
-};
-
-function getDefaultsForProcessor(processor: PaymentsValues["processor"], shared: PaymentsSharedValues): PaymentsValues {
-  switch (processor) {
-    case "stripe":
-      return {
-        processor,
-        stripePublishableKeyLive: "",
-        stripePublishableKeyTest: "",
-        stripe_secret_key_live: "",
-        stripe_webhook_secret_live: "",
-        stripe_secret_key_test: "",
-        stripe_webhook_secret_test: "",
-        statementDescriptorSuffix: "",
-        ...shared,
-      };
-    case "paypal":
-      return {
-        processor,
-        paypalClientIdLive: "",
-        paypalClientIdTest: "",
-        paypal_secret_live: "",
-        paypal_webhook_id_live: "",
-        paypal_secret_test: "",
-        paypal_webhook_id_test: "",
-        ...shared,
-      };
-  }
-}
-
-function extractShared(values: PaymentsValues): PaymentsSharedValues {
-  return sharedSchema.parse(values);
-}
-
-function toFormValues(tenant: Tenant, secrets: TenantSecrets): PaymentsValues {
-  const config = tenant.payments_config;
-  if (!config) return getDefaultsForProcessor("stripe", defaultShared);
-
-  const shared: PaymentsSharedValues = {
-    paymentDueDate: config.paymentDueDate ?? "",
-    directPaymentUrl: config.directPaymentUrl ?? "",
-    coverFeesCheckbox: config.coverFeesCheckbox,
-    showPaymentSummary: config.showPaymentSummary,
-    deposit: { enabled: config.deposit.enabled, amount: config.deposit.amount },
-    donation: { enabled: config.donation.enabled, max: config.donation.max },
-    checks: {
-      allowed: config.checks.allowed,
-      showPostalAddress: config.checks.showPostalAddress ?? false,
-      payee: config.checks.payee ?? "",
-      address: config.checks.address ?? "",
-    },
-  };
-
-  if (config.processor === "stripe") {
-    return {
-      processor: "stripe",
-      stripePublishableKeyLive: config.stripePublishableKeyLive ?? "",
-      stripePublishableKeyTest: config.stripePublishableKeyTest ?? "",
-      stripe_secret_key_live: secrets.stripe_secret_key_live ?? "",
-      stripe_webhook_secret_live: secrets.stripe_webhook_secret_live ?? "",
-      stripe_secret_key_test: secrets.stripe_secret_key_test ?? "",
-      stripe_webhook_secret_test: secrets.stripe_webhook_secret_test ?? "",
-      statementDescriptorSuffix: config.statementDescriptorSuffix ?? "",
-      ...shared,
-    };
-  }
-  return {
-    processor: "paypal",
-    paypalClientIdLive: config.paypalClientIdLive ?? "",
-    paypalClientIdTest: config.paypalClientIdTest ?? "",
-    paypal_secret_live: secrets.paypal_secret_live ?? "",
-    paypal_webhook_id_live: secrets.paypal_webhook_id_live ?? "",
-    paypal_secret_test: secrets.paypal_secret_test ?? "",
-    paypal_webhook_id_test: secrets.paypal_webhook_id_test ?? "",
-    ...shared,
-  };
-}
+// The stored payments_config plus the credential secrets, which live in tenant_secrets (where an
+// unset column is null; the form's blank is "").
+const toFormValues = (tenant: Tenant, secrets: TenantSecrets): PaymentsValues => ({
+  ...tenant.payments_config,
+  stripe_secret_key_live: secrets.stripe_secret_key_live ?? "",
+  stripe_webhook_secret_live: secrets.stripe_webhook_secret_live ?? "",
+  stripe_secret_key_test: secrets.stripe_secret_key_test ?? "",
+  stripe_webhook_secret_test: secrets.stripe_webhook_secret_test ?? "",
+  paypal_secret_live: secrets.paypal_secret_live ?? "",
+  paypal_webhook_id_live: secrets.paypal_webhook_id_live ?? "",
+  paypal_secret_test: secrets.paypal_secret_test ?? "",
+  paypal_webhook_id_test: secrets.paypal_webhook_id_test ?? "",
+});
 
 export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: TenantSecrets }) {
   const form = useForm<PaymentsValues>({
@@ -124,18 +52,9 @@ export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: Ten
     return () => subscription.unsubscribe();
   }, [form, saveDebounced]);
 
+  // Only the active processor's credentials are shown; the other's stay in the form (and are
+  // saved) as they were.
   const processor = form.watch("processor");
-
-  const processorCache = useRef<Partial<Record<PaymentsValues["processor"], PaymentsValues>>>({});
-
-  function handleProcessorChange(newProcessor: PaymentsValues["processor"]) {
-    const current = form.getValues();
-    processorCache.current[current.processor] = current;
-
-    const shared = extractShared(current);
-    const cached = processorCache.current[newProcessor];
-    form.reset(cached ? { ...cached, ...shared } : getDefaultsForProcessor(newProcessor, shared));
-  }
 
   const depositEnabled = form.watch("deposit.enabled");
   const donationEnabled = form.watch("donation.enabled");
@@ -146,7 +65,7 @@ export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: Ten
     <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
       <FieldGroup>
         <Controller name="processor" control={form.control} render={({ field }) => (
-          <RadioGroup value={field.value} onValueChange={(value) => handleProcessorChange(value as PaymentsValues["processor"])}>
+          <RadioGroup value={field.value} onValueChange={field.onChange}>
             <Field orientation="horizontal">
               <RadioGroupItem value="stripe" id="payments-processor-stripe" />
               <FieldContent>
@@ -199,12 +118,20 @@ export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: Ten
       <Separator />
 
       <FieldGroup>
+        {/* Turning deposits (or donations) off hides the amount field, so the switch waits until that
+            field is valid -- a hidden error would block every later save with nothing on screen to
+            explain it. Same rule as the Admissions mode switch. */}
         <Controller name="deposit.enabled" control={form.control} render={({ field, fieldState }) => (
           <Field orientation="horizontal" data-invalid={fieldState.invalid}>
             <FieldContent>
               <FormLabel htmlFor="payments-deposit-enabled">Allow deposit?</FormLabel>
             </FieldContent>
-            <Switch id="payments-deposit-enabled" checked={field.value} onCheckedChange={field.onChange} aria-invalid={fieldState.invalid} />
+            <Switch
+              id="payments-deposit-enabled"
+              checked={field.value}
+              onCheckedChange={async (checked) => { if (checked || await form.trigger("deposit.amount")) field.onChange(checked); }}
+              aria-invalid={fieldState.invalid}
+            />
           </Field>
         )} />
 
@@ -224,7 +151,12 @@ export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: Ten
             <FieldContent>
               <FormLabel htmlFor="payments-donation-enabled">Allow donation?</FormLabel>
             </FieldContent>
-            <Switch id="payments-donation-enabled" checked={field.value} onCheckedChange={field.onChange} aria-invalid={fieldState.invalid} />
+            <Switch
+              id="payments-donation-enabled"
+              checked={field.value}
+              onCheckedChange={async (checked) => { if (checked || await form.trigger("donation.max")) field.onChange(checked); }}
+              aria-invalid={fieldState.invalid}
+            />
           </Field>
         )} />
 

@@ -13,15 +13,6 @@ import type { Tenant } from "@repo/types";
 import { appearanceSchema, type AppearanceValues } from "./schema";
 import { updateAppearance } from "./actions";
 
-const DEFAULTS: AppearanceValues = {
-  backgroundLight: "#ffffff",
-  foregroundLight: "#0a0a0a",
-  accentLight: "#2563eb",
-  backgroundDark: "#0a0a0a",
-  foregroundDark: "#fafafa",
-  accentDark: "#3b82f6",
-};
-
 function ColorField({ name, label, control }: { name: keyof AppearanceValues; label: string; control: Control<AppearanceValues> }) {
   return (
     <Controller name={name} control={control} render={({ field, fieldState }) => (
@@ -44,19 +35,10 @@ function ColorField({ name, label, control }: { name: keyof AppearanceValues; la
 }
 
 export function AppearanceForm({ tenant }: { tenant: Tenant }) {
-  const themeConfig = tenant.theme_config;
-
   const form = useForm<AppearanceValues>({
     mode: "onBlur",
     resolver: zodResolver(appearanceSchema),
-    defaultValues: {
-      backgroundLight: themeConfig?.backgroundLight ?? DEFAULTS.backgroundLight,
-      foregroundLight: themeConfig?.foregroundLight ?? DEFAULTS.foregroundLight,
-      accentLight: themeConfig?.accentLight ?? DEFAULTS.accentLight,
-      backgroundDark: themeConfig?.backgroundDark ?? DEFAULTS.backgroundDark,
-      foregroundDark: themeConfig?.foregroundDark ?? DEFAULTS.foregroundDark,
-      accentDark: themeConfig?.accentDark ?? DEFAULTS.accentDark,
-    },
+    defaultValues: tenant.theme_config,
   });
 
   const { saveDebounced, isPending, savedRecently } = useAutosave<AppearanceValues>(

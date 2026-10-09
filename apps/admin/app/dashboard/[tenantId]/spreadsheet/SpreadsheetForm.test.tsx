@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { defaultPaymentsConfig } from "@repo/tenant-config";
 import { makeTenant } from "@/test/fixtures";
 import { expectLastSave } from "@/test/autosave";
 import type { FieldsConfig, PaymentsConfig } from "@repo/types";
@@ -21,22 +22,7 @@ const registrantColumns = () =>
 // System columns render after the registrant rows as fixed, non-interactive rows ending in "key".
 const systemColumns = () => Array.from(screen.getByText("key", { exact: true }).parentElement!.children).map((el) => el.textContent);
 
-const paymentsConfig = (overrides: Partial<PaymentsConfig>): PaymentsConfig => ({
-  processor: "stripe",
-  stripePublishableKeyLive: null,
-  stripePublishableKeyTest: null,
-  paypalClientIdLive: null,
-  paypalClientIdTest: null,
-  paymentDueDate: null,
-  directPaymentUrl: null,
-  coverFeesCheckbox: false,
-  showPaymentSummary: true,
-  deposit: { enabled: false, amount: 0 },
-  donation: { enabled: false, max: 0 },
-  checks: { allowed: false },
-  statementDescriptorSuffix: null,
-  ...overrides,
-});
+const paymentsConfig = (overrides: Partial<PaymentsConfig>): PaymentsConfig => ({ ...defaultPaymentsConfig(), ...overrides });
 
 const ALWAYS_SYSTEM_COLUMNS = ["admission", "total", "paid", "charged", "status", "purchaser", "completedAt", "paymentId", "paymentEmail", "environment", "key"];
 
@@ -47,7 +33,7 @@ describe("SpreadsheetForm", () => {
 
   describe("registrant columns", () => {
     it("explains that there's nothing to order until fields are activated", () => {
-      render(<SpreadsheetForm tenant={makeTenant()} />);
+      render(<SpreadsheetForm tenant={makeTenant({ fields_config: fields([]) })} />);
       expect(screen.getByText(/No active fields yet/)).toBeInTheDocument();
       expect(screen.queryByRole("button", { name: "Drag to reorder" })).not.toBeInTheDocument();
     });
@@ -91,7 +77,7 @@ describe("SpreadsheetForm", () => {
       render(
         <SpreadsheetForm
           tenant={makeTenant({
-            waiver_config: { show: true, docusealTemplateId: null },
+            waiver_config: { show: true, docusealTemplateId: "" },
             payments_config: paymentsConfig({ coverFeesCheckbox: true, deposit: { enabled: true, amount: 25 }, donation: { enabled: true, max: 100 } }),
           })}
         />,

@@ -31,10 +31,19 @@ describe("updateGeneral", () => {
   });
 
   it("leaves every config column alone", async () => {
+    const configColumns = (tenant: Awaited<ReturnType<typeof readTenant>>) => ({
+      event_config: tenant.event_config,
+      fields_config: tenant.fields_config,
+      admissions_config: tenant.admissions_config,
+      payments_config: tenant.payments_config,
+      theme_config: tenant.theme_config,
+      waiver_config: tenant.waiver_config,
+      receipts_config: tenant.receipts_config,
+      spreadsheet_config: tenant.spreadsheet_config,
+    });
+    const before = configColumns(await readTenant(harness.service, harness.tenantId));
     await updateGeneral(harness.tenantId, values());
-    const tenant = await readTenant(harness.service, harness.tenantId);
-    expect(tenant.event_config).toBeNull();
-    expect(tenant.payments_config).toBeNull();
+    expect(configColumns(await readTenant(harness.service, harness.tenantId))).toEqual(before);
   });
 
   // PostgREST names the violated constraint only in `message` -- `details` is null for this

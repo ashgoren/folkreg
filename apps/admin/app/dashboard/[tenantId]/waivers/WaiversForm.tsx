@@ -16,14 +16,11 @@ import { waiversSchema, type WaiversValues } from "./schema";
 import { updateWaivers } from "./actions";
 
 export function WaiversForm({ tenant, secrets }: { tenant: Tenant; secrets: TenantSecrets }) {
-  const waiverConfig = tenant.waiver_config;
-
   const form = useForm<WaiversValues>({
     mode: "onBlur",
     resolver: zodResolver(waiversSchema),
     defaultValues: {
-      show: waiverConfig?.show ?? false,
-      docusealTemplateId: waiverConfig?.docusealTemplateId ?? "",
+      ...tenant.waiver_config,
       docuseal_key: secrets.docuseal_key ?? "",
     },
   });

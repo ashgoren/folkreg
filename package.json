@@ -9,7 +9,10 @@
     "check-types": "turbo run check-types",
     "test": "turbo run test",
     "generate:types": "turbo run generate:types",
-    "test:e2e": "pnpm --filter admin test:e2e"
+    "test:e2e": "pnpm --filter admin test:e2e",
+    "db:reset": "supabase db reset && pnpm db:seed",
+    "db:seed": "pnpm --filter @repo/db seed",
+    "create-tenant": "pnpm --filter @repo/db create-tenant"
   },
   "devDependencies": {
     "prettier": "^3.7.4",

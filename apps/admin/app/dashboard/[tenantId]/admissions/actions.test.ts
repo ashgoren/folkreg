@@ -6,43 +6,43 @@ import { itGuardsTheAction, useActionHarness } from "@/test/action-harness";
 vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
 import { createClient } from "@/lib/supabase/server";
 import { updateAdmissions } from "./actions";
+import { defaultAdmissionsConfig } from "@repo/tenant-config";
 import type { AdmissionsValues } from "./schema";
 
-const shared = { admissionQuantityMax: 4, waitlistCutoff: 200, forceWaitlist: false };
-const slidingScale = (): AdmissionsValues => ({ mode: "sliding-scale", costRange: [20, 100], costDefault: 60, ...shared });
+const values = (overrides: Partial<AdmissionsValues> = {}): AdmissionsValues => ({ ...defaultAdmissionsConfig(), waitlistCutoff: 200, ...overrides });
 
 describe("updateAdmissions", () => {
   const harness = useActionHarness(createClient);
   const savedConfig = async () => (await readTenant(harness.service, harness.tenantId)).admissions_config;
 
   it.each<[string, AdmissionsValues]>([
-    ["sliding-scale", slidingScale()],
-    ["fixed", { mode: "fixed", cost: 75, ...shared, forceWaitlist: true }],
-    ["tiered", {
+    ["sliding-scale", values({ costRange: [20, 100], costDefault: 60 })],
+    ["fixed", values({ mode: "fixed", cost: 75, forceWaitlist: true })],
+    ["tiered", values({
       mode: "tiered",
       earlybirdCutoff: "2026-03-01",
       categories: [
         { label: "Adult", ageGroups: ["adult"], early: 80, later: 100 },
         { label: "Youth", ageGroups: ["6-12", "13-17"], early: 40, later: 50 },
       ],
-      ...shared,
-    }],
-  ])("saves a %s config as-is", async (_, values) => {
-    expect(await updateAdmissions(harness.tenantId, values)).toBeNull();
-    expect(await savedConfig()).toEqual(values);
+    })],
+  ])("saves a %s config as-is", async (_, config) => {
+    expect(await updateAdmissions(harness.tenantId, config)).toBeNull();
+    expect(await savedConfig()).toEqual(config);
   });
 
-  // The column holds exactly one mode's shape. Switching modes replaces it entirely rather
-  // than merging, so no stale costRange lingers on a fixed-price config.
-  it("drops the previous mode's fields when the mode changes", async () => {
-    await updateAdmissions(harness.tenantId, slidingScale());
-    await updateAdmissions(harness.tenantId, { mode: "fixed", cost: 75, ...shared });
-    expect(await savedConfig()).not.toHaveProperty("costRange");
+  // Switching modes only changes which values apply, so an accidental switch can't cost an
+  // organizer the prices or categories entered for another mode.
+  it("keeps the other modes' values when the mode changes", async () => {
+    const categories = [{ label: "Adult", ageGroups: ["adult" as const], early: 80, later: 100 }];
+    await updateAdmissions(harness.tenantId, values({ mode: "tiered", categories }));
+    await updateAdmissions(harness.tenantId, values({ mode: "sliding-scale", categories }));
+    expect(await savedConfig()).toMatchObject({ mode: "sliding-scale", categories });
   });
 
   itGuardsTheAction({
     harness, createClient, run: updateAdmissions,
-    validValues: slidingScale,
-    invalidValues: () => ({ ...slidingScale(), costDefault: 500 }),
+    validValues: () => values(),
+    invalidValues: () => values({ costDefault: 9999 }),
   });
 });

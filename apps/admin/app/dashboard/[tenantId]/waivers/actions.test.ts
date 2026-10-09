@@ -23,10 +23,11 @@ describe("updateWaivers", () => {
     expect(JSON.stringify((await readTenant(harness.service, harness.tenantId)).waiver_config)).not.toContain("dk_secret");
   });
 
-  it("stores blank or omitted DocuSeal values as null", async () => {
+  // The template id is config (blank is ""); the API key is a tenant_secrets column (blank is null).
+  it("stores a blank template id as \"\" and a blank API key as null", async () => {
     await updateWaivers(harness.tenantId, { show: true, docusealTemplateId: "tmpl_1", docuseal_key: "dk_secret" });
-    await updateWaivers(harness.tenantId, { show: false, docusealTemplateId: "" });
-    expect((await readTenant(harness.service, harness.tenantId)).waiver_config).toEqual({ show: false, docusealTemplateId: null });
+    await updateWaivers(harness.tenantId, { show: false, docusealTemplateId: "", docuseal_key: "" });
+    expect((await readTenant(harness.service, harness.tenantId)).waiver_config).toEqual({ show: false, docusealTemplateId: "" });
     expect((await readSecrets(harness.service, harness.tenantId)).docuseal_key).toBeNull();
   });
 

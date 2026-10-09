@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { defaultThemeConfig } from "@repo/tenant-config";
 import { appearanceSchema, type AppearanceValues } from "./schema";
 
 const valid: AppearanceValues = {
@@ -27,5 +28,9 @@ describe("appearanceSchema", () => {
     expect(result.success).toBe(false);
     expect(result.error?.issues[0]?.path).toEqual(["accentLight"]);
     expect(result.error?.issues[0]?.message).toBe("Must be a hex color, e.g. #d97706");
+  });
+
+  it("accepts the @repo/tenant-config default theme", () => {
+    expect(appearanceSchema.safeParse(defaultThemeConfig()).success).toBe(true);
   });
 });

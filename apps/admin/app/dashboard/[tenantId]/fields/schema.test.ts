@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { defaultFieldsConfig } from "@repo/tenant-config";
 import { fieldsSchema } from "./schema";
 
 describe("fieldsSchema", () => {
@@ -38,5 +39,9 @@ describe("fieldsSchema", () => {
   it("rejects a non-numeric width", () => {
     const value = { contactOrder: ["first"], miscOrder: [], config: { first: { width: "6" } } };
     expect(fieldsSchema.safeParse(value).success).toBe(false);
+  });
+
+  it("accepts the @repo/tenant-config default field set", () => {
+    expect(fieldsSchema.safeParse(defaultFieldsConfig()).success).toBe(true);
   });
 });

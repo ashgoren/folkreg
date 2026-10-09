@@ -1,14 +1,16 @@
 // Shared Supabase helpers for server action tests and Playwright e2e tests. Not imported by
 // any app code.
 
+import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
-import type { Database, DbClient } from "@repo/types";
+import { defaultTenantConfig } from "@repo/tenant-config";
+import type { Database, DbClient, TablesUpdate } from "@repo/types";
 
 // Loaded here (rather than via Vitest/Playwright config) so every test that imports these
 // helpers is guaranteed a populated env, whichever runner it's under -- same reasoning as
 // packages/db/src/test-helpers.ts.
-config({ path: new URL("../.env.test.local", import.meta.url).pathname, quiet: true });
+config({ path: fileURLToPath(new URL("../.env.test.local", import.meta.url)), quiet: true });
 
 const url = process.env.SUPABASE_URL!;
 
@@ -18,8 +20,8 @@ if (!/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/.test(url ?? "")) {
   throw new Error(`Refusing to run tests against non-local SUPABASE_URL: ${url}`);
 }
 
-// Seeded in supabase/seed.sql -- keep in sync.
-export const TEST_PASSWORD = "test-password";
+// Seeded by packages/db/scripts/seed.ts -- keep in sync.
+export const TEST_PASSWORD = "password";
 export const ADMIN_OWNER_EMAIL = "admin-owner@test.local";
 export const E2E_OWNER_EMAIL = "e2e-owner@test.local";
 export const OTHER_OWNER_EMAIL = "other-owner@test.local";
@@ -41,7 +43,7 @@ export const signInAs = async (email: string): Promise<DbClient> => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { error } = await client.auth.signInWithPassword({ email, password: TEST_PASSWORD });
-  if (error) throw new Error(`Sign-in as ${email} failed (run \`supabase db reset\` to apply the seed): ${error.message}`);
+  if (error) throw new Error(`Sign-in as ${email} failed (run \`pnpm db:reset\` to apply the seed): ${error.message}`);
   return client;
 };
 
@@ -54,27 +56,22 @@ export const createAnonClient = (): DbClient =>
 
 export const getTenantIdBySlug = async (service: DbClient, slug: string): Promise<string> => {
   const { data, error } = await service.from("tenants").select("id").eq("slug", slug).single();
-  if (error) throw new Error(`Seed tenant "${slug}" not found -- run \`supabase db reset\`: ${error.message}`);
+  if (error) throw new Error(`Seed tenant "${slug}" not found -- run \`pnpm db:reset\`: ${error.message}`);
   return data.id;
 };
 
-// Returns a tenant to its freshly-seeded state: every config column null, scalars at their
-// defaults, every secret null. Each test starts from here instead of depending on what an
-// earlier test left behind.
+// Returns a tenant to the state createTenant() leaves it in: every config column at its default
+// (spreadsheet_config null), scalars at their defaults, every secret null. Each test starts from
+// here instead of depending on what an earlier test left behind.
 export const resetTenant = async (service: DbClient, tenantId: string, slug: string) => {
+  // Cast for the same reason as createTenant's insert (packages/db/src/provisioning.ts).
   const { error: tenantError } = await service.from("tenants").update({
     slug,
     is_live: false,
     show_preregistration: false,
-    event_config: null,
-    fields_config: null,
-    admissions_config: null,
-    payments_config: null,
-    waiver_config: null,
-    receipts_config: null,
-    theme_config: null,
+    ...defaultTenantConfig(),
     spreadsheet_config: null,
-  }).eq("id", tenantId);
+  } as unknown as TablesUpdate<"tenants">).eq("id", tenantId);
   if (tenantError) throw tenantError;
 
   const { error: secretsError } = await service.from("tenant_secrets").update({

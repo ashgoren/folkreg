@@ -35,8 +35,8 @@ describe("FIELD_DEFS", () => {
   // render with nothing selected despite having a default.
   it("only defaults a radio field to one of its own options", () => {
     for (const [name, def] of Object.entries(FIELD_DEFS)) {
-      if (def.type !== "radio" || !def.defaults?.value || !def.defaults.options) continue;
-      expect(def.defaults.options.map((o) => o.value), name).toContain(def.defaults.value);
+      if (def.type !== "radio" || !def.defaults?.defaultValue || !def.defaults.options) continue;
+      expect(def.defaults.options.map((o) => o.value), name).toContain(def.defaults.defaultValue);
     }
   });
 

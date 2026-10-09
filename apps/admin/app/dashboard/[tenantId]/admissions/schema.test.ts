@@ -1,16 +1,21 @@
 import { describe, it, expect } from "vitest";
+import { defaultAdmissionsConfig } from "@repo/tenant-config";
+import type { AdmissionsConfig } from "@repo/types";
 import { admissionsSchema } from "./schema";
 
-const shared = { admissionQuantityMax: 4, waitlistCutoff: 200, forceWaitlist: false };
-
-const slidingScale = { mode: "sliding-scale" as const, costRange: [20, 100] as [number, number], costDefault: 60, ...shared };
-const fixed = { mode: "fixed" as const, cost: 60, ...shared };
-const tiered = {
-  mode: "tiered" as const,
+// Every mode's values are always present; `mode` picks which one applies.
+const base: AdmissionsConfig = {
+  ...defaultAdmissionsConfig(),
+  costRange: [20, 100],
+  costDefault: 60,
+  cost: 60,
   earlybirdCutoff: "2026-03-01",
-  categories: [{ label: "Adult", ageGroups: ["adult" as const], early: 80, later: 100 }],
-  ...shared,
+  categories: [{ label: "Adult", ageGroups: ["adult"], early: 80, later: 100 }],
+  waitlistCutoff: 200,
 };
+const slidingScale = { ...base, mode: "sliding-scale" as const };
+const fixed = { ...base, mode: "fixed" as const };
+const tiered = { ...base, mode: "tiered" as const };
 
 const issuePaths = (value: unknown) =>
   admissionsSchema.safeParse(value).error?.issues.map((issue) => issue.path.join(".")) ?? [];
@@ -24,11 +29,11 @@ describe("admissionsSchema", () => {
     expect(admissionsSchema.safeParse({ ...fixed, mode: "pay-what-you-want" }).success).toBe(false);
   });
 
-  // The union discriminates on `mode`, so each branch's own fields are required for that
-  // mode -- a fixed config can't be saved as sliding-scale just by flipping the mode.
-  it("requires each mode's own fields", () => {
-    expect(admissionsSchema.safeParse({ ...fixed, mode: "sliding-scale" }).success).toBe(false);
-    expect(admissionsSchema.safeParse({ ...slidingScale, mode: "fixed" }).success).toBe(false);
+  // The other modes' values are kept (so switching never loses them) and validated too: the form
+  // only switches modes while the current one is valid, so a hidden mode is never left invalid.
+  it("validates every mode's fields, whichever mode is active", () => {
+    expect(issuePaths({ ...fixed, costRange: [NaN, 100] })).toEqual(["costRange.0"]);
+    expect(issuePaths({ ...slidingScale, cost: NaN })).toEqual(["cost"]);
   });
 
   describe("sliding scale", () => {
@@ -104,5 +109,11 @@ describe("admissionsSchema", () => {
     it("requires forceWaitlist", () => {
       expect(issuePaths({ ...fixed, forceWaitlist: undefined })).toEqual(["forceWaitlist"]);
     });
+  });
+
+  // Every new tenant is created with this, so it has to pass the same validation as anything an
+  // organizer types -- in any mode, since switching keeps the other modes' starting values.
+  it.each(["sliding-scale", "fixed", "tiered"] as const)("accepts the @repo/tenant-config default in %s mode", (mode) => {
+    expect(admissionsSchema.safeParse({ ...defaultAdmissionsConfig(), mode }).success).toBe(true);
   });
 });

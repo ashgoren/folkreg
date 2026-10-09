@@ -19,6 +19,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@repo/db": "workspace:*",
     "@repo/fields": "workspace:*",
+    "@repo/tenant-config": "workspace:*",
     "@repo/types": "workspace:*",
     "@supabase/ssr": "^0.10.2",
     "class-variance-authority": "^0.7.1",

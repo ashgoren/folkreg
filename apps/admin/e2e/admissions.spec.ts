@@ -1,3 +1,4 @@
+import { defaultAdmissionsConfig } from "@repo/tenant-config";
 import { test, expect, readTenantConfig, waitForSaved } from "./fixtures";
 
 const admissionsConfig = async (tenantId: string) => (await readTenantConfig(tenantId)).admissions_config;
@@ -6,8 +7,10 @@ test.beforeEach(async ({ page, dashboardUrl }) => {
   await page.goto(dashboardUrl("admissions"));
 });
 
-test("switching mode keeps the shared ticket limits", async ({ page, tenantId }) => {
-  // A new tenant starts in sliding-scale mode with defaults filled in.
+// Switching only changes `mode`: the shared limits and every other mode's values stay saved, so an
+// accidental switch loses nothing even across a reload.
+test("switching mode keeps the shared limits and the other modes' values", async ({ page, tenantId }) => {
+  // A new tenant starts in sliding-scale mode, with its default prices saved.
   await expect(page.getByRole("radio", { name: "Sliding scale" })).toBeChecked();
   await page.getByLabel("Max number of tickets registrant can purchase").fill("6");
 
@@ -16,33 +19,34 @@ test("switching mode keeps the shared ticket limits", async ({ page, tenantId })
   await waitForSaved(page);
 
   await expect.poll(() => admissionsConfig(tenantId)).toEqual({
+    ...defaultAdmissionsConfig(),
     mode: "fixed",
     cost: 75,
     admissionQuantityMax: 6,
-    waitlistCutoff: 999,
-    forceWaitlist: false,
   });
 
   await page.reload();
   await expect(page.getByRole("radio", { name: "Fixed" })).toBeChecked();
   await expect(page.getByLabel("Cost")).toHaveValue("75");
   await expect(page.getByLabel("Max number of tickets registrant can purchase")).toHaveValue("6");
+  await page.getByRole("radio", { name: "Sliding scale" }).click();
+  await expect(page.getByLabel("Default")).toHaveValue("350");
 });
 
 test("a sliding-scale default outside the range shows an error and isn't saved", async ({ page, tenantId }) => {
-  await page.getByLabel("Default").fill("500");
+  await page.getByLabel("Default").fill("600");
   await page.getByLabel("Default").blur();
   await expect(page.getByText("Must be between minimum and maximum")).toBeVisible();
 
   // No event signals a save that didn't happen; this outlasts the debounce plus a round trip.
   await page.waitForTimeout(1500);
-  expect(await admissionsConfig(tenantId)).toBeNull();
+  expect(await admissionsConfig(tenantId)).toEqual(defaultAdmissionsConfig());
 
-  await page.getByLabel("Maximum").fill("600");
+  await page.getByLabel("Maximum").fill("700");
   await expect.poll(() => admissionsConfig(tenantId)).toMatchObject({
     mode: "sliding-scale",
-    costRange: [20, 600],
-    costDefault: 500,
+    costRange: [120, 700],
+    costDefault: 600,
   });
 });
 
@@ -59,11 +63,10 @@ test("tiered mode saves categories with their age groups and prices", async ({ p
   await waitForSaved(page);
 
   await expect.poll(() => admissionsConfig(tenantId)).toEqual({
+    ...defaultAdmissionsConfig(),
     mode: "tiered",
     earlybirdCutoff: "2027-09-01",
     categories: [{ label: "Basic", ageGroups: ["adult", "13-17"], early: 80, later: 100 }],
-    admissionQuantityMax: 4,
-    waitlistCutoff: 999,
     forceWaitlist: true,
   });
 

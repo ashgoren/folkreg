@@ -14,34 +14,10 @@ import { eventSchema, type EventValues } from "./schema";
 import { updateEvent } from "./actions";
 
 export function EventForm({ tenant }: { tenant: Tenant }) {
-  const eventConfig = tenant.event_config;
-
   const form = useForm<EventValues>({
     mode: "onBlur",
     resolver: zodResolver(eventSchema),
-    defaultValues: {
-      title: eventConfig?.title ?? "",
-      year: eventConfig?.year ?? new Date().getFullYear(),
-      location: eventConfig?.location ?? "",
-      date: eventConfig?.date ?? "",
-      timezone: eventConfig?.timezone ?? "America/Los_Angeles",
-      calendar: {
-        title: eventConfig?.calendar?.title ?? "",
-        description: eventConfig?.calendar?.description ?? "",
-        location: eventConfig?.calendar?.location ?? "",
-        start: eventConfig?.calendar?.start ?? "",
-        end: eventConfig?.calendar?.end ?? "",
-      },
-      contacts: {
-        info: eventConfig?.contacts?.info ?? "",
-        housing: eventConfig?.contacts?.housing ?? "",
-      },
-      links: {
-        info: eventConfig?.links?.info ?? "",
-        health: eventConfig?.links?.health ?? "",
-        safety: eventConfig?.links?.safety ?? "",
-      },
-    },
+    defaultValues: tenant.event_config,
   });
 
   const { saveDebounced, isPending, savedRecently } = useAutosave<EventValues>(

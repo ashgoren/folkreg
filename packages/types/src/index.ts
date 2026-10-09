@@ -54,13 +54,18 @@ export type Order = Omit<Tables<'orders'>, 'people' | 'payments' | 'lottery'> & 
   lottery: LotteryInfo | null;
 }
 
+// The jsonb config shapes below store unset text as "" and keep every key present, the same
+// values the admin forms edit -- so a form can be seeded straight from its stored config and save
+// what it validated, with no null/"" conversion in either direction. (tenant_secrets, a regular
+// table, uses null for an unset column.)
+
 export interface EventConfig {
   title: string;
   year: number;
   location: string;
   date: string;
   timezone: string;
-  calendar?: {
+  calendar: {
     title: string;
     description: string;
     location: string;
@@ -69,12 +74,12 @@ export interface EventConfig {
   };
   contacts: {
     info: string;
-    housing?: string;
+    housing: string;
   };
   links: {
-    info?: string;
-    health?: string;
-    safety?: string;
+    info: string;
+    health: string;
+    safety: string;
   };
 }
 
@@ -98,7 +103,7 @@ export interface FieldsConfig {
 
 export interface WaiverConfig {
   show: boolean;
-  docusealTemplateId: string | null;
+  docusealTemplateId: string;
 }
 
 export interface TieredCategory {
@@ -108,24 +113,33 @@ export interface TieredCategory {
   later: number;
 }
 
-export type AdmissionsConfig = (
-  | { mode: 'sliding-scale'; costRange: [number, number]; costDefault: number }
-  | { mode: 'fixed'; cost: number }
-  | { mode: 'tiered'; earlybirdCutoff: string; categories: TieredCategory[] }
-) & {
+// Every pricing mode's values are kept regardless of which is active, so switching `mode` (even by
+// accident) never discards prices or categories an organizer entered for another mode.
+export interface AdmissionsConfig {
+  mode: 'sliding-scale' | 'fixed' | 'tiered';
+  // sliding-scale
+  costRange: [number, number];
+  costDefault: number;
+  // fixed
+  cost: number;
+  // tiered
+  earlybirdCutoff: string;
+  categories: TieredCategory[];
   admissionQuantityMax: number;
   waitlistCutoff: number;
   forceWaitlist: boolean;
 }
 
+// Both processors' public keys are kept regardless of which is active, so switching `processor`
+// (even by accident) never discards what an organizer entered for the other one.
 export interface PaymentsConfig {
   processor: PaymentProcessor;
-  stripePublishableKeyLive: string | null;
-  stripePublishableKeyTest: string | null;
-  paypalClientIdLive: string | null;
-  paypalClientIdTest: string | null;
-  paymentDueDate: string | null;
-  directPaymentUrl: string | null;
+  stripePublishableKeyLive: string;
+  stripePublishableKeyTest: string;
+  paypalClientIdLive: string;
+  paypalClientIdTest: string;
+  paymentDueDate: string;
+  directPaymentUrl: string;
   coverFeesCheckbox: boolean;
   showPaymentSummary: boolean;
   deposit: {
@@ -138,11 +152,11 @@ export interface PaymentsConfig {
   };
   checks: {
     allowed: boolean;
-    showPostalAddress?: boolean;
-    payee?: string;
-    address?: string;
+    showPostalAddress: boolean;
+    payee: string;
+    address: string;
   };
-  statementDescriptorSuffix: string | null;
+  statementDescriptorSuffix: string;
 }
 
 export interface SpreadsheetConfig {
@@ -162,8 +176,8 @@ export const SPREADSHEET_SYSTEM_COLUMNS = [
 ] as const;
 
 export interface ReceiptsConfig {
-  emailFrom: string | null;
-  emailReplyTo: string | null;
+  emailFrom: string;
+  emailReplyTo: string;
 }
 
 export interface ThemeConfig {
@@ -176,14 +190,14 @@ export interface ThemeConfig {
 }
 
 export type Tenant = Omit<Tables<'tenants'>, 'event_config' | 'fields_config' | 'admissions_config' | 'payments_config' | 'theme_config' | 'spreadsheet_config' | 'waiver_config' | 'receipts_config'> & {
-  event_config: EventConfig | null
-  fields_config: FieldsConfig | null
-  admissions_config: AdmissionsConfig | null
-  payments_config: PaymentsConfig | null
+  event_config: EventConfig
+  fields_config: FieldsConfig
+  admissions_config: AdmissionsConfig
+  payments_config: PaymentsConfig
   spreadsheet_config: SpreadsheetConfig | null
-  theme_config: ThemeConfig | null
-  waiver_config: WaiverConfig | null
-  receipts_config: ReceiptsConfig | null
+  theme_config: ThemeConfig
+  waiver_config: WaiverConfig
+  receipts_config: ReceiptsConfig
 }
 
 export type TenantSecrets = Tables<'tenant_secrets'>

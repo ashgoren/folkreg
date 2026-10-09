@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { DragDropProvider } from "@dnd-kit/react";
 import { move } from "@dnd-kit/helpers";
 import { FIELD_DEFS } from "@repo/fields";
+import { defaultFieldConfig } from "@repo/tenant-config";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useAutosave } from "@/lib/useAutosave";
 import { AutosaveStatus } from "@/components/autosave-status";
@@ -18,33 +19,12 @@ type FieldsState = {
   config: Record<string, FieldConfig>;
 };
 
-function getDefaultConfig(fieldName: string): FieldConfig {
-  const def = FIELD_DEFS[fieldName];
-  if (!def) throw new Error(`Unknown field: ${fieldName}`);
-  const d = def.defaults ?? {};
-  return {
-    ...(d.label && { label: d.label }),
-    ...(d.title && { title: d.title }),
-    ...(d.placeholder && { placeholder: d.placeholder }),
-    ...(d.width !== undefined && { width: d.width }),
-    ...(d.rows !== undefined && { rows: d.rows }),
-    ...(d.options && { options: d.options }),
-    ...(d.value !== undefined && { defaultValue: d.value }),
-  };
-}
-
 export function FieldsForm({ tenant }: { tenant: Tenant }) {
   // Load initial fields config from db and keep it in local state until user saves
   const initialFields = tenant.fields_config;
-  const [contactOrder, setContactOrder] = useState<string[]>(
-    initialFields?.contactOrder ?? [],
-  );
-  const [miscOrder, setMiscOrder] = useState<string[]>(
-    initialFields?.miscOrder ?? [],
-  );
-  const [config, setConfig] = useState<Record<string, FieldConfig>>(
-    initialFields?.config ?? {},
-  );
+  const [contactOrder, setContactOrder] = useState<string[]>(initialFields.contactOrder);
+  const [miscOrder, setMiscOrder] = useState<string[]>(initialFields.miscOrder);
+  const [config, setConfig] = useState<Record<string, FieldConfig>>(initialFields.config);
 
   // Mirrors state so callbacks always read the latest values
   const stateRef = useRef<FieldsState>({ contactOrder, miscOrder, config });
@@ -76,7 +56,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
     const def = FIELD_DEFS[fieldName];
     const newConfig = {
       ...stateRef.current.config,
-      [fieldName]: getDefaultConfig(fieldName),
+      [fieldName]: defaultFieldConfig(fieldName),
     };
     if (def!.group === "contact") {
       const newContactOrder = [...stateRef.current.contactOrder, fieldName];
