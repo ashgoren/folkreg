@@ -40,6 +40,15 @@ describe("order methods (via createTenantDb)", () => {
     expect(order!.lottery).toBeNull();
   });
 
+  // Tried on insert: on update, the set_updated_at trigger would replace a null updated_at with
+  // now() before the constraint is checked. The cast gets past the generated types, which don't
+  // allow null here, so this checks the database constraint itself. Any row it does create is
+  // removed by afterAll.
+  it.each(["created_at", "updated_at"])("rejects a null %s", async (column) => {
+    const { error } = await supabase.from("orders").insert({ tenant_id: tenantId, [column]: null } as never);
+    expect(error).toMatchObject({ code: "23502" }); // not_null_violation
+  });
+
   it("returns null for an order that doesn't exist", async () => {
     const order = await orders.getOrder("00000000-0000-0000-0000-000000000000");
     expect(order).toBeNull();

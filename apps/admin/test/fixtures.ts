@@ -16,8 +16,8 @@ export const makeTenant = (overrides: Partial<Tenant> = {}): Tenant => ({
   show_preregistration: false,
   ...defaultTenantConfig(),
   spreadsheet_config: null,
-  created_at: null,
-  updated_at: null,
+  created_at: "2026-01-01T00:00:00.000Z",
+  updated_at: "2026-01-01T00:00:00.000Z",
   ...overrides,
 });
 

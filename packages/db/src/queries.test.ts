@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
-import { defaultEventConfig, defaultPaymentsConfig, defaultReceiptsConfig, defaultThemeConfig, type PaymentsConfig } from "@repo/tenant-config";
+import { defaultEventConfig, defaultPaymentsConfig, defaultReceiptsConfig, defaultTenantConfig, defaultThemeConfig, type PaymentsConfig } from "@repo/tenant-config";
 import type { TenantSecrets } from "@repo/types";
 import { createTestClient, getTestTenantId } from "./test-helpers";
 import { createTenantDb, getTenantBySlug } from "./queries";
@@ -133,6 +133,28 @@ describe("updateTenant", () => {
 
   it("surfaces a database error, e.g. a duplicate slug", async () => {
     await expect(db.updateTenant({ slug: "admin-test-tenant" })).rejects.toMatchObject({ code: "23505" });
+  });
+
+  it("advances updated_at on every write", async () => {
+    const before = (await db.getTenant())!.updated_at;
+    await db.updateTenant({ is_live: true });
+    const after = (await db.getTenant())!.updated_at;
+    expect(new Date(after).getTime()).toBeGreaterThan(new Date(before).getTime());
+  });
+});
+
+describe("tenants timestamps", () => {
+  // Tried on insert: on update, the set_updated_at trigger would replace a null updated_at with
+  // now() before the constraint is checked. The cast gets past the generated types, which don't
+  // allow null here, so this checks the database constraint itself.
+  it.each(["created_at", "updated_at"])("rejects a null %s", async (column) => {
+    const { data, error } = await supabase
+      .from("tenants")
+      .insert({ slug: `null-${column.replace("_", "-")}`, ...defaultTenantConfig(), [column]: null } as never)
+      .select("id");
+    // Only reached if the constraint is missing: removes the row so the failure doesn't linger.
+    if (data?.[0]) await supabase.from("tenants").delete().eq("id", data[0].id);
+    expect(error).toMatchObject({ code: "23502" }); // not_null_violation
   });
 });
 

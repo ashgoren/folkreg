@@ -36,7 +36,7 @@ export type Database = {
     Tables: {
       orders: {
         Row: {
-          created_at: string | null
+          created_at: string
           donation: number | null
           id: string
           is_live: boolean
@@ -49,7 +49,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
           donation?: number | null
           id?: string
           is_live?: boolean
@@ -62,7 +62,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
           donation?: number | null
           id?: string
           is_live?: boolean
@@ -134,7 +134,7 @@ export type Database = {
       tenants: {
         Row: {
           admissions_config: Json
-          created_at: string | null
+          created_at: string
           event_config: Json
           fields_config: Json
           id: string
@@ -146,12 +146,12 @@ export type Database = {
           slug: string
           spreadsheet_config: Json | null
           theme_config: Json
-          updated_at: string | null
+          updated_at: string
           waiver_config: Json
         }
         Insert: {
           admissions_config: Json
-          created_at?: string | null
+          created_at?: string
           event_config: Json
           fields_config: Json
           id?: string
@@ -163,12 +163,12 @@ export type Database = {
           slug: string
           spreadsheet_config?: Json | null
           theme_config: Json
-          updated_at?: string | null
+          updated_at?: string
           waiver_config: Json
         }
         Update: {
           admissions_config?: Json
-          created_at?: string | null
+          created_at?: string
           event_config?: Json
           fields_config?: Json
           id?: string
@@ -180,7 +180,7 @@ export type Database = {
           slug?: string
           spreadsheet_config?: Json | null
           theme_config?: Json
-          updated_at?: string | null
+          updated_at?: string
           waiver_config?: Json
         }
         Relationships: []
