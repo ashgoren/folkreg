@@ -7,13 +7,10 @@
 // blank the admin forms use; the organizer reviews and fills in every page before the tenant goes
 // live. Prices are
 // placeholders taken from a real event's config, there to be replaced.
-//
-// spreadsheet_config isn't here: it stays null until a sheet is set up, since the sync can't
-// run without a sheet id, and the Spreadsheet page derives its columns from the active fields.
 
 import { FIELD_DEFS, type FieldName } from "@repo/fields";
 import type {
-  AdmissionsConfig, EventConfig, FieldConfig, FieldEntry, FieldsConfig, PaymentsConfig, ReceiptsConfig, ThemeConfig, WaiverConfig,
+  AdmissionsConfig, EventConfig, FieldConfig, FieldEntry, FieldsConfig, PaymentsConfig, ReceiptsConfig, SpreadsheetConfig, ThemeConfig, WaiverConfig,
 } from "./schemas";
 
 export const defaultEventConfig = (): EventConfig => ({
@@ -120,6 +117,10 @@ export const defaultWaiverConfig = (): WaiverConfig => ({ show: false, docusealT
 export const defaultReceiptsConfig = (): ReceiptsConfig => ({ emailFrom: "", emailReplyTo: "" });
 
 // Every config column a new tenant row gets.
+// No sheet yet. No stored columns either: every available column shows, in field order, until
+// the organizer reorders or hides one on the Spreadsheet page.
+export const defaultSpreadsheetConfig = (): SpreadsheetConfig => ({ sheetId: "", columns: [] });
+
 export const defaultTenantConfig = () => ({
   event_config: defaultEventConfig(),
   fields_config: defaultFieldsConfig(),
@@ -128,4 +129,5 @@ export const defaultTenantConfig = () => ({
   theme_config: defaultThemeConfig(),
   waiver_config: defaultWaiverConfig(),
   receipts_config: defaultReceiptsConfig(),
+  spreadsheet_config: defaultSpreadsheetConfig(),
 });

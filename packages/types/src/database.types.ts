@@ -141,7 +141,7 @@ export type Database = {
           receipts_config: Json
           show_preregistration: boolean
           slug: string
-          spreadsheet_config: Json | null
+          spreadsheet_config: Json
           theme_config: Json
           updated_at: string
           waiver_config: Json
@@ -158,7 +158,7 @@ export type Database = {
           receipts_config: Json
           show_preregistration?: boolean
           slug: string
-          spreadsheet_config?: Json | null
+          spreadsheet_config: Json
           theme_config: Json
           updated_at?: string
           waiver_config: Json
@@ -175,7 +175,7 @@ export type Database = {
           receipts_config?: Json
           show_preregistration?: boolean
           slug?: string
-          spreadsheet_config?: Json | null
+          spreadsheet_config?: Json
           theme_config?: Json
           updated_at?: string
           waiver_config?: Json

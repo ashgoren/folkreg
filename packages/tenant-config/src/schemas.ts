@@ -323,9 +323,8 @@ export const receiptsConfigSchema = z.object({
 export type ReceiptsConfig = z.infer<typeof receiptsConfigSchema>;
 
 export const spreadsheetConfigSchema = z.object({
-  // Accepts either a bare sheet ID or a full Google Sheets URL, stored as-is -- whatever reads
-  // this to call the Sheets API is responsible for extracting the ID, e.g. via
-  // `trimmed.match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1] ?? trimmed`.
+  // "" until a sheet is set up, which is when the sync starts. Accepts either a bare sheet ID or
+  // a full Google Sheets URL, stored as-is. Reader needs to extract ID.
   sheetId: z.string(),
   columns: z.array(z.object({
     name: z.string(),
@@ -334,8 +333,7 @@ export const spreadsheetConfigSchema = z.object({
 });
 export type SpreadsheetConfig = z.infer<typeof spreadsheetConfigSchema>;
 
-// Every config column of a tenants row. spreadsheet_config is the one nullable column: null means
-// no sheet has been set up yet.
+// Every config column of a tenants row.
 export const tenantConfigSchema = z.object({
   event_config: eventConfigSchema,
   fields_config: fieldsConfigSchema,
@@ -344,7 +342,7 @@ export const tenantConfigSchema = z.object({
   theme_config: themeConfigSchema,
   waiver_config: waiverConfigSchema,
   receipts_config: receiptsConfigSchema,
-  spreadsheet_config: spreadsheetConfigSchema.nullable(),
+  spreadsheet_config: spreadsheetConfigSchema,
 });
 export type TenantConfig = z.infer<typeof tenantConfigSchema>;
 

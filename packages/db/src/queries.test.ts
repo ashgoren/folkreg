@@ -64,6 +64,12 @@ describe("getTenant / getSecrets", () => {
     await expect(db.getTenant()).rejects.toThrow(/Tenant .* has invalid config:[\s\S]*event_config\.calendar/);
   });
 
+  // Every config column always holds a value; a tenant with no sheet has a blank sheetId instead.
+  it("refuses to store a null spreadsheet_config", async () => {
+    const { error } = await supabase.from("tenants").update({ spreadsheet_config: null }).eq("id", tenantId);
+    expect(error?.code).toBe("23502"); // not_null_violation
+  });
+
   it("returns null for a tenant that doesn't exist", async () => {
     expect(await createTenantDb(supabase, "00000000-0000-0000-0000-000000000000").getTenant()).toBeNull();
   });

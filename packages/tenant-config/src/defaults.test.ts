@@ -7,7 +7,7 @@ import { admissionsConfigSchema, fieldsConfigSchema, tenantConfigSchema } from "
 // defaults have to pass the same schemas as anything an organizer saves.
 describe("defaultTenantConfig", () => {
   it("passes every config schema", () => {
-    expect(tenantConfigSchema.safeParse({ ...defaultTenantConfig(), spreadsheet_config: null }).error).toBeUndefined();
+    expect(tenantConfigSchema.safeParse(defaultTenantConfig()).error).toBeUndefined();
   });
 
   // Switching Admissions modes keeps the other modes' starting values, so each has to be valid.

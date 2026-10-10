@@ -34,24 +34,22 @@ export function SpreadsheetForm({ tenant }: { tenant: Tenant }) {
     if (def.followUp) availableRegistrantColumns.push(def.followUp.storageKey);
   }
 
-  // A brand-new tenant (or one with stale data from before columns existed) defaults
-  // everything to visible. On later visits, a no-longer-available column drops out
-  // entirely, and a newly-available one gets appended as visible -- opt-out, not opt-in.
-  const storedColumns = tenant.spreadsheet_config?.columns;
-  const initialColumns = Array.isArray(storedColumns)
-    ? [
-        ...storedColumns.filter((col) => availableRegistrantColumns.includes(col.name)),
-        ...availableRegistrantColumns
-          .filter((name) => !storedColumns.some((col) => col.name === name))
-          .map((name) => ({ name, visible: true })),
-      ]
-    : availableRegistrantColumns.map((name) => ({ name, visible: true }));
+  // The stored list keeps the organizer's order and hidden columns. A column no longer available
+  // drops out, and a newly available one is appended as visible -- opt-out, not opt-in. A new
+  // tenant stores none, so every available column shows.
+  const storedColumns = tenant.spreadsheet_config.columns;
+  const initialColumns = [
+    ...storedColumns.filter((col) => availableRegistrantColumns.includes(col.name)),
+    ...availableRegistrantColumns
+      .filter((name) => !storedColumns.some((col) => col.name === name))
+      .map((name) => ({ name, visible: true })),
+  ];
 
   const { form, formProps, isPending, savedRecently } = useAutosaveForm({
     label: "Spreadsheet",
     schema: spreadsheetConfigSchema,
     defaultValues: {
-      sheetId: tenant.spreadsheet_config?.sheetId ?? "",
+      sheetId: tenant.spreadsheet_config.sheetId,
       columns: initialColumns,
     },
     save: (data) => updateSpreadsheet(tenant.id, data),

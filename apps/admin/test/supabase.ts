@@ -60,8 +60,8 @@ export const getTenantIdBySlug = async (service: DbClient, slug: string): Promis
   return data.id;
 };
 
-// Returns a tenant to the state createTenant() leaves it in: every config column at its default
-// (spreadsheet_config null), scalars at their defaults, every secret null. Each test starts from
+// Returns a tenant to the state createTenant() leaves it in: every config column at its default,
+// scalars at their defaults, every secret null. Each test starts from
 // here instead of depending on what an earlier test left behind.
 export const resetTenant = async (service: DbClient, tenantId: string, slug: string) => {
   // Cast for the same reason as createTenant's insert (packages/db/src/provisioning.ts).
@@ -70,7 +70,6 @@ export const resetTenant = async (service: DbClient, tenantId: string, slug: str
     is_live: false,
     show_preregistration: false,
     ...defaultTenantConfig(),
-    spreadsheet_config: null,
   } as unknown as TablesUpdate<"tenants">).eq("id", tenantId);
   if (tenantError) throw tenantError;
 

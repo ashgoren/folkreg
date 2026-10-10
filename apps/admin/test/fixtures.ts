@@ -6,8 +6,8 @@ import type { Tenant, TenantSecrets } from "@repo/types";
 
 export const TEST_TENANT_ID = "11111111-1111-4111-8111-111111111111";
 
-// Every config column at its default (spreadsheet_config null), matching a freshly-created
-// tenant, so each test spells out only the config it actually depends on.
+// Every config column at its default, matching a freshly-created tenant, so each test spells
+// out only the config it actually depends on.
 export const makeTenant = (overrides: Partial<Tenant> = {}): Tenant => ({
   id: TEST_TENANT_ID,
   slug: "example",
@@ -15,7 +15,6 @@ export const makeTenant = (overrides: Partial<Tenant> = {}): Tenant => ({
   is_live: false,
   show_preregistration: false,
   ...defaultTenantConfig(),
-  spreadsheet_config: null,
   created_at: "2026-01-01T00:00:00.000Z",
   updated_at: "2026-01-01T00:00:00.000Z",
   ...overrides,

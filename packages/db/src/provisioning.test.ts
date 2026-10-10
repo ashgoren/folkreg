@@ -26,13 +26,13 @@ const findUserByEmail = async (email: string) => {
 };
 
 describe("createTenant", () => {
-  it("writes the full default config, leaves spreadsheet_config null, and gets a secrets row", async () => {
+  it("writes the full default config and gets a secrets row", async () => {
     const slug = unique();
     const tenantId = await createTenant(supabase, { slug, ownerId: null });
     created.tenantIds.push(tenantId);
 
     const { data: tenant } = await supabase.from("tenants").select("*").eq("id", tenantId).single();
-    expect(tenant).toMatchObject({ slug, owner_id: null, is_live: false, spreadsheet_config: null, ...defaultTenantConfig() });
+    expect(tenant).toMatchObject({ slug, owner_id: null, is_live: false, ...defaultTenantConfig() });
 
     const { data: secrets } = await supabase.from("tenant_secrets").select("tenant_id").eq("tenant_id", tenantId);
     expect(secrets).toHaveLength(1);
