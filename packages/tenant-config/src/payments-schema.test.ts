@@ -36,4 +36,15 @@ describe("paymentsConfigSchema", () => {
   it("requires every checks sub-field", () => {
     expect(paymentsConfigSchema.safeParse({ ...blank, checks: { allowed: true } }).success).toBe(false);
   });
+
+  it.each(["", "https://www.paypal.com/paypalme/example"])("accepts a direct payment link of %j", (directPaymentUrl) => {
+    expect(paymentsConfigSchema.safeParse({ ...blank, directPaymentUrl }).success).toBe(true);
+  });
+
+  // Without "https://", the link would point at a page on the registration site itself.
+  it("rejects a direct payment link that isn't a web address", () => {
+    const result = paymentsConfigSchema.safeParse({ ...blank, directPaymentUrl: "paypal.me/example" });
+    expect(result.error?.issues.map((issue) => [issue.path.join("."), issue.message]))
+      .toEqual([["directPaymentUrl", "Must be a web address starting with https://"]]);
+  });
 });

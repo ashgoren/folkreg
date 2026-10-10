@@ -265,7 +265,8 @@ export const paymentsConfigSchema = z.object({
   paypalClientIdLive: z.string(),
   paypalClientIdTest: z.string(),
   paymentDueDate: z.string(),
-  directPaymentUrl: z.string(),
+  // Where registrants who paid a deposit (or by check) send the rest electronically.
+  directPaymentUrl: optionalUrl,
   coverFeesCheckbox: z.boolean(),
   showPaymentSummary: z.boolean(),
   deposit: z.object({

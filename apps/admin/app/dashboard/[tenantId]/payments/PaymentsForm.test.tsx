@@ -215,6 +215,18 @@ describe("PaymentsForm", () => {
       await expectLastSave(vi.mocked(updatePayments), tenant.id, expect.objectContaining({ donation: { enabled: true, max: 500 } }));
     });
 
+    it("flags a direct payment link without https:// and doesn't save it", async () => {
+      const user = userEvent.setup();
+      render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={makeSecrets()} />);
+
+      await user.clear(byId("payments-direct-url"));
+      await user.type(byId("payments-direct-url"), "paypal.me/example");
+      await user.tab();
+
+      expect(await screen.findByText("Must be a web address starting with https://")).toBeInTheDocument();
+      await expectNoSave(vi.mocked(updatePayments));
+    });
+
     it("rejects a negative deposit amount", async () => {
       const user = userEvent.setup();
       render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={makeSecrets()} />);
