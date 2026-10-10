@@ -11,6 +11,7 @@
 // with "Required" rather than being saved.
 
 import { z } from "zod";
+import { FIELD_DEFS, FIELD_NAMES } from "@repo/fields";
 
 const requiredNumber = (min: number) => z.number({ error: "Required" }).min(min);
 const optionalEmail = z.union([z.literal(""), z.string().email("Must be a valid email")]);
@@ -44,25 +45,45 @@ export const eventConfigSchema = z.object({
 });
 export type EventConfig = z.infer<typeof eventConfigSchema>;
 
-// Per-field overrides of a field's catalog defaults in @repo/fields. Optional keys, unlike the
-// rest of the config: a field only stores what differs from (or isn't covered by) its catalog entry.
+// A tenant's settings for one active field: copied from the field's catalog defaults in
+// @repo/fields when the organizer activates it (defaultFieldConfig), then the tenant's own -- the
+// registration form reads these, never the catalog's defaults. Keys are optional because not every
+// setting applies to every field (rows only to a textarea, options only to radio and checkbox
+// fields, width only to contact fields).
 export const fieldConfigSchema = z.object({
   title: z.string().optional(),
   label: z.string().optional(),
   placeholder: z.string().optional(),
   options: z.array(z.object({ label: z.string(), value: z.string() })).optional(),
   defaultValue: z.string().optional(),
-  rows: z.number().optional(),
-  width: z.number().optional(),
+  rows: z.number().int().min(1).optional(),
+  width: z.number().int().min(1).max(12).optional(),
   required: z.boolean().optional(),
   includeOnNametag: z.boolean().optional(),
 });
 export type FieldConfig = z.infer<typeof fieldConfigSchema>;
 
+// An active field: which catalog field it is, plus the tenant's settings for it.
+export const fieldEntrySchema = fieldConfigSchema.extend({ name: z.enum(FIELD_NAMES) });
+export type FieldEntry = z.infer<typeof fieldEntrySchema>;
+
+// A tenant's active fields, by section of the registration form, each section in the order it
+// shows them. A field is active exactly when it has an entry; removing it removes its settings.
+// Names are checked against the catalog, so a renamed or removed catalog field fails the read
+// loudly rather than being skipped.
 export const fieldsConfigSchema = z.object({
-  contactOrder: z.array(z.string()),
-  miscOrder: z.array(z.string()),
-  config: z.record(z.string(), fieldConfigSchema),
+  contact: z.array(fieldEntrySchema),
+  misc: z.array(fieldEntrySchema),
+}).superRefine((config, ctx) => {
+  const seen = new Set<string>();
+  for (const group of ["contact", "misc"] as const) {
+    config[group].forEach(({ name }, index) => {
+      const path = [group, index, "name"];
+      if (FIELD_DEFS[name].group !== group) ctx.addIssue({ code: "custom", path, message: `${name} belongs in ${FIELD_DEFS[name].group}` });
+      if (seen.has(name)) ctx.addIssue({ code: "custom", path, message: `${name} is listed more than once` });
+      seen.add(name);
+    });
+  }
 });
 export type FieldsConfig = z.infer<typeof fieldsConfigSchema>;
 

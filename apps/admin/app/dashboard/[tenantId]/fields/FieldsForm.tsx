@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { DragDropProvider } from "@dnd-kit/react";
 import { move } from "@dnd-kit/helpers";
-import { FIELD_DEFS } from "@repo/fields";
+import { FIELD_DEFS, FIELD_NAMES, type FieldName } from "@repo/fields";
 import { defaultFieldConfig } from "@repo/tenant-config";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { isTextEntry } from "@/lib/text-entry";
@@ -13,25 +13,38 @@ import { FieldRow } from "./FieldRow";
 import { ConfigPanel } from "./ConfigPanel";
 import { updateFields } from "./actions";
 import type { Tenant } from "@repo/types";
-import type { FieldConfig } from "@repo/tenant-config";
+import type { FieldConfig, FieldsConfig } from "@repo/tenant-config";
 
+// The page edits each section as an order of field names, with the fields' settings kept by name;
+// fields_config stores each section as a list of entries (a name plus its settings). These convert
+// when the page loads and when it saves.
 type FieldsState = {
-  contactOrder: string[];
-  miscOrder: string[];
-  config: Record<string, FieldConfig>;
+  contactOrder: FieldName[];
+  miscOrder: FieldName[];
+  config: Partial<Record<FieldName, FieldConfig>>;
 };
 
+const toState = (stored: FieldsConfig): FieldsState => ({
+  contactOrder: stored.contact.map((field) => field.name),
+  miscOrder: stored.misc.map((field) => field.name),
+  config: Object.fromEntries([...stored.contact, ...stored.misc].map(({ name, ...settings }) => [name, settings])),
+});
+
+const toStored = (state: FieldsState): FieldsConfig => ({
+  contact: state.contactOrder.map((name) => ({ name, ...state.config[name] })),
+  misc: state.miscOrder.map((name) => ({ name, ...state.config[name] })),
+});
+
 export function FieldsForm({ tenant }: { tenant: Tenant }) {
-  // Load initial fields config from db and keep it in local state until user saves
-  const initialFields = tenant.fields_config;
-  const [contactOrder, setContactOrder] = useState<string[]>(initialFields.contactOrder);
-  const [miscOrder, setMiscOrder] = useState<string[]>(initialFields.miscOrder);
-  const [config, setConfig] = useState<Record<string, FieldConfig>>(initialFields.config);
+  const initialFields = toState(tenant.fields_config);
+  const [contactOrder, setContactOrder] = useState(initialFields.contactOrder);
+  const [miscOrder, setMiscOrder] = useState(initialFields.miscOrder);
+  const [config, setConfig] = useState(initialFields.config);
 
   // Mirrors state so callbacks always read the latest values
   const stateRef = useRef<FieldsState>({ contactOrder, miscOrder, config });
 
-  const [selectedField, setSelectedField] = useState<string | null>(null);
+  const [selectedField, setSelectedField] = useState<FieldName | null>(null);
 
   // UI state
   const [contactOpen, setContactOpen] = useState(true);
@@ -39,7 +52,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
   const [availableOpen, setAvailableOpen] = useState(true);
 
   const { save, isPending, savedRecently } = useAutosave<FieldsState>(
-    (data) => updateFields(tenant.id, data),
+    (data) => updateFields(tenant.id, toStored(data)),
   );
 
   // A config panel edit typed into a text field, waiting to be saved when that field loses focus.
@@ -47,7 +60,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
   // Required switch, adding or removing an option) saves right away.
   const textEditPendingRef = useRef(false);
 
-  function updateFieldConfig(fieldName: string, updates: Partial<FieldConfig>) {
+  function updateFieldConfig(fieldName: FieldName, updates: Partial<FieldConfig>) {
     const next = {
       ...stateRef.current.config,
       [fieldName]: { ...stateRef.current.config[fieldName], ...updates },
@@ -65,13 +78,13 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
     save(stateRef.current);
   }
 
-  function activateField(fieldName: string) {
+  function activateField(fieldName: FieldName) {
     const def = FIELD_DEFS[fieldName];
     const newConfig = {
       ...stateRef.current.config,
       [fieldName]: defaultFieldConfig(fieldName),
     };
-    if (def!.group === "contact") {
+    if (def.group === "contact") {
       const newContactOrder = [...stateRef.current.contactOrder, fieldName];
       setContactOrder(newContactOrder);
       stateRef.current = {
@@ -92,7 +105,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
     save(stateRef.current);
   }
 
-  function deactivateField(fieldName: string) {
+  function deactivateField(fieldName: FieldName) {
     const newContactOrder = stateRef.current.contactOrder.filter(
       (n) => n !== fieldName,
     );
@@ -113,20 +126,18 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
     save(stateRef.current);
   }
 
-  function needsOptions(fieldName: string) {
-    const type = FIELD_DEFS[fieldName]?.type;
+  function needsOptions(fieldName: FieldName) {
+    const type = FIELD_DEFS[fieldName].type;
     return type === "radio" || type === "checkbox";
   }
 
-  function missingOptions(fieldName: string) {
+  function missingOptions(fieldName: FieldName) {
     const options = config[fieldName]?.options;
     return needsOptions(fieldName) && (!options || options.length === 0);
   }
 
   const activeNames = new Set([...contactOrder, ...miscOrder]);
-  const availableFields = Object.entries(FIELD_DEFS).filter(
-    ([name]) => !activeNames.has(name),
-  );
+  const availableFields = FIELD_NAMES.filter((name) => !activeNames.has(name));
 
   const selectedConfig = selectedField ? (config[selectedField] ?? null) : null;
   const selectedGroup: "contact" | "misc" | null = selectedField
@@ -153,7 +164,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
             <DragDropProvider
               onDragEnd={(event) => {
                 if (event.canceled) return;
-                const newOrder = move(contactOrder, event) as string[];
+                const newOrder = move(contactOrder, event) as FieldName[];
                 setContactOrder(newOrder);
                 stateRef.current = {
                   ...stateRef.current,
@@ -193,7 +204,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
             <DragDropProvider
               onDragEnd={(event) => {
                 if (event.canceled) return;
-                const newOrder = move(miscOrder, event) as string[];
+                const newOrder = move(miscOrder, event) as FieldName[];
                 setMiscOrder(newOrder);
                 stateRef.current = {
                   ...stateRef.current,
@@ -236,7 +247,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
             </button>
             {availableOpen && (
               <div className="mt-2 flex flex-col gap-0.5 opacity-70">
-                {availableFields.map(([name]) => (
+                {availableFields.map((name) => (
                   <AvailableFieldRow
                     key={name}
                     fieldName={name}

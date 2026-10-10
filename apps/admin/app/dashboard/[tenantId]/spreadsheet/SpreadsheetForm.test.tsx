@@ -7,13 +7,18 @@ import userEvent from "@testing-library/user-event";
 import { defaultPaymentsConfig } from "@repo/tenant-config";
 import { makeTenant } from "@/test/fixtures";
 import { expectLastSave } from "@/test/autosave";
+import type { FieldName } from "@repo/fields";
 import type { FieldsConfig, PaymentsConfig } from "@repo/tenant-config";
 
 vi.mock("./actions", () => ({ updateSpreadsheet: vi.fn() }));
 import { updateSpreadsheet } from "./actions";
 import { SpreadsheetForm } from "./SpreadsheetForm";
 
-const fields = (contactOrder: string[], miscOrder: string[] = []): FieldsConfig => ({ contactOrder, miscOrder, config: {} });
+// Active fields by name, with no settings: the Spreadsheet page only reads which fields are active.
+const fields = (contact: FieldName[], misc: FieldName[] = []): FieldsConfig => ({
+  contact: contact.map((name) => ({ name })),
+  misc: misc.map((name) => ({ name })),
+});
 
 // Registrant columns are the draggable rows -- each has a drag handle -- in on-screen order.
 const registrantColumns = () =>

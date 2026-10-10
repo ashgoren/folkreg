@@ -11,9 +11,9 @@
 // spreadsheet_config isn't here: it stays null until a sheet is set up, since the sync can't
 // run without a sheet id, and the Spreadsheet page derives its columns from the active fields.
 
-import { FIELD_DEFS } from "@repo/fields";
+import { FIELD_DEFS, type FieldName } from "@repo/fields";
 import type {
-  AdmissionsConfig, EventConfig, FieldConfig, FieldsConfig, PaymentsConfig, ReceiptsConfig, ThemeConfig, WaiverConfig,
+  AdmissionsConfig, EventConfig, FieldConfig, FieldEntry, FieldsConfig, PaymentsConfig, ReceiptsConfig, ThemeConfig, WaiverConfig,
 } from "./schemas";
 
 // A function rather than a constant because the year is the current one at the time of the call.
@@ -28,31 +28,31 @@ export const defaultEventConfig = (): EventConfig => ({
   links: { info: "", health: "", safety: "" },
 });
 
-// A field's starting config when it's activated: the label, placeholder, width, etc. from its
+// A field's starting settings when it's activated: the label, placeholder, width, etc. from its
 // catalog entry in @repo/fields, whose `defaults` use the same keys as FieldConfig. Cloned so the
 // tenant's copy (options arrays included) never shares objects with the catalog. Used both for
 // the default field set below and by the Fields page when an organizer turns a field on.
-export const defaultFieldConfig = (fieldName: string): FieldConfig => {
-  const def = FIELD_DEFS[fieldName];
-  if (!def) throw new Error(`Unknown field: ${fieldName}`);
-  return structuredClone(def.defaults ?? {});
-};
+export const defaultFieldConfig = (fieldName: FieldName): FieldConfig => structuredClone(FIELD_DEFS[fieldName].defaults ?? {});
+
+// A field as a new tenant has it: its catalog defaults, printed on the nametag if it can be.
+const defaultFieldEntry = (name: FieldName): FieldEntry => ({
+  name,
+  ...defaultFieldConfig(name),
+  ...(FIELD_DEFS[name].canIncludeOnNametag && { includeOnNametag: true }),
+});
 
 // The fields a typical event collects, in the order its form shows them. Removing a few is less
 // work for an organizer than assembling the whole form from nothing.
-const DEFAULT_CONTACT_FIELDS = [
-  "first", "last", "nametag", "pronouns", "email", "emailConfirmation", "phone", "address", "apartment", "city", "state", "zip" ];
-const DEFAULT_MISC_FIELDS = [
+const DEFAULT_CONTACT_FIELDS: FieldName[] = [
+  "first", "last", "nametag", "pronouns", "email", "emailConfirmation", "phone", "address", "apartment", "city", "state", "zip",
+];
+const DEFAULT_MISC_FIELDS: FieldName[] = [
   "share", "allergies", "carpool", "bedding", "volunteer", "housing", "roommate", "misc", "agreement", "comments",
 ];
 
 export const defaultFieldsConfig = (): FieldsConfig => ({
-  contactOrder: [...DEFAULT_CONTACT_FIELDS],
-  miscOrder: [...DEFAULT_MISC_FIELDS],
-  config: Object.fromEntries([...DEFAULT_CONTACT_FIELDS, ...DEFAULT_MISC_FIELDS].map((name) => [
-    name,
-    { ...defaultFieldConfig(name), ...(FIELD_DEFS[name]?.canIncludeOnNametag && { includeOnNametag: true }) },
-  ])),
+  contact: DEFAULT_CONTACT_FIELDS.map(defaultFieldEntry),
+  misc: DEFAULT_MISC_FIELDS.map(defaultFieldEntry),
 });
 
 // Sliding scale is active for a new tenant; the other modes' values are what an organizer sees on

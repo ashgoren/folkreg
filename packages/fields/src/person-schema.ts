@@ -5,11 +5,11 @@
 // and again on the server.
 
 import { z } from "zod";
-import { FIELD_DEFS } from "./catalog";
+import { FIELD_DEFS, type FieldName } from "./catalog";
 import type { FieldType } from "./types";
 
-// The tenant's settings for a field that matter to validation (a subset of its fields_config entry).
-export type FieldSettings = { required?: boolean };
+// A tenant's active field, as stored in its fields_config, narrowed to what validation uses.
+export type FieldSettings = { name: FieldName; required?: boolean };
 
 // For a required field the catalog gives no message of its own.
 const FALLBACK_REQUIRED_MESSAGES: Record<FieldType, string> = {
@@ -29,23 +29,17 @@ const isBlank = (value: unknown) => (Array.isArray(value) ? value.length === 0 :
 const hasValue = (value: unknown, option: string) => (Array.isArray(value) ? value.includes(option) : value === option);
 
 /**
- * The zod schema for one person, given the tenant's settings for each active field (keyed by field
- * name) and the person's position in the order (0 is the one registering).
+ * The zod schema for one person, given the tenant's active fields (as stored in fields_config:
+ * contact then misc) and the person's position in the order (0 is the one registering).
  *
  * Every problem is reported at the path of the field it's about -- a follow-up's at its own key --
  * so a form shows each error under its own input. Values that aren't fields (e.g. an admission
  * amount) pass through untouched.
  */
-export const personSchema = (settingsByField: Record<string, FieldSettings>, personIndex: number) => {
+export const personSchema = (activeFields: FieldSettings[], personIndex: number) => {
   const isFirstPerson = personIndex === 0;
-  const fields = Object.entries(settingsByField)
-    .map(([name, settings]) => {
-      const def = FIELD_DEFS[name];
-      // Stored config naming a field the catalog lacks (e.g. one since renamed) would otherwise be
-      // silently left unvalidated.
-      if (!def) throw new Error(`Unknown field: ${name}`);
-      return { name, def, settings };
-    })
+  const fields = activeFields
+    .map((settings) => ({ name: settings.name, def: FIELD_DEFS[settings.name], settings }))
     // Not asked of anyone after the first person, so there's nothing of theirs to check.
     .filter(({ def }) => isFirstPerson || !def.firstPersonOnly);
 

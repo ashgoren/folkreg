@@ -11,9 +11,8 @@ test.beforeEach(async ({ page, tenantId, dashboardUrl }) => {
   // needs some before there's anything to configure.
   const { error } = await service.from("tenants").update({
     fields_config: {
-      contactOrder: ["first", "last", "email", "emailConfirmation"],
-      miscOrder: ["photo"],
-      config: {},
+      contact: [{ name: "first" }, { name: "last" }, { name: "email" }, { name: "emailConfirmation" }],
+      misc: [{ name: "photo" }],
     },
   }).eq("id", tenantId);
   if (error) throw error;

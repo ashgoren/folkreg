@@ -9,14 +9,12 @@ import { updateFields } from "./actions";
 import type { FieldsConfig } from "@repo/tenant-config";
 
 const config = (): FieldsConfig => ({
-  contactOrder: ["first", "last", "email"],
-  miscOrder: ["age"],
-  config: {
-    first: { label: "First name", width: 6, required: true },
-    last: { label: "Last name", width: 6, includeOnNametag: true },
-    email: { label: "Email", width: 12 },
-    age: { title: "Age", options: [{ label: "Adult", value: "adult" }], defaultValue: "adult" },
-  },
+  contact: [
+    { name: "first", label: "First name", width: 6, required: true },
+    { name: "last", label: "Last name", width: 6, includeOnNametag: true },
+    { name: "email", label: "Email", width: 12 },
+  ],
+  misc: [{ name: "age", title: "Age", options: [{ label: "Adult", value: "adult" }], defaultValue: "adult" }],
 });
 
 describe("updateFields", () => {
@@ -30,6 +28,7 @@ describe("updateFields", () => {
   itGuardsTheAction({
     harness, createClient, run: updateFields,
     validValues: config,
-    invalidValues: () => ({ ...config(), contactOrder: "first,last" }),
+    // A name the catalog doesn't define.
+    invalidValues: () => ({ ...config(), contact: [{ name: "notAField" }] }),
   });
 });

@@ -25,11 +25,11 @@ test("adding a field saves it with its default config", async ({ page, tenantId 
   await waitForSaved(page);
 
   await expect.poll(() => fieldsConfig(tenantId)).toEqual({
-    contactOrder: defaults.contactOrder,
-    miscOrder: [...defaults.miscOrder, "age"],
-    config: {
-      ...defaults.config,
-      age: {
+    contact: defaults.contact,
+    misc: [
+      ...defaults.misc,
+      {
+        name: "age",
         title: "Age",
         label: "Please choose one.",
         options: [
@@ -42,17 +42,16 @@ test("adding a field saves it with its default config", async ({ page, tenantId 
         defaultValue: "adult",
         required: true,
       },
-    },
+    ],
   });
 });
 
-test("removing a field drops it from both the order and the config", async ({ page, tenantId }) => {
+test("removing a field drops its entry, settings and all", async ({ page, tenantId }) => {
   await activeRow(page, "last").getByRole("button", { name: "Remove field" }).click();
 
   await expect.poll(() => fieldsConfig(tenantId)).toEqual({
-    contactOrder: defaults.contactOrder.filter((name) => name !== "last"),
-    miscOrder: defaults.miscOrder,
-    config: Object.fromEntries(Object.entries(defaults.config).filter(([name]) => name !== "last")),
+    contact: defaults.contact.filter((field) => field.name !== "last"),
+    misc: defaults.misc,
   });
   // It's back in the available list.
   await expect(availableAddButton(page, "last")).toBeVisible();
@@ -69,8 +68,8 @@ test("editing a field in the config panel saves its config", async ({ page, tena
   await page.locator("#config-required-first").click();
   await waitForSaved(page);
 
-  await expect.poll(async () => (await fieldsConfig(tenantId)).config.first)
-    .toEqual({ label: "Given name", width: 6, required: false });
+  await expect.poll(async () => (await fieldsConfig(tenantId)).contact.find((field) => field.name === "first"))
+    .toEqual({ name: "first", label: "Given name", width: 6, required: false });
 
   await page.reload();
   // No longer required, the row has no "*".
@@ -82,8 +81,9 @@ test("editing a field in the config panel saves its config", async ({ page, tena
 test("dragging a row reorders the contact fields", async ({ page, tenantId }) => {
   await dragRowOnto(page, activeRow(page, "email").getByRole("button", { name: "Drag to reorder" }), activeRow(page, "first"));
 
-  const expected = ["email", ...defaults.contactOrder.filter((name) => name !== "email")];
-  await expect.poll(async () => (await fieldsConfig(tenantId)).contactOrder).toEqual(expected);
+  const names = defaults.contact.map((field) => field.name);
+  const expected = ["email", ...names.filter((name) => name !== "email")];
+  await expect.poll(async () => (await fieldsConfig(tenantId)).contact.map((field) => field.name)).toEqual(expected);
 
   await page.reload();
   const contactRows = page.locator("[data-active-field]");

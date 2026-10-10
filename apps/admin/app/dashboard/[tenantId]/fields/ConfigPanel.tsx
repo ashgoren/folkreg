@@ -1,6 +1,6 @@
 "use client";
 
-import { FIELD_DEFS } from "@repo/fields";
+import { FIELD_DEFS, type FieldName } from "@repo/fields";
 import type { FieldConfig } from "@repo/tenant-config";
 import { Field, FieldContent, FieldGroup } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { X, Plus } from "lucide-react";
 
 interface ConfigPanelProps {
-  fieldName: string;
+  fieldName: FieldName;
   group: "contact" | "misc";
   config: FieldConfig;
   onChange: (updates: Partial<FieldConfig>) => void;
@@ -24,7 +24,6 @@ export function ConfigPanel({
   onChange,
 }: ConfigPanelProps) {
   const def = FIELD_DEFS[fieldName];
-  if (!def) return null;
 
   const showHeading = group === "misc";
   const showPlaceholder = def.type !== "radio" && def.type !== "checkbox";

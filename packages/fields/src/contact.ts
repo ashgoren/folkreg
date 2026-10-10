@@ -6,7 +6,7 @@ const NAME_FORMAT = z.string().regex(/^[^<>&@]+$/, "Invalid characters :(");
 const EMAIL_FORMAT = z.email("Please enter a valid email address.");
 const PHONE_FORMAT = z.string().regex(/^[2-9][0-9-() ]*$/, "Please enter a valid phone number.");
 
-export const CONTACT_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
+export const CONTACT_FIELD_DEFS = {
   first: {
     type: "text",
     autoComplete: "given-name",
@@ -135,4 +135,4 @@ export const CONTACT_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
       width: 3
     },
   },
-};
+} satisfies Record<string, Omit<FieldDef, "group">>;

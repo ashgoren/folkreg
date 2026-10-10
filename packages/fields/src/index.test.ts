@@ -1,11 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { CONTACT_FIELD_DEFS, FIELD_DEFS, MISC_FIELD_DEFS, STATE_OPTIONS } from "./index";
+import { CONTACT_FIELD_DEFS, FIELD_DEFS, FIELD_NAMES, MISC_FIELD_DEFS, STATE_OPTIONS } from "./index";
 
 describe("FIELD_DEFS", () => {
   it("merges both catalogs, tagging each field with its group", () => {
     expect(Object.keys(FIELD_DEFS)).toEqual([...Object.keys(CONTACT_FIELD_DEFS), ...Object.keys(MISC_FIELD_DEFS)]);
-    for (const name of Object.keys(CONTACT_FIELD_DEFS)) expect(FIELD_DEFS[name]?.group).toBe("contact");
-    for (const name of Object.keys(MISC_FIELD_DEFS)) expect(FIELD_DEFS[name]?.group).toBe("misc");
+    for (const name of FIELD_NAMES) expect(FIELD_DEFS[name].group).toBe(name in CONTACT_FIELD_DEFS ? "contact" : "misc");
   });
 
   // Field names are the keys stored in fields_config and in each order's people[] -- a name
@@ -82,8 +81,8 @@ describe("catalog rules", () => {
     ["dietaryRestrictions", "other", "dietaryRestrictionsOther"],
     ["photo", "Other", "photoComments"],
     ["misc", "minor", "miscComments"],
-  ])("%s reveals a follow-up stored as %s when %s is selected", (name, trigger, storageKey) => {
-    expect(MISC_FIELD_DEFS[name]!.followUp).toMatchObject({ triggerValue: trigger, storageKey });
+  ] as const)("%s reveals a follow-up stored as %s when %s is selected", (name, trigger, storageKey) => {
+    expect(FIELD_DEFS[name].followUp).toMatchObject({ triggerValue: trigger, storageKey });
   });
 
   it("asks only the agreement of the first person alone", () => {

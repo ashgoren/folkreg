@@ -33,18 +33,13 @@ const availableRow = (name: string) => {
   return row;
 };
 
-const config: FieldsConfig = {
-  contactOrder: ["first", "email"],
-  miscOrder: ["carpool"],
-  config: {
-    first: { label: "First name", width: 6, required: true },
-    email: { label: "Email", width: 6 },
-    carpool: { title: "Transportation" },
-  },
-};
+const first = { name: "first", label: "First name", width: 6, required: true } as const;
+const email = { name: "email", label: "Email", width: 6 } as const;
+const carpool = { name: "carpool", title: "Transportation" } as const;
+const config: FieldsConfig = { contact: [first, email], misc: [carpool] };
 
 // What the page looks like once an organizer has deactivated every field.
-const noneActive: FieldsConfig = { contactOrder: [], miscOrder: [], config: {} };
+const noneActive: FieldsConfig = { contact: [], misc: [] };
 
 describe("FieldsForm", () => {
   beforeEach(() => {
@@ -54,8 +49,8 @@ describe("FieldsForm", () => {
   describe("initial state", () => {
     it("starts a new tenant with the default field set active, contact fields first", () => {
       render(<FieldsForm tenant={makeTenant()} />);
-      const { contactOrder, miscOrder } = defaultFieldsConfig();
-      expect(activeFieldNames()).toEqual([...contactOrder, ...miscOrder]);
+      const { contact, misc } = defaultFieldsConfig();
+      expect(activeFieldNames()).toEqual([...contact, ...misc].map((field) => field.name));
     });
 
     // Like the useAutosaveForm pages: stops Firefox (and sometimes Safari) restoring unsaved field
@@ -106,9 +101,8 @@ describe("FieldsForm", () => {
       expect(activeFieldNames()).toEqual(["first"]);
       // A click is a complete gesture, so it's saved right away rather than on a blur.
       await expectLastSave(vi.mocked(updateFields), tenant.id, {
-        contactOrder: ["first"],
-        miscOrder: [],
-        config: { first: { label: "First name", width: 6, required: true } },
+        contact: [{ name: "first", label: "First name", width: 6, required: true }],
+        misc: [],
       });
     });
 
@@ -119,11 +113,10 @@ describe("FieldsForm", () => {
 
       await user.click(within(availableRow("age")).getByRole("button", { name: "Add" }));
 
-      const ageDefaults = FIELD_DEFS.age!.defaults!;
+      const ageDefaults = FIELD_DEFS.age.defaults!;
       await expectLastSave(vi.mocked(updateFields), tenant.id, {
-        contactOrder: [],
-        miscOrder: ["age"],
-        config: { age: { label: ageDefaults.label, title: ageDefaults.title, options: ageDefaults.options, defaultValue: "adult", required: true } },
+        contact: [],
+        misc: [{ name: "age", label: ageDefaults.label, title: ageDefaults.title, options: ageDefaults.options, defaultValue: "adult", required: true }],
       });
       // age ships with options, so it carries no missing-options warning.
       expect(activeRow("age").querySelector(".text-amber-500")).toBeNull();
@@ -138,10 +131,10 @@ describe("FieldsForm", () => {
       await user.click(within(availableRow("comments")).getByRole("button", { name: "Add" }));
 
       expect(activeFieldNames()).toEqual(["first", "email", "phone", "carpool", "comments"]);
-      await expectLastSave(vi.mocked(updateFields), tenant.id, expect.objectContaining({
-        contactOrder: ["first", "email", "phone"],
-        miscOrder: ["carpool", "comments"],
-      }));
+      await expectLastSave(vi.mocked(updateFields), tenant.id, {
+        contact: [first, email, expect.objectContaining({ name: "phone" })],
+        misc: [carpool, expect.objectContaining({ name: "comments" })],
+      });
     });
 
     it("deactivates a field, dropping its config and returning it to the available list", async () => {
@@ -152,11 +145,7 @@ describe("FieldsForm", () => {
       await user.click(within(activeRow("email")).getByRole("button", { name: "Remove field" }));
 
       expect(activeFieldNames()).toEqual(["first", "carpool"]);
-      await expectLastSave(vi.mocked(updateFields), tenant.id, {
-        contactOrder: ["first"],
-        miscOrder: ["carpool"],
-        config: { first: config.config.first, carpool: config.config.carpool },
-      });
+      await expectLastSave(vi.mocked(updateFields), tenant.id, { contact: [first], misc: [carpool] });
       expect(within(availableRow("email")).getByRole("button", { name: "Add" })).toBeInTheDocument();
     });
 
@@ -171,7 +160,7 @@ describe("FieldsForm", () => {
       await user.click(within(activeRow("email")).getByRole("button", { name: "Remove field" }));
       expect(screen.queryByRole("heading", { name: "email" })).not.toBeInTheDocument();
       expect(screen.getByText("Select a field to configure it.")).toBeInTheDocument();
-      await expectLastSave(vi.mocked(updateFields), tenant.id, expect.objectContaining({ contactOrder: ["first"] }));
+      await expectLastSave(vi.mocked(updateFields), tenant.id, expect.objectContaining({ contact: [first] }));
     });
   });
 
@@ -208,8 +197,8 @@ describe("FieldsForm", () => {
 
       await user.tab();
       await expectLastSave(vi.mocked(updateFields), tenant.id, {
-        ...config,
-        config: { ...config.config, email: { label: "Email", width: 6, placeholder: "you@example.com" } },
+        contact: [first, { ...email, placeholder: "you@example.com" }],
+        misc: [carpool],
       });
       expect(updateFields).toHaveBeenCalledTimes(1);
     });
@@ -224,7 +213,7 @@ describe("FieldsForm", () => {
 
       expect(activeRow("carpool").querySelector(".text-amber-500")).toBeNull();
       await expectLastSave(vi.mocked(updateFields), tenant.id, expect.objectContaining({
-        config: expect.objectContaining({ carpool: { title: "Transportation", options: [{ label: "", value: "" }] } }),
+        misc: [{ ...carpool, options: [{ label: "", value: "" }] }],
       }));
     });
 
@@ -238,7 +227,7 @@ describe("FieldsForm", () => {
 
       expect(within(activeRow("email")).getByText("*")).toBeInTheDocument();
       await expectLastSave(vi.mocked(updateFields), tenant.id, expect.objectContaining({
-        config: expect.objectContaining({ email: { label: "Email", width: 6, required: true } }),
+        contact: [first, { ...email, required: true }],
       }));
     });
   });

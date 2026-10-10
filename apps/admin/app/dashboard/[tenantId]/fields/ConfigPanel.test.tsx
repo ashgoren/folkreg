@@ -6,10 +6,11 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { FieldName } from "@repo/fields";
 import type { FieldConfig } from "@repo/tenant-config";
 import { ConfigPanel } from "./ConfigPanel";
 
-const renderPanel = (fieldName: string, group: "contact" | "misc", config: FieldConfig = {}) => {
+const renderPanel = (fieldName: FieldName, group: "contact" | "misc", config: FieldConfig = {}) => {
   const onChange = vi.fn();
   render(<ConfigPanel fieldName={fieldName} group={group} config={config} onChange={onChange} />);
   return onChange;
@@ -19,11 +20,6 @@ const renderPanel = (fieldName: string, group: "contact" | "misc", config: Field
 const captionedInput = (caption: string) => screen.getByText(caption).nextElementSibling as HTMLInputElement;
 
 describe("ConfigPanel", () => {
-  it("renders nothing for a field name with no definition", () => {
-    const { container } = render(<ConfigPanel fieldName="notAField" group="contact" config={{}} onChange={vi.fn()} />);
-    expect(container).toBeEmptyDOMElement();
-  });
-
   it("shows the field's name and type", () => {
     renderPanel("email", "contact");
     expect(screen.getByRole("heading", { name: "email" })).toBeInTheDocument();
@@ -71,14 +67,14 @@ describe("ConfigPanel", () => {
   });
 
   describe("the nametag toggle", () => {
-    it.each(["last", "pronouns"])("appears for %s", async (name) => {
+    it.each(["last", "pronouns"] as const)("appears for %s", async (name) => {
       const user = userEvent.setup();
       const onChange = renderPanel(name, "contact");
       await user.click(screen.getByRole("switch", { name: "Include on nametag?" }));
       expect(onChange).toHaveBeenLastCalledWith({ includeOnNametag: true });
     });
 
-    it.each(["first", "email", "nametag"])("doesn't appear for %s", (name) => {
+    it.each(["first", "email", "nametag"] as const)("doesn't appear for %s", (name) => {
       renderPanel(name, "contact");
       expect(screen.queryByRole("switch", { name: "Include on nametag?" })).not.toBeInTheDocument();
     });
@@ -107,7 +103,7 @@ describe("ConfigPanel", () => {
       expect(onChange).toHaveBeenLastCalledWith({ rows: undefined });
     });
 
-    it.each(["age", "share", "first"])("non-textarea %s gets no rows control", (name) => {
+    it.each(["age", "share", "first"] as const)("non-textarea %s gets no rows control", (name) => {
       renderPanel(name, name === "first" ? "contact" : "misc");
       expect(screen.queryByText("Rows")).not.toBeInTheDocument();
     });

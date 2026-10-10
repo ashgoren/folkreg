@@ -24,15 +24,12 @@ function isSystemColumnRelevant(column: string, tenant: Tenant): boolean {
 }
 
 export function SpreadsheetForm({ tenant }: { tenant: Tenant }) {
-  const activeFieldNames = [
-    ...tenant.fields_config.contactOrder,
-    ...tenant.fields_config.miscOrder,
-  ];
+  const activeFieldNames = [...tenant.fields_config.contact, ...tenant.fields_config.misc].map((field) => field.name);
 
   const availableRegistrantColumns: string[] = [];
   for (const name of activeFieldNames) {
     const def = FIELD_DEFS[name];
-    if (!def || def.excludeFromSpreadsheet) continue;
+    if (def.excludeFromSpreadsheet) continue;
     availableRegistrantColumns.push(name);
     if (def.followUp) availableRegistrantColumns.push(def.followUp.storageKey);
   }

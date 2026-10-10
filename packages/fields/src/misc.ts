@@ -1,6 +1,6 @@
 import type { FieldDef } from "./types";
 
-export const MISC_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
+export const MISC_FIELD_DEFS = {
   age: {
     type: "radio",
     requiredMessage: "Please select age range.",
@@ -172,4 +172,4 @@ export const MISC_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
       options: [{ label: "Yes", value: "yes" }],
     },
   },
-};
+} satisfies Record<string, Omit<FieldDef, "group">>;

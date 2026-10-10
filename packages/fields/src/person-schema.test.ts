@@ -1,9 +1,14 @@
 import { describe, it, expect } from "vitest";
+import type { FieldName } from "./catalog";
 import { personSchema, type FieldSettings } from "./person-schema";
 
+// Active fields from a field -> settings map, the way fields_config lists them.
+const fields = (settings: Partial<Record<FieldName, Omit<FieldSettings, "name">>>) =>
+  Object.entries(settings).map(([name, rest]) => ({ name: name as FieldName, ...rest }));
+
 // The errors a person gets, keyed by field: what the registration form shows under each input.
-const errors = (settings: Record<string, FieldSettings>, person: Record<string, unknown>, personIndex = 0) => {
-  const result = personSchema(settings, personIndex).safeParse(person);
+const errors = (settings: Partial<Record<FieldName, Omit<FieldSettings, "name">>>, person: Record<string, unknown>, personIndex = 0) => {
+  const result = personSchema(fields(settings), personIndex).safeParse(person);
   if (result.success) return {};
   return Object.fromEntries(result.error.issues.map((issue) => [issue.path.join("."), issue.message]));
 };
@@ -119,12 +124,12 @@ describe("personSchema", () => {
 
   // E.g. a single string where a checkbox field holds a list of checked options.
   it("rejects a value of the wrong type", () => {
-    expect(personSchema({ agreement: { required: true } }, 0).safeParse({ agreement: "yes" }).success).toBe(false);
+    expect(personSchema(fields({ agreement: { required: true } }), 0).safeParse({ agreement: "yes" }).success).toBe(false);
   });
 
   // A person carries more than its fields (e.g. the admission amount), which the schema leaves alone.
   it("keeps values that aren't fields", () => {
-    const result = personSchema({ first: {} }, 0).parse({ first: "Ada", admission: 120 });
+    const result = personSchema(fields({ first: {} }), 0).parse({ first: "Ada", admission: 120 });
     expect(result).toEqual({ first: "Ada", admission: 120 });
   });
 
@@ -135,10 +140,5 @@ describe("personSchema", () => {
       email: "Please enter a valid email address.",
       agreement: "Please check this box to continue.",
     });
-  });
-
-  // Stored config naming a field the catalog doesn't have is a data problem to surface, not skip.
-  it("rejects a field name the catalog doesn't have", () => {
-    expect(() => personSchema({ notAField: {} }, 0)).toThrow("Unknown field: notAField");
   });
 });
