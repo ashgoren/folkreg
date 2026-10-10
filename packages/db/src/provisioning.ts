@@ -3,7 +3,7 @@
 // so every function here takes a service-role client. No `server-only` import: the seed and
 // create-tenant scripts call these from plain Node.
 
-import { defaultTenantConfig } from "@repo/tenant-config";
+import { defaultTenantConfig, slugSchema } from "@repo/tenant-config";
 import type { DbClient } from "@repo/types";
 import { getTenantBySlug } from "./queries";
 
@@ -30,8 +30,11 @@ export const createTenantWithOwner = async (
   service: DbClient,
   { slug, email, password }: { slug: string; email: string; password: string },
 ): Promise<{ userId: string; tenantId: string }> => {
-  // A taken slug is the likeliest failure, and checking first avoids creating a user only to
-  // delete it. The unique constraint still catches a slug taken between this check and the insert.
+  // An invalid or taken slug is the likeliest failure, and checking first avoids creating a user
+  // only to delete it. The database still catches both (tenants_slug_valid, the unique constraint),
+  // including a slug taken between this check and the insert.
+  const slugCheck = slugSchema.safeParse(slug);
+  if (!slugCheck.success) throw new Error(`Slug "${slug}" isn't valid: ${slugCheck.error.issues[0]!.message}`);
   if (await getTenantBySlug(service, slug)) throw new Error(`Slug "${slug}" is already taken`);
 
   const { data, error } = await service.auth.admin.createUser({ email, password, email_confirm: true });

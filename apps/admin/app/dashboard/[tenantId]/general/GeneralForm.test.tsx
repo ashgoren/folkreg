@@ -87,4 +87,20 @@ describe("GeneralForm", () => {
     expect(screen.getByText("open")).toBeInTheDocument();
     await expectLastSave(vi.mocked(updateGeneral), tenant.id, expect.objectContaining({ is_live: true }));
   });
+
+  // The slug is a hostname: the rule it breaks shows under the field, and it isn't saved.
+  it.each([
+    ["admin", "That name is reserved"],
+    ["dance-", "Can't start or end with a hyphen"],
+  ])("flags the subdomain %j and doesn't save it", async (slug, message) => {
+    const user = userEvent.setup();
+    render(<GeneralForm tenant={makeTenant({ slug: "spring-dance" })} />);
+
+    await user.clear(screen.getByLabelText(/Subdomain/));
+    await user.type(screen.getByLabelText(/Subdomain/), slug);
+    await user.tab();
+
+    expect(await screen.findByText(message)).toBeInTheDocument();
+    await expectNoSave(vi.mocked(updateGeneral));
+  });
 });

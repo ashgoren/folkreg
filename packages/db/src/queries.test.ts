@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
-import { defaultEventConfig, defaultPaymentsConfig, defaultReceiptsConfig, defaultTenantConfig, defaultThemeConfig, type PaymentsConfig } from "@repo/tenant-config";
+import {
+  defaultEventConfig, defaultPaymentsConfig, defaultReceiptsConfig, defaultTenantConfig, defaultThemeConfig, RESERVED_SLUGS, slugSchema,
+  type PaymentsConfig,
+} from "@repo/tenant-config";
 import type { TenantSecrets } from "@repo/types";
 import { createTestClient, getTestTenantId } from "./test-helpers";
 import { createTenantDb, getTenantBySlug } from "./queries";
@@ -146,6 +149,28 @@ describe("updateTenant", () => {
     await db.updateTenant({ is_live: true });
     const after = (await db.getTenant())!.updated_at;
     expect(new Date(after).getTime()).toBeGreaterThan(new Date(before).getTime());
+  });
+});
+
+// The slug is the registration site's hostname. The database enforces the same rules as slugSchema
+// (tenants_slug_valid), so a write that bypasses the admin can't store a broken or reserved one.
+describe("tenants slug", () => {
+  const setSlug = (slug: string) => supabase.from("tenants").update({ slug }).eq("id", tenantId);
+
+  // The migration repeats RESERVED_SLUGS in SQL; this fails if the two lists drift apart.
+  it.each(RESERVED_SLUGS)("refuses the reserved slug %j", async (slug) => {
+    expect((await setSlug(slug)).error?.code).toBe("23514"); // check_violation
+  });
+
+  it.each(["-dance", "dance-", "Dance", "dance.org", "x".repeat(64)])("refuses the invalid slug %j", async (slug) => {
+    expect((await setSlug(slug)).error?.code).toBe("23514");
+  });
+
+  // Every seeded tenant is created through createTenant, so a fixture slug the rules reject would
+  // break the seed; this names it.
+  it("accepts every existing tenant's slug", async () => {
+    const { data } = await supabase.from("tenants").select("slug");
+    expect(data!.filter(({ slug }) => !slugSchema.safeParse(slug).success)).toEqual([]);
   });
 });
 

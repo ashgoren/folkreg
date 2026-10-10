@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { slugSchema } from "@repo/tenant-config";
 
 export const generalSchema = z.object({
-  slug: z.string().min(1, "Required").regex(/^[a-z0-9-]+$/, "Lowercase letters, numbers, and hyphens only"),
+  slug: slugSchema,
   is_live: z.boolean(),
   show_preregistration: z.boolean(),
 });

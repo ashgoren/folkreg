@@ -52,7 +52,17 @@ describe("createTenantWithOwner", () => {
     expect((await findUserByEmail(email))?.email_confirmed_at).toBeTruthy();
   });
 
-  // The slug check runs before the user is created, so a taken slug never produces a user.
+  // The slug checks run before the user is created, so a bad slug never produces a user.
+  it.each([["admin", "That name is reserved"], ["-dance", "Can't start or end with a hyphen"]])(
+    "rejects slug %j (%s) without creating a user",
+    async (slug, reason) => {
+      const email = `${unique()}@test.local`;
+      await expect(createTenantWithOwner(supabase, { slug, email, password: "test-password" }))
+        .rejects.toThrow(`Slug "${slug}" isn't valid: ${reason}`);
+      expect(await findUserByEmail(email)).toBeNull();
+    },
+  );
+
   it("rejects a taken slug without creating a user", async () => {
     const email = `${unique()}@test.local`;
     await expect(createTenantWithOwner(supabase, { slug: "test-tenant", email, password: "test-password" }))
