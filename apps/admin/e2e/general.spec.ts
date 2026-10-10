@@ -9,6 +9,7 @@ test("autosaves slug and toggles, and shows them after a reload", async ({ page,
   await page.getByLabel("Subdomain").fill("renamed-e2e");
   await page.getByRole("switch", { name: "Show preregistration?" }).click();
   await page.getByRole("switch", { name: "Live mode?" }).click();
+  await page.getByRole("button", { name: "Go live" }).click(); // the confirmation
   // The badge and description follow the is_live toggle immediately, before any save.
   await expect(page.getByText("LIVE", { exact: true })).toBeVisible();
   await expect(page.getByText("open", { exact: true })).toBeVisible();
