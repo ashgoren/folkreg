@@ -1,7 +1,7 @@
 // Covers AdmissionsForm together with the per-mode subforms it renders (SlidingScaleFields,
 // FixedFields, TieredFields -> TieredCategories -> TieredCategoryCard), since those only exist
-// as pieces of this form's state. Drag-reordering tiered categories is covered by the
-// Playwright e2e suite -- dnd-kit's pointer/geometry handling doesn't run in jsdom.
+// as pieces of this form's state. Drag-reordering tiered prices isn't covered here: dnd-kit's
+// pointer/geometry handling doesn't run in jsdom (see the skipped test in e2e/admissions.spec.ts).
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";

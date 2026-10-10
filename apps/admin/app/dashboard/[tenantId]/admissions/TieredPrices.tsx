@@ -2,8 +2,7 @@
 
 import { Controller, useFieldArray, useWatch, type UseFormReturn } from "react-hook-form";
 import { DragDropProvider } from "@dnd-kit/react";
-import { move as reorder } from "@dnd-kit/helpers";
-import { useSortable } from "@dnd-kit/react/sortable";
+import { isSortable, useSortable } from "@dnd-kit/react/sortable";
 import { GripVertical, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FieldDescription, FieldError } from "@/components/ui/field";
@@ -119,12 +118,9 @@ function AgeGroupPrices({ form, index, title, onRemoveGroup }: {
       {fields.length === 0 && <NoPriceYet />}
       <DragDropProvider
         onDragEnd={(event) => {
-          if (event.canceled || !event.operation.source) return;
-          const sourceId = event.operation.source.id as string;
-          const ids = fields.map((field) => field.id);
-          const from = ids.indexOf(sourceId);
-          const to = (reorder(ids, event) as string[]).indexOf(sourceId);
-          if (from !== -1 && to !== -1 && from !== to) move(from, to);
+          const { source } = event.operation;
+          if (event.canceled || !isSortable(source) || source.initialIndex === source.index) return;
+          move(source.initialIndex, source.index);
         }}
       >
         {fields.map((field, i) => (

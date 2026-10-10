@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useFieldArray, useWatch } from "react-hook-form";
 import { DragDropProvider } from "@dnd-kit/react";
-import { move as reorder } from "@dnd-kit/helpers";
+import { isSortable } from "@dnd-kit/react/sortable";
 import { FIELD_DEFS, FIELD_NAMES, type FieldName } from "@repo/fields";
 import { defaultFieldEntry, fieldsConfigSchema, type FieldEntry } from "@repo/tenant-config";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -97,13 +97,9 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
             {open[group] && (
               <DragDropProvider
                 onDragEnd={(event) => {
-                  if (event.canceled || !event.operation.source) return;
-                  // Rows are sorted by field name, which is unique; move() takes indexes.
-                  const sourceName = event.operation.source.id as FieldName;
-                  const names = entries[group].map((entry) => entry.name);
-                  const from = names.indexOf(sourceName);
-                  const to = (reorder(names, event) as FieldName[]).indexOf(sourceName);
-                  if (from !== -1 && to !== -1 && from !== to) fieldArrays[group].move(from, to);
+                  const { source } = event.operation;
+                  if (event.canceled || !isSortable(source) || source.initialIndex === source.index) return;
+                  fieldArrays[group].move(source.initialIndex, source.index);
                 }}
               >
                 <div className="flex flex-col gap-1">
