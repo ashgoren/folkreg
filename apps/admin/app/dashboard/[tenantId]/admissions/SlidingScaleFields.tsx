@@ -8,9 +8,9 @@ import type { AdmissionsConfig } from "@repo/tenant-config";
 export function SlidingScaleFields({ form }: { form: UseFormReturn<AdmissionsConfig> }) {
   return (
     <FieldGroup>
-      <NumberField control={form.control} name="costRange.0" id="admissions-cost-min" label="Minimum" required />
-      <NumberField control={form.control} name="costRange.1" id="admissions-cost-max" label="Maximum" required />
-      <NumberField control={form.control} name="costDefault" id="admissions-cost-default" label="Default" required />
+      <NumberField control={form.control} name="slidingScale.min" id="admissions-sliding-min" label="Minimum" required />
+      <NumberField control={form.control} name="slidingScale.max" id="admissions-sliding-max" label="Maximum" required />
+      <NumberField control={form.control} name="slidingScale.default" id="admissions-sliding-default" label="Default" required />
     </FieldGroup>
   );
 }

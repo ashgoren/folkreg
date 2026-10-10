@@ -59,24 +59,25 @@ export const defaultFieldsConfig = (): FieldsConfig => ({
 // first switching to them.
 export const defaultAdmissionsConfig = (): AdmissionsConfig => ({
   mode: "sliding-scale",
-  costRange: [120, 500],
-  costDefault: 350,
-  cost: 200,
-  earlybirdCutoff: "",
-  // A typical event's prices, $15 more after the cutoff. They're keyed by the age field's options,
-  // and these are the values that field starts with. Ages 0-12 have one price each, so it's
-  // unlabeled: the registration form shows just the price.
-  lateIncrease: 15,
-  prices: [
-    {
-      ageGroup: "adult",
-      options: [{ label: "Benefactor", price: 340 }, { label: "Sustaining", price: 280 }, { label: "Basic", price: 220 }],
-    },
-    { ageGroup: "13-17", options: [{ label: "Sustaining", price: 220 }, { label: "Basic", price: 160 }] },
-    { ageGroup: "6-12", options: [{ label: "", price: 160 }] },
-    { ageGroup: "3-5", options: [{ label: "", price: 105 }] },
-    { ageGroup: "0-2", options: [{ label: "", price: 0 }] },
-  ],
+  slidingScale: { min: 120, max: 500, default: 350 },
+  fixed: { price: 200 },
+  tiered: {
+    earlybirdCutoff: "",
+    // A typical event's prices, $15 more after the cutoff. They're keyed by the age field's options,
+    // and these are the values that field starts with. Ages 0-12 have one price each, so it's
+    // unlabeled: the registration form shows just the price.
+    lateIncrease: 15,
+    prices: [
+      {
+        ageGroup: "adult",
+        options: [{ label: "Benefactor", price: 340 }, { label: "Sustaining", price: 280 }, { label: "Basic", price: 220 }],
+      },
+      { ageGroup: "13-17", options: [{ label: "Sustaining", price: 220 }, { label: "Basic", price: 160 }] },
+      { ageGroup: "6-12", options: [{ label: "", price: 160 }] },
+      { ageGroup: "3-5", options: [{ label: "", price: 105 }] },
+      { ageGroup: "0-2", options: [{ label: "", price: 0 }] },
+    ],
+  },
   admissionQuantityMax: 4,
   // No waitlist to start, with a capacity ready for when one is wanted.
   waitlist: { when: "never", capacity: 100 },

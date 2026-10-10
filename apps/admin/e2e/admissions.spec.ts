@@ -15,19 +15,19 @@ test("switching mode keeps the shared limits and the other modes' values", async
   await page.getByLabel("Max number of tickets registrant can purchase").fill("6");
 
   await page.getByRole("radio", { name: "Fixed" }).click();
-  await page.getByLabel("Cost").fill("75");
+  await page.getByLabel("Price").fill("75");
   await waitForSaved(page);
 
   await expect.poll(() => admissionsConfig(tenantId)).toEqual({
     ...defaultAdmissionsConfig(),
     mode: "fixed",
-    cost: 75,
+    fixed: { price: 75 },
     admissionQuantityMax: 6,
   });
 
   await page.reload();
   await expect(page.getByRole("radio", { name: "Fixed" })).toBeChecked();
-  await expect(page.getByLabel("Cost")).toHaveValue("75");
+  await expect(page.getByLabel("Price")).toHaveValue("75");
   await expect(page.getByLabel("Max number of tickets registrant can purchase")).toHaveValue("6");
   await page.getByRole("radio", { name: "Sliding scale" }).click();
   await expect(page.getByLabel("Default")).toHaveValue("350");
@@ -46,8 +46,7 @@ test("a sliding-scale default outside the range shows an error and isn't saved",
   await page.getByLabel("Maximum").blur();
   await expect.poll(() => admissionsConfig(tenantId)).toMatchObject({
     mode: "sliding-scale",
-    costRange: [120, 700],
-    costDefault: 600,
+    slidingScale: { min: 120, max: 700, default: 600 },
   });
 });
 
@@ -57,7 +56,7 @@ test("tiered mode saves prices by age group, with the late increase", async ({ p
   const fields = defaultFieldsConfig();
   fields.misc.push(defaultFieldEntry("age"));
   const { error } = await service.from("tenants")
-    .update({ fields_config: fields, admissions_config: { ...defaultAdmissionsConfig(), prices: [] } })
+    .update({ fields_config: fields, admissions_config: { ...defaultAdmissionsConfig(), tiered: { ...defaultAdmissionsConfig().tiered, prices: [] } } })
     .eq("id", tenantId);
   if (error) throw error;
   await page.reload();
@@ -74,9 +73,7 @@ test("tiered mode saves prices by age group, with the late increase", async ({ p
   await expect.poll(() => admissionsConfig(tenantId)).toEqual({
     ...defaultAdmissionsConfig(),
     mode: "tiered",
-    earlybirdCutoff: "2027-09-01",
-    lateIncrease: 20,
-    prices: [{ ageGroup: "adult", options: [{ label: "Basic", price: 80 }] }],
+    tiered: { earlybirdCutoff: "2027-09-01", lateIncrease: 20, prices: [{ ageGroup: "adult", options: [{ label: "Basic", price: 80 }] }] },
     waitlist: { when: "now", capacity: 100 },
   });
 
@@ -88,14 +85,14 @@ test("tiered mode saves prices by age group, with the late increase", async ({ p
   await expect(page.getByRole("region", { name: "0-2 yr old" })).toContainText("No price yet");
 
   await page.getByRole("button", { name: "Remove Adult price 1" }).click();
-  await expect.poll(() => admissionsConfig(tenantId)).toMatchObject({ mode: "tiered", prices: [{ ageGroup: "adult", options: [] }] });
+  await expect.poll(() => admissionsConfig(tenantId)).toMatchObject({ mode: "tiered", tiered: { prices: [{ ageGroup: "adult", options: [] }] } });
 });
 
 // A date input reports a half-typed date as "", the same as an empty one; it mustn't be saved as a
 // cleared cutoff.
 test("a half-typed early-bird cutoff shows an error and isn't saved", async ({ page, tenantId }) => {
   const { error } = await service.from("tenants")
-    .update({ admissions_config: { ...defaultAdmissionsConfig(), mode: "tiered", earlybirdCutoff: "2027-09-01" } })
+    .update({ admissions_config: { ...defaultAdmissionsConfig(), mode: "tiered", tiered: { ...defaultAdmissionsConfig().tiered, earlybirdCutoff: "2027-09-01" } } })
     .eq("id", tenantId);
   if (error) throw error;
   await page.reload();
@@ -108,7 +105,7 @@ test("a half-typed early-bird cutoff shows an error and isn't saved", async ({ p
   await page.getByRole("heading", { level: 1 }).click();
 
   await expect(page.getByText("Must be a date")).toBeVisible();
-  expect((await admissionsConfig(tenantId)).earlybirdCutoff).toBe("2027-09-01");
+  expect((await admissionsConfig(tenantId)).tiered.earlybirdCutoff).toBe("2027-09-01");
 });
 
 // Within an age group, prices are listed in the order registrants see them.
@@ -131,7 +128,7 @@ test.skip("dragging a price reorders it within its age group", async ({ page, te
   await dragRowOnto(page, rows.nth(2).getByRole("button", { name: "Drag to reorder" }), rows.nth(0));
 
   const adultLabels = async () =>
-    (await admissionsConfig(tenantId)).prices.find((entry) => entry.ageGroup === "adult")?.options.map((option) => option.label);
+    (await admissionsConfig(tenantId)).tiered.prices.find((entry) => entry.ageGroup === "adult")?.options.map((option) => option.label);
   await expect.poll(adultLabels).toEqual(["Basic", "Benefactor", "Sustaining"]);
 });
 

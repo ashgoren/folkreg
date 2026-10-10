@@ -13,14 +13,14 @@ export function TieredFields({ form, ageOptions }: { form: UseFormReturn<Admissi
       <FieldGroup>
         <DateField
           control={form.control}
-          name="earlybirdCutoff"
+          name="tiered.earlybirdCutoff"
           id="admissions-earlybird-cutoff"
           label="Early-bird cutoff"
           description="The last day early-bird prices apply, in the event's timezone. Leave blank for no early-bird pricing: prices stay as entered."
         />
         <NumberField
           control={form.control}
-          name="lateIncrease"
+          name="tiered.lateIncrease"
           id="admissions-late-increase"
           label="Increase after the cutoff"
           description="Every price goes up by this much after the early-bird cutoff. Free stays free."

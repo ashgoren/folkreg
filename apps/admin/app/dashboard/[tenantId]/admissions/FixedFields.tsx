@@ -8,7 +8,7 @@ import type { AdmissionsConfig } from "@repo/tenant-config";
 export function FixedFields({ form }: { form: UseFormReturn<AdmissionsConfig> }) {
   return (
     <FieldGroup>
-      <NumberField control={form.control} name="cost" id="admissions-fixed-cost" label="Cost" required />
+      <NumberField control={form.control} name="fixed.price" id="admissions-fixed-price" label="Price" required />
     </FieldGroup>
   );
 }

@@ -19,7 +19,7 @@ describe("defaultTenantConfig", () => {
   // if they're for the options that field starts with.
   it("prices exactly the age groups the age field starts with, in its order", () => {
     const ageValues = defaultFieldConfig("age").options!.map((option) => option.value);
-    expect(defaultAdmissionsConfig().prices.map((entry) => entry.ageGroup)).toEqual(ageValues);
+    expect(defaultAdmissionsConfig().tiered.prices.map((entry) => entry.ageGroup)).toEqual(ageValues);
   });
 });
 
@@ -65,11 +65,8 @@ describe("fresh objects per call", () => {
     expect(options).not.toBe(FIELD_DEFS.age.defaults!.options);
   });
 
-  it("doesn't share the sliding-scale cost range", () => {
-    const config = defaultAdmissionsConfig();
-    if (config.mode !== "sliding-scale") throw new Error("expected sliding-scale");
-    config.costRange[0] = 1;
-    const next = defaultAdmissionsConfig();
-    expect(next.mode === "sliding-scale" && next.costRange[0]).toBe(120);
+  it("doesn't share the tiered prices", () => {
+    defaultAdmissionsConfig().tiered.prices[0]!.options[0]!.price = 1;
+    expect(defaultAdmissionsConfig().tiered.prices[0]!.options[0]!.price).toBe(340);
   });
 });

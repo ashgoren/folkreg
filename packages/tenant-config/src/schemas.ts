@@ -161,23 +161,40 @@ export const ageGroupPricesSchema = z.object({
 });
 export type AgeGroupPrices = z.infer<typeof ageGroupPricesSchema>;
 
-// One flat shape holding every pricing mode's values; `mode` picks which one applies, so switching
-// modes (even by accident) never discards another mode's prices. All of them are
-// validated whichever mode is active -- the Admissions page only lets an organizer switch modes
-// while the current one is valid, and a hidden mode's fields can't be edited, so they stay valid.
-export const admissionsConfigSchema = z.object({
-  mode: z.enum(["sliding-scale", "fixed", "tiered"]),
-  // sliding-scale
-  costRange: z.tuple([requiredNumber(0), requiredNumber(0)]),
-  costDefault: requiredNumber(0),
-  // fixed
-  cost: requiredNumber(0),
-  // tiered: each price goes up by lateIncrease after the early-bird cutoff (see priceAfterCutoff)
+// Sliding scale: registrants choose what to pay between min and max, starting at the default
+// amount.
+export const slidingScaleSchema = z.object({
+  min: requiredNumber(0),
+  max: requiredNumber(0),
+  default: requiredNumber(0),
+}).refine((scale) => scale.default >= scale.min && scale.default <= scale.max, {
+  message: "Must be between minimum and maximum",
+  path: ["default"],
+});
+
+// Tiered: each age group's prices, every one going up by lateIncrease after the early-bird cutoff
+// (see priceAfterCutoff).
+export const tieredSchema = z.object({
   // The last day early-bird prices apply (YYYY-MM-DD), read as a whole day in event_config.timezone.
   // "" means no early-bird period: prices stay as entered and lateIncrease never applies.
   earlybirdCutoff: z.union([z.literal(""), z.iso.date({ error: "Must be a date" })], { error: "Must be a date" }),
   lateIncrease: requiredNumber(0),
-  prices: z.array(ageGroupPricesSchema),
+  // The Admissions page only ever adds an age group's entry once, so a repeat is stored data that's wrong.
+  prices: z.array(ageGroupPricesSchema).refine((prices) => new Set(prices.map((entry) => entry.ageGroup)).size === prices.length, {
+    message: "An age group is listed more than once",
+  }),
+});
+
+// Every pricing mode's values, each under its own key; `mode` picks which one applies, so switching
+// modes (even by accident) never discards another mode's prices. All of them are validated whichever
+// mode is active -- the Admissions page only lets an organizer switch modes while the current one is
+// valid, and a hidden mode's fields can't be edited, so they stay valid.
+export const admissionsConfigSchema = z.object({
+  mode: z.enum(["sliding-scale", "fixed", "tiered"]),
+  slidingScale: slidingScaleSchema,
+  fixed: z.object({ price: requiredNumber(0) }),
+  tiered: tieredSchema,
+  // The most tickets one checkout can buy.
   admissionQuantityMax: requiredNumber(1).int(),
   // When new registrants join the waitlist instead of paying: never, once `capacity` people have
   // registered, or now. Capacity is kept whichever is chosen, so switching back restores it.
@@ -185,13 +202,6 @@ export const admissionsConfigSchema = z.object({
     when: z.enum(["never", "when-full", "now"]),
     capacity: wholeNumber({ min: 1 }, "Must be a whole number, 1 or more"),
   }),
-}).refine((data) => data.costDefault >= data.costRange[0] && data.costDefault <= data.costRange[1], {
-  message: "Must be between minimum and maximum",
-  path: ["costDefault"],
-}).refine((data) => new Set(data.prices.map((entry) => entry.ageGroup)).size === data.prices.length, {
-  // The Admissions page only ever adds an age group's entry once, so this is stored data that's wrong.
-  message: "An age group is listed more than once",
-  path: ["prices"],
 });
 
 /** A tiered price after the early-bird cutoff: higher by lateIncrease, except that free stays free. */

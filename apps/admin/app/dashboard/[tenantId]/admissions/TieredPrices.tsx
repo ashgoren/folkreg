@@ -17,7 +17,7 @@ type Form = UseFormReturn<AdmissionsConfig>;
 
 /**
  * Tiered prices, one section per age group in the age field's order, each listing the prices
- * someone that age chooses between. An age group can have no entry in `prices` yet; its section
+ * someone that age chooses between. An age group can have no entry in `tiered.prices` yet; its section
  * offers to add the first price. Prices kept for a value that's no longer an age option (renamed
  * or removed on the Fields page) get a section of their own, so they can be seen and removed.
  */
@@ -27,8 +27,8 @@ export function TieredPrices({ form, ageOptions }: {
   ageOptions: AgeOption[] | null;
 }) {
   // Adds and removes whole age groups; each group's own list is edited in AgeGroupPrices.
-  const { fields, append, remove } = useFieldArray({ control: form.control, name: "prices" });
-  const prices = useWatch({ control: form.control, name: "prices" });
+  const { fields, append, remove } = useFieldArray({ control: form.control, name: "tiered.prices" });
+  const prices = useWatch({ control: form.control, name: "tiered.prices" });
 
   // Each registrant is priced by their answer to the age field, so without it there's nothing to
   // price by. Prices already entered are kept (and shown again once the field is back).
@@ -104,7 +104,7 @@ function AgeGroupPrices({ form, index, title, onRemoveGroup }: {
   /** For prices kept under a value that's no longer an age option. */
   onRemoveGroup?: () => void;
 }) {
-  const { fields, append, remove, move } = useFieldArray({ control: form.control, name: `prices.${index}.options` });
+  const { fields, append, remove, move } = useFieldArray({ control: form.control, name: `tiered.prices.${index}.options` });
 
   return (
     <AgeGroupSection
@@ -142,7 +142,7 @@ function PriceRow({ form, fieldId, group, index, title, onRemove }: {
   onRemove: () => void;
 }) {
   const { ref, handleRef, isDragging } = useSortable({ id: fieldId, index, group: `prices-${group}` });
-  const [price, lateIncrease] = useWatch({ control: form.control, name: [`prices.${group}.options.${index}.price`, "lateIncrease"] });
+  const [price, lateIncrease] = useWatch({ control: form.control, name: [`tiered.prices.${group}.options.${index}.price`, "tiered.lateIncrease"] });
   const name = `${title} price ${index + 1}`;
   const later = Number.isNaN(price) || Number.isNaN(lateIncrease) ? null : priceAfterCutoff(price, lateIncrease);
 
@@ -159,7 +159,7 @@ function PriceRow({ form, fieldId, group, index, title, onRemove }: {
       </button>
 
       <Controller
-        name={`prices.${group}.options.${index}.label`}
+        name={`tiered.prices.${group}.options.${index}.label`}
         control={form.control}
         render={({ field }) => (
           <Input {...field} aria-label={`${name} label`} placeholder="Label (optional)" autoComplete="off" className="h-8 w-48" />
@@ -169,7 +169,7 @@ function PriceRow({ form, fieldId, group, index, title, onRemove }: {
       {/* Like NumberField, a cleared input is NaN, so it fails with "Required" rather than being
           saved as 0 (which would mean free). */}
       <Controller
-        name={`prices.${group}.options.${index}.price`}
+        name={`tiered.prices.${group}.options.${index}.price`}
         control={form.control}
         render={({ field, fieldState }) => (
           <div className="flex flex-col">

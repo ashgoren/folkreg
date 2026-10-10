@@ -6,14 +6,14 @@ import { admissionsConfigSchema, priceAfterCutoff } from "./schemas";
 // Every mode's values are always present; `mode` picks which one applies.
 const base: AdmissionsConfig = {
   ...defaultAdmissionsConfig(),
-  costRange: [20, 100],
-  costDefault: 60,
-  cost: 60,
-  earlybirdCutoff: "2026-03-01",
-  lateIncrease: 15,
-  prices: [{ ageGroup: "adult", options: [{ label: "Basic", price: 80 }] }],
+  slidingScale: { min: 20, max: 100, default: 60 },
+  fixed: { price: 60 },
+  tiered: { earlybirdCutoff: "2026-03-01", lateIncrease: 15, prices: [{ ageGroup: "adult", options: [{ label: "Basic", price: 80 }] }] },
   waitlist: { when: "when-full", capacity: 200 },
 };
+// A config with some of one mode's values changed.
+const withSlidingScale = (values: object) => ({ ...base, mode: "sliding-scale" as const, slidingScale: { ...base.slidingScale, ...values } });
+const withTiered = (values: object) => ({ ...base, mode: "tiered" as const, tiered: { ...base.tiered, ...values } });
 const slidingScale = { ...base, mode: "sliding-scale" as const };
 const fixed = { ...base, mode: "fixed" as const };
 const tiered = { ...base, mode: "tiered" as const };
@@ -33,76 +33,75 @@ describe("admissionsConfigSchema", () => {
   // The other modes' values are kept (so switching never loses them) and validated too: the form
   // only switches modes while the current one is valid, so a hidden mode is never left invalid.
   it("validates every mode's fields, whichever mode is active", () => {
-    expect(issuePaths({ ...fixed, costRange: [NaN, 100] })).toEqual(["costRange.0"]);
-    expect(issuePaths({ ...slidingScale, cost: NaN })).toEqual(["cost"]);
+    expect(issuePaths({ ...fixed, slidingScale: { ...base.slidingScale, min: NaN } })).toEqual(["slidingScale.min"]);
+    expect(issuePaths({ ...slidingScale, fixed: { price: NaN } })).toEqual(["fixed.price"]);
   });
 
   describe("sliding scale", () => {
-    it.each([20, 60, 100])("accepts a default of %s within (or on the edge of) the range", (costDefault) => {
-      expect(admissionsConfigSchema.safeParse({ ...slidingScale, costDefault }).success).toBe(true);
+    it.each([20, 60, 100])("accepts a default of %s within (or on the edge of) the range", (amount) => {
+      expect(issuePaths(withSlidingScale({ default: amount }))).toEqual([]);
     });
 
-    it.each([19, 101])("rejects a default of %s outside the range, attached to costDefault", (costDefault) => {
-      const result = admissionsConfigSchema.safeParse({ ...slidingScale, costDefault });
-      expect(result.success).toBe(false);
-      expect(result.error?.issues[0]?.path).toEqual(["costDefault"]);
-      expect(result.error?.issues[0]?.message).toBe("Must be between minimum and maximum");
+    it.each([19, 101])("rejects a default of %s outside the range, attached to it", (amount) => {
+      const result = admissionsConfigSchema.safeParse(withSlidingScale({ default: amount }));
+      expect(result.error?.issues.map((issue) => [issue.path.join("."), issue.message]))
+        .toEqual([["slidingScale.default", "Must be between minimum and maximum"]]);
     });
 
-    it("rejects negative costs", () => {
-      expect(issuePaths({ ...slidingScale, costRange: [-1, 100] })).toContain("costRange.0");
+    it("rejects negative amounts", () => {
+      expect(issuePaths(withSlidingScale({ min: -1 }))).toContain("slidingScale.min");
     });
 
     // NumberField maps a cleared input to NaN; it has to fail validation (inline "Required")
     // rather than saving.
     it("rejects a cleared (NaN) range bound", () => {
-      expect(admissionsConfigSchema.safeParse({ ...slidingScale, costRange: [NaN, 100] }).success).toBe(false);
+      expect(issuePaths(withSlidingScale({ min: NaN }))).toContain("slidingScale.min");
     });
   });
 
   describe("fixed", () => {
     it("accepts a free event", () => {
-      expect(admissionsConfigSchema.safeParse({ ...fixed, cost: 0 }).success).toBe(true);
+      expect(issuePaths({ ...fixed, fixed: { price: 0 } })).toEqual([]);
     });
 
-    it("rejects a cleared (NaN) cost", () => {
-      expect(issuePaths({ ...fixed, cost: NaN })).toEqual(["cost"]);
+    it("rejects a cleared (NaN) price", () => {
+      expect(issuePaths({ ...fixed, fixed: { price: NaN } })).toEqual(["fixed.price"]);
     });
   });
 
   describe("tiered", () => {
     // Blank means no early-bird period at all.
     it.each(["", "2027-09-01", "2028-02-29"])("accepts a cutoff of %j", (earlybirdCutoff) => {
-      expect(issuePaths({ ...tiered, earlybirdCutoff })).toEqual([]);
+      expect(issuePaths(withTiered({ earlybirdCutoff }))).toEqual([]);
     });
 
     it.each(["Nov 10", "2027-9-1", "2027-13-01", "2027-02-29"])("rejects a cutoff of %j", (earlybirdCutoff) => {
-      const result = admissionsConfigSchema.safeParse({ ...tiered, earlybirdCutoff });
-      expect(result.error?.issues.map((issue) => [issue.path.join("."), issue.message])).toEqual([["earlybirdCutoff", "Must be a date"]]);
+      const result = admissionsConfigSchema.safeParse(withTiered({ earlybirdCutoff }));
+      expect(result.error?.issues.map((issue) => [issue.path.join("."), issue.message])).toEqual([["tiered.earlybirdCutoff", "Must be a date"]]);
     });
 
     it("accepts no prices and a blank cutoff", () => {
-      expect(issuePaths({ ...tiered, prices: [], earlybirdCutoff: "" })).toEqual([]);
+      expect(issuePaths(withTiered({ prices: [], earlybirdCutoff: "" }))).toEqual([]);
     });
 
     // Age groups are the tenant's own age field options, defined on the Fields page.
     it("accepts prices for any age group the tenant defines, labeled or not", () => {
       const prices = [{ ageGroup: "65+", options: [{ label: "", price: 50 }] }, { ageGroup: "under-30", options: [] }];
-      expect(issuePaths({ ...tiered, prices })).toEqual([]);
+      expect(issuePaths(withTiered({ prices }))).toEqual([]);
     });
 
     it("rejects an age group listed twice", () => {
       const prices = [{ ageGroup: "adult", options: [] }, { ageGroup: "adult", options: [] }];
-      expect(issuePaths({ ...tiered, prices })).toEqual(["prices"]);
+      expect(issuePaths(withTiered({ prices }))).toEqual(["tiered.prices"]);
     });
 
     it.each([NaN, -1])("rejects a price of %s", (price) => {
-      expect(issuePaths({ ...tiered, prices: [{ ageGroup: "adult", options: [{ label: "", price }] }] }))
-        .toEqual(["prices.0.options.0.price"]);
+      expect(issuePaths(withTiered({ prices: [{ ageGroup: "adult", options: [{ label: "", price }] }] })))
+        .toEqual(["tiered.prices.0.options.0.price"]);
     });
 
     it.each([NaN, -1])("rejects a late increase of %s", (lateIncrease) => {
-      expect(issuePaths({ ...tiered, lateIncrease })).toEqual(["lateIncrease"]);
+      expect(issuePaths(withTiered({ lateIncrease }))).toEqual(["tiered.lateIncrease"]);
     });
   });
 

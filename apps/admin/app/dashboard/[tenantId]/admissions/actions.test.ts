@@ -16,16 +16,18 @@ describe("updateAdmissions", () => {
   const savedConfig = async () => (await readTenant(harness.service, harness.tenantId)).admissions_config;
 
   it.each<[string, AdmissionsConfig]>([
-    ["sliding-scale", values({ costRange: [20, 100], costDefault: 60 })],
-    ["fixed", values({ mode: "fixed", cost: 75, waitlist: { when: "now", capacity: 200 } })],
+    ["sliding-scale", values({ slidingScale: { min: 20, max: 100, default: 60 } })],
+    ["fixed", values({ mode: "fixed", fixed: { price: 75 }, waitlist: { when: "now", capacity: 200 } })],
     ["tiered", values({
       mode: "tiered",
-      earlybirdCutoff: "2026-03-01",
-      lateIncrease: 10,
-      prices: [
-        { ageGroup: "adult", options: [{ label: "Supporter", price: 120 }, { label: "Basic", price: 80 }] },
-        { ageGroup: "6-12", options: [{ label: "", price: 40 }] },
-      ],
+      tiered: {
+        earlybirdCutoff: "2026-03-01",
+        lateIncrease: 10,
+        prices: [
+          { ageGroup: "adult", options: [{ label: "Supporter", price: 120 }, { label: "Basic", price: 80 }] },
+          { ageGroup: "6-12", options: [{ label: "", price: 40 }] },
+        ],
+      },
     })],
   ])("saves a %s config as-is", async (_, config) => {
     expect(await updateAdmissions(harness.tenantId, config)).toBeNull();
@@ -35,15 +37,15 @@ describe("updateAdmissions", () => {
   // Switching modes only changes which values apply, so an accidental switch can't cost an
   // organizer the prices entered for another mode.
   it("keeps the other modes' values when the mode changes", async () => {
-    const prices = [{ ageGroup: "adult", options: [{ label: "", price: 80 }] }];
-    await updateAdmissions(harness.tenantId, values({ mode: "tiered", prices }));
-    await updateAdmissions(harness.tenantId, values({ mode: "sliding-scale", prices }));
-    expect(await savedConfig()).toMatchObject({ mode: "sliding-scale", prices });
+    const tiered = { ...defaultAdmissionsConfig().tiered, prices: [{ ageGroup: "adult", options: [{ label: "", price: 80 }] }] };
+    await updateAdmissions(harness.tenantId, values({ mode: "tiered", tiered }));
+    await updateAdmissions(harness.tenantId, values({ mode: "sliding-scale", tiered }));
+    expect(await savedConfig()).toMatchObject({ mode: "sliding-scale", tiered });
   });
 
   itGuardsTheAction({
     harness, createClient, run: updateAdmissions,
     validValues: () => values(),
-    invalidValues: () => values({ costDefault: 9999 }),
+    invalidValues: () => values({ slidingScale: { min: 120, max: 500, default: 9999 } }),
   });
 });
