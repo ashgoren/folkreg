@@ -1,10 +1,13 @@
 import { getPageTenant } from "@/lib/tenant";
+import { secretValues } from "@/lib/secret-values";
 import { PaymentsForm } from "./PaymentsForm";
+import { paymentSecretsSchema } from "./schema";
 
 export default async function PaymentsPage({ params }: { params: Promise<{ tenantId: string }> }) {
   const { tenantId } = await params;
   const { db, tenant } = await getPageTenant(tenantId);
-  const secrets = await db.getSecrets();
+  // Only the secrets this page edits reach the browser.
+  const secrets = secretValues(paymentSecretsSchema, await db.getSecrets());
 
   return (
     <div className="max-w-xl">

@@ -11,7 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useAutosaveForm } from "@/lib/useAutosaveForm";
-import type { Tenant, TenantSecrets } from "@repo/types";
+import type { Tenant } from "@repo/types";
 import { paymentsConfigSchema } from "@repo/tenant-config";
 import { pickKeys, useSaveChangedParts } from "@/lib/useSaveChangedParts";
 import { paymentSecretsSchema, paymentsSchema, type PaymentSecretsValues, type PaymentsValues } from "./schema";
@@ -19,20 +19,8 @@ import { updatePayments, updatePaymentSecrets } from "./actions";
 import { StripeCredentials } from "./StripeCredentials";
 import { PaypalCredentials } from "./PaypalCredentials";
 
-// The credential secrets as the form edits them: tenant_secrets' unset null is the form's "".
-const toSecretValues = (secrets: TenantSecrets): PaymentSecretsValues => ({
-  stripe_secret_key_live: secrets.stripe_secret_key_live ?? "",
-  stripe_webhook_secret_live: secrets.stripe_webhook_secret_live ?? "",
-  stripe_secret_key_test: secrets.stripe_secret_key_test ?? "",
-  stripe_webhook_secret_test: secrets.stripe_webhook_secret_test ?? "",
-  paypal_secret_live: secrets.paypal_secret_live ?? "",
-  paypal_webhook_id_live: secrets.paypal_webhook_id_live ?? "",
-  paypal_secret_test: secrets.paypal_secret_test ?? "",
-  paypal_webhook_id_test: secrets.paypal_webhook_id_test ?? "",
-});
-
-export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: TenantSecrets }) {
-  const initial: PaymentsValues = { ...tenant.payments_config, ...toSecretValues(secrets) };
+export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: PaymentSecretsValues }) {
+  const initial: PaymentsValues = { ...tenant.payments_config, ...secrets };
   // payments_config and the secrets are saved separately, each only when it changed.
   const save = useSaveChangedParts({
     initial,

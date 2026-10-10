@@ -7,6 +7,11 @@ import { expectLastSave } from "@/test/autosave";
 vi.mock("./actions", () => ({ updateWaivers: vi.fn(), updateWaiverSecrets: vi.fn() }));
 import { updateWaivers, updateWaiverSecrets } from "./actions";
 import { WaiversForm } from "./WaiversForm";
+import { secretValues } from "@/lib/secret-values";
+import { waiverSecretsSchema } from "./schema";
+
+// The form's secrets as its page passes them: the row's columns this page edits, unset as "".
+const waiverSecrets = (overrides: Parameters<typeof makeSecrets>[0] = {}) => secretValues(waiverSecretsSchema, makeSecrets(overrides));
 
 describe("WaiversForm", () => {
   beforeEach(() => {
@@ -15,7 +20,7 @@ describe("WaiversForm", () => {
   });
 
   it("hides the DocuSeal fields while the waiver is off", () => {
-    render(<WaiversForm tenant={makeTenant()} secrets={makeSecrets()} />);
+    render(<WaiversForm tenant={makeTenant()} secrets={waiverSecrets()} />);
     expect(screen.getByRole("switch", { name: /Show waiver/ })).not.toBeChecked();
     expect(screen.queryByLabelText("DocuSeal template ID")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("DocuSeal API key")).not.toBeInTheDocument();
@@ -25,7 +30,7 @@ describe("WaiversForm", () => {
     render(
       <WaiversForm
         tenant={makeTenant({ waiver_config: { show: true, docusealTemplateId: "tmpl_1" } })}
-        secrets={makeSecrets({ docuseal_key: "key_1" })}
+        secrets={waiverSecrets({ docuseal_key: "key_1" })}
       />,
     );
     expect(screen.getByLabelText("DocuSeal template ID")).toHaveValue("tmpl_1");
@@ -38,7 +43,7 @@ describe("WaiversForm", () => {
   it("autosaves the template id to waiver_config and the API key to the secrets", async () => {
     const tenant = makeTenant();
     const user = userEvent.setup();
-    render(<WaiversForm tenant={tenant} secrets={makeSecrets()} />);
+    render(<WaiversForm tenant={tenant} secrets={waiverSecrets()} />);
 
     await user.click(screen.getByRole("switch", { name: /Show waiver/ }));
     await user.type(screen.getByLabelText("DocuSeal template ID"), "tmpl_9");
@@ -52,7 +57,7 @@ describe("WaiversForm", () => {
   it("keeps the DocuSeal values while toggled off, and restores them when toggled back on", async () => {
     const tenant = makeTenant({ waiver_config: { show: true, docusealTemplateId: "tmpl_1" } });
     const user = userEvent.setup();
-    render(<WaiversForm tenant={tenant} secrets={makeSecrets({ docuseal_key: "key_1" })} />);
+    render(<WaiversForm tenant={tenant} secrets={waiverSecrets({ docuseal_key: "key_1" })} />);
 
     await user.click(screen.getByRole("switch", { name: /Show waiver/ }));
     expect(screen.queryByLabelText("DocuSeal template ID")).not.toBeInTheDocument();

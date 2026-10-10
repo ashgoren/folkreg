@@ -9,15 +9,14 @@ import { SecretInput } from "@/components/ui/secret-input";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useAutosaveForm } from "@/lib/useAutosaveForm";
-import type { Tenant, TenantSecrets } from "@repo/types";
+import type { Tenant } from "@repo/types";
 import { waiverConfigSchema } from "@repo/tenant-config";
 import { pickKeys, useSaveChangedParts } from "@/lib/useSaveChangedParts";
-import { waiverSecretsSchema, waiversSchema, type WaiversValues } from "./schema";
+import { waiverSecretsSchema, waiversSchema, type WaiverSecretsValues, type WaiversValues } from "./schema";
 import { updateWaivers, updateWaiverSecrets } from "./actions";
 
-export function WaiversForm({ tenant, secrets }: { tenant: Tenant; secrets: TenantSecrets }) {
-  // tenant_secrets' unset null is the form's "".
-  const initial: WaiversValues = { ...tenant.waiver_config, docuseal_key: secrets.docuseal_key ?? "" };
+export function WaiversForm({ tenant, secrets }: { tenant: Tenant; secrets: WaiverSecretsValues }) {
+  const initial: WaiversValues = { ...tenant.waiver_config, ...secrets };
   // waiver_config and the key are saved separately, each only when it changed.
   const save = useSaveChangedParts({
     initial,

@@ -12,7 +12,11 @@ import type { PaymentsConfig } from "@repo/tenant-config";
 vi.mock("./actions", () => ({ updatePayments: vi.fn(), updatePaymentSecrets: vi.fn() }));
 import { updatePayments, updatePaymentSecrets } from "./actions";
 import { PaymentsForm } from "./PaymentsForm";
-import type { PaymentSecretsValues } from "./schema";
+import { secretValues } from "@/lib/secret-values";
+import { paymentSecretsSchema, type PaymentSecretsValues } from "./schema";
+
+// The form's secrets as its page passes them: the row's columns this page edits, unset as "".
+const paymentSecrets = (overrides: Parameters<typeof makeSecrets>[0] = {}) => secretValues(paymentSecretsSchema, makeSecrets(overrides));
 
 const byId = (id: string) => document.getElementById(id) as HTMLInputElement;
 
@@ -53,7 +57,7 @@ describe("PaymentsForm", () => {
 
   describe("initial state", () => {
     it("defaults a new tenant to Stripe with every optional section collapsed", () => {
-      render(<PaymentsForm tenant={makeTenant()} secrets={makeSecrets()} />);
+      render(<PaymentsForm tenant={makeTenant()} secrets={paymentSecrets()} />);
 
       expect(screen.getByRole("radio", { name: "Stripe" })).toBeChecked();
       expect(screen.getByLabelText("Statement descriptor suffix")).toHaveValue("");
@@ -71,7 +75,7 @@ describe("PaymentsForm", () => {
       render(
         <PaymentsForm
           tenant={makeTenant({ payments_config: storedConfig() })}
-          secrets={makeSecrets({ stripe_secret_key_live: "sk_live", stripe_webhook_secret_test: "whsec_test" })}
+          secrets={paymentSecrets({ stripe_secret_key_live: "sk_live", stripe_webhook_secret_test: "whsec_test" })}
         />,
       );
 
@@ -93,7 +97,7 @@ describe("PaymentsForm", () => {
       render(
         <PaymentsForm
           tenant={makeTenant({ payments_config: storedConfig({ processor: "paypal", paypalClientIdLive: "client_live" }) })}
-          secrets={makeSecrets({ paypal_secret_live: "secret_live" })}
+          secrets={paymentSecrets({ paypal_secret_live: "secret_live" })}
         />,
       );
       expect(screen.getByRole("radio", { name: "PayPal" })).toBeChecked();
@@ -107,7 +111,7 @@ describe("PaymentsForm", () => {
     it("saves live and test Stripe credentials together, whichever tab is showing", async () => {
       const tenant = makeTenant();
       const user = userEvent.setup();
-      render(<PaymentsForm tenant={tenant} secrets={makeSecrets()} />);
+      render(<PaymentsForm tenant={tenant} secrets={paymentSecrets()} />);
 
       await user.type(screen.getByLabelText("Secret key (Live)"), "sk_live");
       await user.click(screen.getByRole("tab", { name: "Test" }));
@@ -129,7 +133,7 @@ describe("PaymentsForm", () => {
     it("saves PayPal credentials across both tabs", async () => {
       const tenant = makeTenant({ payments_config: storedConfig({ processor: "paypal" }) });
       const user = userEvent.setup();
-      render(<PaymentsForm tenant={tenant} secrets={makeSecrets()} />);
+      render(<PaymentsForm tenant={tenant} secrets={paymentSecrets()} />);
 
       await user.type(screen.getByLabelText("Webhook ID (Live)"), "wh_live");
       await user.click(screen.getByRole("tab", { name: "Test" }));
@@ -143,7 +147,7 @@ describe("PaymentsForm", () => {
 
     // Publishable keys and client IDs are sent to every registrant's browser; secrets never are.
     it("shows public keys in full and masks the secrets", () => {
-      render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={makeSecrets()} />);
+      render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={paymentSecrets()} />);
       expect(screen.getByLabelText("Publishable key (Live)")).toHaveAttribute("type", "text");
       expect(screen.getByLabelText("Secret key (Live)")).toHaveAttribute("type", "password");
       expect(screen.getByLabelText("Webhook secret (Live)")).toHaveAttribute("type", "password");
@@ -154,7 +158,7 @@ describe("PaymentsForm", () => {
   it("saves a config change without sending the secrets", async () => {
     const tenant = makeTenant();
     const user = userEvent.setup();
-    render(<PaymentsForm tenant={tenant} secrets={makeSecrets({ stripe_secret_key_live: "sk_live" })} />);
+    render(<PaymentsForm tenant={tenant} secrets={paymentSecrets({ stripe_secret_key_live: "sk_live" })} />);
 
     await user.click(screen.getByRole("switch", { name: /payment summary/ }));
     await expectLastSave(vi.mocked(updatePayments), tenant.id, { ...BLANK, showPaymentSummary: false });
@@ -167,7 +171,7 @@ describe("PaymentsForm", () => {
     vi.mocked(updatePaymentSecrets).mockResolvedValueOnce("Couldn't save");
     const tenant = makeTenant();
     const user = userEvent.setup();
-    render(<PaymentsForm tenant={tenant} secrets={makeSecrets()} />);
+    render(<PaymentsForm tenant={tenant} secrets={paymentSecrets()} />);
 
     await user.type(screen.getByLabelText("Secret key (Live)"), "sk_live");
     await user.tab();
@@ -184,7 +188,7 @@ describe("PaymentsForm", () => {
     it("shows the new processor's credentials and keeps the previous one's in the save", async () => {
       const tenant = makeTenant();
       const user = userEvent.setup();
-      render(<PaymentsForm tenant={tenant} secrets={makeSecrets()} />);
+      render(<PaymentsForm tenant={tenant} secrets={paymentSecrets()} />);
 
       await user.click(screen.getByRole("switch", { name: /cover fees/ }));
       await user.type(screen.getByLabelText("Secret key (Live)"), "sk_live");
@@ -201,7 +205,7 @@ describe("PaymentsForm", () => {
 
     it("shows each processor's values again when switching back", async () => {
       const user = userEvent.setup();
-      render(<PaymentsForm tenant={makeTenant()} secrets={makeSecrets()} />);
+      render(<PaymentsForm tenant={makeTenant()} secrets={paymentSecrets()} />);
 
       await user.type(screen.getByLabelText("Secret key (Live)"), "sk_live");
       await user.click(screen.getByRole("radio", { name: "PayPal" }));
@@ -218,7 +222,7 @@ describe("PaymentsForm", () => {
     it("reveals the fee rates only while cover fees are offered, keeping them either way", async () => {
       const tenant = makeTenant();
       const user = userEvent.setup();
-      render(<PaymentsForm tenant={tenant} secrets={makeSecrets()} />);
+      render(<PaymentsForm tenant={tenant} secrets={paymentSecrets()} />);
       expect(byId("payments-cover-fees-percent")).toBeNull();
 
       await user.click(screen.getByRole("switch", { name: /cover fees/ }));
@@ -238,7 +242,7 @@ describe("PaymentsForm", () => {
     // Turning it off would hide the invalid rate while its error still blocked every save.
     it("keeps cover fees on while a fee rate has an error", async () => {
       const user = userEvent.setup();
-      render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={makeSecrets()} />);
+      render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={paymentSecrets()} />);
 
       await user.clear(byId("payments-cover-fees-percent"));
       await user.click(screen.getByRole("switch", { name: /cover fees/ }));
@@ -251,7 +255,7 @@ describe("PaymentsForm", () => {
     it("reveals deposit amount and balance due date only while deposits are allowed", async () => {
       const tenant = makeTenant();
       const user = userEvent.setup();
-      render(<PaymentsForm tenant={tenant} secrets={makeSecrets()} />);
+      render(<PaymentsForm tenant={tenant} secrets={paymentSecrets()} />);
 
       await user.click(screen.getByRole("switch", { name: /Allow deposit/ }));
       await user.clear(byId("payments-deposit-amount"));
@@ -272,7 +276,7 @@ describe("PaymentsForm", () => {
     // jsdom doesn't model a half-typed date, so this reports it the way a browser does: an empty
     // value, with validity.badInput set.
     it("flags a half-typed due date rather than saving it as blank", async () => {
-      render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={makeSecrets()} />);
+      render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={paymentSecrets()} />);
       const due = byId("payments-due-date");
       expect(due).toHaveAttribute("type", "date");
       Object.defineProperty(due, "validity", { value: { badInput: true } });
@@ -287,7 +291,7 @@ describe("PaymentsForm", () => {
     it("reveals the donation max only while donations are allowed", async () => {
       const tenant = makeTenant();
       const user = userEvent.setup();
-      render(<PaymentsForm tenant={tenant} secrets={makeSecrets()} />);
+      render(<PaymentsForm tenant={tenant} secrets={paymentSecrets()} />);
 
       await user.click(screen.getByRole("switch", { name: /Allow donation/ }));
       await user.clear(byId("payments-donation-max"));
@@ -298,7 +302,7 @@ describe("PaymentsForm", () => {
 
     it("flags a direct payment link without https:// and doesn't save it", async () => {
       const user = userEvent.setup();
-      render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={makeSecrets()} />);
+      render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={paymentSecrets()} />);
 
       await user.clear(byId("payments-direct-url"));
       await user.type(byId("payments-direct-url"), "paypal.me/example");
@@ -310,7 +314,7 @@ describe("PaymentsForm", () => {
 
     it("rejects a negative deposit amount", async () => {
       const user = userEvent.setup();
-      render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={makeSecrets()} />);
+      render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={paymentSecrets()} />);
 
       await user.clear(byId("payments-deposit-amount"));
       await user.type(byId("payments-deposit-amount"), "-5");
@@ -324,7 +328,7 @@ describe("PaymentsForm", () => {
     // save, so the switch waits for the error to be fixed.
     it("keeps deposits on while the deposit amount has an error", async () => {
       const user = userEvent.setup();
-      render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={makeSecrets()} />);
+      render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={paymentSecrets()} />);
 
       await user.clear(byId("payments-deposit-amount"));
       await user.click(screen.getByRole("switch", { name: /Allow deposit/ }));
@@ -337,7 +341,7 @@ describe("PaymentsForm", () => {
     // The switch also hides the due date, so its error would vanish while still blocking saves.
     it("keeps deposits on while the balance due date has an error", async () => {
       const user = userEvent.setup();
-      render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={makeSecrets()} />);
+      render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={paymentSecrets()} />);
       const due = byId("payments-due-date");
       Object.defineProperty(due, "validity", { value: { badInput: true } }); // a half-typed date
       fireEvent.change(due, { target: { value: "" } });
@@ -353,7 +357,7 @@ describe("PaymentsForm", () => {
     it("walks check payments from allowed -> email vs. mailing address -> payee and address", async () => {
       const tenant = makeTenant();
       const user = userEvent.setup();
-      render(<PaymentsForm tenant={tenant} secrets={makeSecrets()} />);
+      render(<PaymentsForm tenant={tenant} secrets={paymentSecrets()} />);
 
       await user.click(screen.getByRole("switch", { name: /payment by check/ }));
       expect(screen.getByRole("radio", { name: "Email" })).toBeChecked();
