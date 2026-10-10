@@ -100,13 +100,6 @@ describe("PaymentsForm", () => {
       expect(screen.getByLabelText("Client ID (Live)")).toHaveValue("client_live");
       expect(screen.getByLabelText("Secret (Live)")).toHaveValue("secret_live");
     });
-
-    it("renders every credential masked", () => {
-      render(<PaymentsForm tenant={makeTenant()} secrets={makeSecrets()} />);
-      for (const label of ["Publishable key (Live)", "Secret key (Live)", "Webhook secret (Live)"]) {
-        expect(screen.getByLabelText(label)).toHaveAttribute("type", "password");
-      }
-    });
   });
 
   describe("credentials", () => {
@@ -143,6 +136,14 @@ describe("PaymentsForm", () => {
       await expectLastSave(vi.mocked(updatePayments), tenant.id, expect.objectContaining({
         processor: "paypal", paypal_webhook_id_live: "wh_live", paypalClientIdTest: "client_test",
       }));
+    });
+
+    // Publishable keys and client IDs are sent to every registrant's browser; secrets never are.
+    it("shows public keys in full and masks the secrets", () => {
+      render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={makeSecrets()} />);
+      expect(screen.getByLabelText("Publishable key (Live)")).toHaveAttribute("type", "text");
+      expect(screen.getByLabelText("Secret key (Live)")).toHaveAttribute("type", "password");
+      expect(screen.getByLabelText("Webhook secret (Live)")).toHaveAttribute("type", "password");
     });
   });
 

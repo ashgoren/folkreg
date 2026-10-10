@@ -21,12 +21,8 @@ export function StripeCredentials({ form }: { form: UseFormReturn<PaymentsValues
 
         <TabsContent value="live">
           <FieldGroup className="rounded-lg border bg-muted/40 p-4">
-            <Controller name="stripePublishableKeyLive" control={form.control} render={({ field }) => (
-              <Field>
-                <FormLabel htmlFor="payments-stripe-publishable-live">Publishable key (Live)</FormLabel>
-                <SecretInput {...field} id="payments-stripe-publishable-live" />
-              </Field>
-            )} />
+            {/* Public: sent to every registrant's browser, so shown in full rather than masked. */}
+            <TextField control={form.control} name="stripePublishableKeyLive" id="payments-stripe-publishable-live" label="Publishable key (Live)" autoComplete="off" />
             <Controller name="stripe_secret_key_live" control={form.control} render={({ field }) => (
               <Field>
                 <FormLabel htmlFor="payments-stripe-secret-live">Secret key (Live)</FormLabel>
@@ -44,12 +40,7 @@ export function StripeCredentials({ form }: { form: UseFormReturn<PaymentsValues
 
         <TabsContent value="test">
           <FieldGroup className="rounded-lg border bg-muted/40 p-4">
-            <Controller name="stripePublishableKeyTest" control={form.control} render={({ field }) => (
-              <Field>
-                <FormLabel htmlFor="payments-stripe-publishable-test">Publishable key (Test)</FormLabel>
-                <SecretInput {...field} id="payments-stripe-publishable-test" />
-              </Field>
-            )} />
+            <TextField control={form.control} name="stripePublishableKeyTest" id="payments-stripe-publishable-test" label="Publishable key (Test)" autoComplete="off" />
             <Controller name="stripe_secret_key_test" control={form.control} render={({ field }) => (
               <Field>
                 <FormLabel htmlFor="payments-stripe-secret-test">Secret key (Test)</FormLabel>
