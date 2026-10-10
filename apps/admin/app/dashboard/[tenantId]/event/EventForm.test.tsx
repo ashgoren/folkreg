@@ -194,4 +194,13 @@ describe("EventForm", () => {
     await user.selectOptions(byId("event-timezone"), "Mountain");
     await expectLastSave(vi.mocked(updateEvent), tenant.id, blankValues({ timezone: "America/Denver" }));
   });
+
+  // A blank Date field shows registrants the range from start to end; its placeholder shows which.
+  it("shows the dates a blank Date field means, as its placeholder", () => {
+    render(<EventForm tenant={makeTenant({ event_config: blankValues({ start: "2027-10-01T19:00" }) })} />);
+    expect(byId("event-date")).toHaveAttribute("placeholder", "October 1, 2027");
+
+    fireEvent.change(byId("event-end"), { target: { value: "2027-10-03T15:00" } });
+    expect(byId("event-date")).toHaveAttribute("placeholder", "October 1–3, 2027");
+  });
 });

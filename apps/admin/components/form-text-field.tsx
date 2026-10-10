@@ -14,6 +14,7 @@ export function TextField<TFieldValues extends FieldValues>({
   autoComplete,
   required,
   description,
+  placeholder,
 }: {
   control: Control<TFieldValues>;
   name: FieldPath<TFieldValues>;
@@ -23,6 +24,7 @@ export function TextField<TFieldValues extends FieldValues>({
   autoComplete: string;
   required?: boolean;
   description?: string;
+  placeholder?: string;
 }) {
   return (
     <Controller
@@ -34,7 +36,7 @@ export function TextField<TFieldValues extends FieldValues>({
           {description && <FieldDescription>{description}</FieldDescription>}
           {/* An optional setting with no value yet (e.g. a field's placeholder) shows as blank; an
               undefined value would make React treat the input as uncontrolled. */}
-          <Input {...field} value={field.value ?? ""} id={id} type={type} autoComplete={autoComplete} aria-invalid={fieldState.invalid} />
+          <Input {...field} value={field.value ?? ""} id={id} type={type} autoComplete={autoComplete} placeholder={placeholder} aria-invalid={fieldState.invalid} />
           {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
         </Field>
       )}

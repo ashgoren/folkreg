@@ -1,6 +1,6 @@
 "use client";
 
-import { Controller } from "react-hook-form";
+import { Controller, useWatch } from "react-hook-form";
 import { Field, FieldContent, FieldDescription, FieldGroup } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
 import { DateField } from "@/components/form-date-field";
@@ -11,7 +11,7 @@ import { TextField } from "@/components/form-text-field";
 import { Separator } from "@/components/ui/separator";
 import { useAutosaveForm } from "@/lib/useAutosaveForm";
 import type { Tenant } from "@repo/types";
-import { eventConfigSchema, TIMEZONES } from "@repo/tenant-config";
+import { eventConfigSchema, formatEventDates, TIMEZONES } from "@repo/tenant-config";
 import { updateEvent } from "./actions";
 
 export function EventForm({ tenant }: { tenant: Tenant }) {
@@ -21,6 +21,9 @@ export function EventForm({ tenant }: { tenant: Tenant }) {
     defaultValues: tenant.event_config,
     save: (data) => updateEvent(tenant.id, data),
   });
+
+  // What a blank Date field shows registrants, as its placeholder.
+  const [start, end] = useWatch({ control: form.control, name: ["start", "end"] });
 
   return (
     <form {...formProps} className="space-y-8">
@@ -50,7 +53,8 @@ export function EventForm({ tenant }: { tenant: Tenant }) {
           name="date"
           id="event-date"
           label="Date shown to registrants"
-          description="Optional override; leave blank to derive from above."
+          description="Optional; leave blank to derive from above."
+          placeholder={formatEventDates(start, end)}
           autoComplete="off"
         />
       </FieldGroup>
