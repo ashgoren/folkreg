@@ -396,6 +396,25 @@ describe("FieldsForm", () => {
     expect(screen.queryByText("Must be a single value")).not.toBeInTheDocument();
   });
 
+  // Admissions prices each age group by its option's value, so a repeat would make two age groups
+  // share prices; it's caught here, where the options are edited.
+  it("flags two options with the same value, and doesn't save", async () => {
+    const age = { name: "age" as const, options: [{ label: "Adult", value: "adult" }, { label: "Teenager", value: "13-17" }] };
+    const tenant = makeTenant({ fields_config: { contact: [first], misc: [age] } });
+    const user = userEvent.setup();
+    render(<FieldsForm tenant={tenant} />);
+
+    await user.click(selectButton("age"));
+    // The option's value input (the Default picker's radio items carry the same value).
+    const value = screen.getAllByRole("textbox").find((box) => (box as HTMLInputElement).value === "13-17")!;
+    await user.clear(value);
+    await user.type(value, "adult");
+    await user.tab();
+
+    expect(await screen.findByText("Each option needs a different value")).toBeInTheDocument();
+    await expectNoSave(vi.mocked(updateFields));
+  });
+
   describe("group sections", () => {
     it("collapse and expand independently", async () => {
       const user = userEvent.setup();

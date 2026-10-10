@@ -133,6 +133,18 @@ describe("fieldsConfigSchema", () => {
     });
   });
 
+  // A value is how an answer (and a default, and an age group's prices) names its option, so two
+  // options sharing one are ambiguous. An option with no value yet is still being written.
+  it("rejects two options with the same value", () => {
+    const options = [{ label: "Adult", value: "adult" }, { label: "Grown-up", value: "adult" }];
+    expect(issues({ contact: [], misc: [{ name: "age", options }] })).toEqual({ "misc.0.options": "Each option needs a different value" });
+  });
+
+  it("accepts several options with no value yet", () => {
+    const options = [{ label: "", value: "" }, { label: "", value: "" }];
+    expect(issues({ contact: [], misc: [{ name: "carpool", options }] })).toEqual({});
+  });
+
   it("rejects malformed options", () => {
     expect(issues({ contact: [], misc: [{ name: "age", options: [{ label: "Adult" }] }] })).toHaveProperty(["misc.0.options.0.value"]);
   });

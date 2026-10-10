@@ -177,6 +177,11 @@ const checkChoices = ({ name, defaultValue, firstPersonOptions, options = [] }: 
     else checkChosen("firstPersonOptions", firstPersonOptions);
   }
 
+  // A value is how an answer, a default, and an age group's prices name an option, so two options
+  // sharing one are ambiguous. An option with no value yet is still being written.
+  const filledValues = options.map((option) => option.value).filter((value) => value !== "");
+  if (new Set(filledValues).size !== filledValues.length) issue("options", "Each option needs a different value");
+
   const prerequisite = def.prerequisiteOption;
   if (prerequisite !== undefined) {
     if (!options.some((option) => option.value === prerequisite)) {
