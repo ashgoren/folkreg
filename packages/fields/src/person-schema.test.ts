@@ -57,11 +57,17 @@ describe("personSchema", () => {
       expect(errors({ agreement: { required: false } }, { agreement: [] }, 0)).toEqual({});
     });
 
-    it("limits the first person's age to an adult or a teen", () => {
-      expect(errors({ age: {} }, { age: "6-12" }, 0)).toEqual({ age: "The person registering must be 13 or older." });
-      expect(errors({ age: {} }, { age: "13-17" }, 0)).toEqual({});
-      expect(errors({ age: {} }, { age: "adult" }, 0)).toEqual({});
-      expect(errors({ age: {} }, { age: "6-12" }, 1)).toEqual({});
+    // The tenant chooses which of its age options the person registering may pick.
+    it("limits the first person to the tenant's chosen options", () => {
+      const settings = { age: { firstPersonOptions: ["adult", "13-17"] } };
+      expect(errors(settings, { age: "6-12" }, 0)).toEqual({ age: "This option isn't available for the person registering." });
+      expect(errors(settings, { age: "13-17" }, 0)).toEqual({});
+      expect(errors(settings, { age: "adult" }, 0)).toEqual({});
+      expect(errors(settings, { age: "6-12" }, 1)).toEqual({});
+    });
+
+    it("doesn't limit the first person when the tenant hasn't", () => {
+      expect(errors({ age: {} }, { age: "6-12" }, 0)).toEqual({});
     });
   });
 

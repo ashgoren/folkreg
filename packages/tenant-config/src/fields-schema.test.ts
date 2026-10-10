@@ -98,6 +98,26 @@ describe("fieldsConfigSchema", () => {
     });
   });
 
+  // Which age options the person registering may choose.
+  describe("first-person options", () => {
+    const options = [{ label: "Adult", value: "adult" }, { label: "Child", value: "child" }];
+
+    it("accepts options the field has", () => {
+      expect(issues({ contact: [], misc: [{ name: "age", options, firstPersonOptions: ["adult"] }] })).toEqual({});
+    });
+
+    it("rejects one that isn't an option", () => {
+      expect(issues({ contact: [], misc: [{ name: "age", options, firstPersonOptions: ["adult", "teen"] }] }))
+        .toEqual({ "misc.0.firstPersonOptions": '"teen" isn\'t one of the options' });
+    });
+
+    // Nobody could register.
+    it("rejects choosing none", () => {
+      expect(issues({ contact: [], misc: [{ name: "age", options, firstPersonOptions: [] }] }))
+        .toEqual({ "misc.0.firstPersonOptions": "Choose at least one" });
+    });
+  });
+
   // A roster can't list someone's email without their name.
   describe("a prerequisite option", () => {
     it("must stay among the field's options", () => {

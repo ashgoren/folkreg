@@ -107,7 +107,7 @@ describe("FieldsForm", () => {
       });
     });
 
-    it("activates a misc field into the misc group, translating `value` defaults into defaultValue", async () => {
+    it("activates a misc field into the misc group with its catalog defaults", async () => {
       const tenant = makeTenant({ fields_config: noneActive });
       const user = userEvent.setup();
       render(<FieldsForm tenant={tenant} />);
@@ -117,7 +117,7 @@ describe("FieldsForm", () => {
       const ageDefaults = FIELD_DEFS.age.defaults!;
       await expectLastSave(vi.mocked(updateFields), tenant.id, {
         contact: [],
-        misc: [{ name: "age", label: ageDefaults.label, title: ageDefaults.title, options: ageDefaults.options, defaultValue: "adult", required: true }],
+        misc: [{ name: "age", label: ageDefaults.label, title: ageDefaults.title, options: ageDefaults.options, defaultValue: "adult", firstPersonOptions: ["adult", "13-17"], required: true }],
       });
       // age ships with options, so it carries no missing-options warning.
       expect(activeRow("age").querySelector(".text-amber-500")).toBeNull();
@@ -362,6 +362,20 @@ describe("FieldsForm", () => {
       expect(await screen.findByText('Needs an option with the value "name": the other options depend on it')).toBeInTheDocument();
       await expectNoSave(vi.mocked(updateFields));
     });
+  });
+
+  // Nobody could register a group.
+  it("flags unchecking every option the person registering may choose, and doesn't save", async () => {
+    const age = { name: "age" as const, options: [{ label: "Adult", value: "adult" }, { label: "Child", value: "child" }], firstPersonOptions: ["adult"] };
+    const tenant = makeTenant({ fields_config: { contact: [first], misc: [age] } });
+    const user = userEvent.setup();
+    render(<FieldsForm tenant={tenant} />);
+
+    await user.click(selectButton("age"));
+    await user.click(within(screen.getByRole("group", { name: "Can register a group" })).getByRole("checkbox", { name: "Adult" }));
+
+    expect(await screen.findByText("Choose at least one")).toBeInTheDocument();
+    await expectNoSave(vi.mocked(updateFields));
   });
 
   describe("group sections", () => {

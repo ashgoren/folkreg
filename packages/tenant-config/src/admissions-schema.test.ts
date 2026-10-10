@@ -79,9 +79,10 @@ describe("admissionsConfigSchema", () => {
       expect(admissionsConfigSchema.safeParse({ ...tiered, categories: [category] }).success).toBe(true);
     });
 
-    it("rejects an unknown age group", () => {
+    // Age groups are the tenant's own age field options, defined on the Fields page.
+    it("accepts any age group the tenant defines", () => {
       const category = { label: "Senior", ageGroups: ["65+"], early: 50, later: 60 };
-      expect(issuePaths({ ...tiered, categories: [category] })).toEqual(["categories.0.ageGroups.0"]);
+      expect(issuePaths({ ...tiered, categories: [category] })).toEqual([]);
     });
 
     it("rejects a cleared (NaN) price on a category", () => {

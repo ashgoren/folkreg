@@ -9,26 +9,20 @@ import { FormLabel } from "@/components/form-label";
 import { NumberField } from "@/components/form-number-field";
 import { TextField } from "@/components/form-text-field";
 import { cn } from "@/lib/utils";
-import type { AgeGroup } from "@repo/tenant-config";
 import type { AdmissionsConfig } from "@repo/tenant-config";
-
-const AGE_GROUPS: { value: AgeGroup; label: string }[] = [
-  { value: "0-2", label: "0-2 yr old" },
-  { value: "3-5", label: "3-5 yr old" },
-  { value: "6-12", label: "6-12 yr old" },
-  { value: "13-17", label: "13-17 yr old" },
-  { value: "adult", label: "Adult" },
-];
+import type { AgeOption } from "./TieredCategories";
 
 export function TieredCategoryCard({
   form,
   fieldId,
   index,
+  ageOptions,
   onRemove,
 }: {
   form: UseFormReturn<AdmissionsConfig>;
   fieldId: string;
   index: number;
+  ageOptions: AgeOption[];
   onRemove: () => void;
 }) {
   const { ref, handleRef, isDragging } = useSortable({ id: fieldId, index });
@@ -88,27 +82,36 @@ export function TieredCategoryCard({
       <Controller
         name={`categories.${index}.ageGroups`}
         control={form.control}
-        render={({ field: ageGroupsField }) => (
-          <Field>
-            <FormLabel>Which age groups should this category apply to?</FormLabel>
-            <div className="flex flex-wrap gap-4">
-              {AGE_GROUPS.map((group) => (
-                <label key={group.value} className="flex items-center gap-1.5 text-sm">
-                  <Checkbox
-                    checked={ageGroupsField.value.includes(group.value)}
-                    onCheckedChange={(checked) => {
-                      const next = checked
-                        ? [...ageGroupsField.value, group.value]
-                        : ageGroupsField.value.filter((g) => g !== group.value);
-                      ageGroupsField.onChange(next);
-                    }}
-                  />
-                  {group.label}
-                </label>
-              ))}
-            </div>
-          </Field>
-        )}
+        render={({ field: ageGroupsField }) => {
+          // A value can outlive its age option (renamed or removed on the Fields page). It's still
+          // listed, so the category's pointing at it is visible and can be unchecked.
+          const known = new Set(ageOptions.map((option) => option.value));
+          const groups = [
+            ...ageOptions.map((option) => ({ value: option.value, label: option.label || option.value })),
+            ...ageGroupsField.value.filter((value) => !known.has(value)).map((value) => ({ value, label: `${value} (not an age option)` })),
+          ];
+          return (
+            <Field>
+              <FormLabel>Which age groups should this category apply to?</FormLabel>
+              <div className="flex flex-wrap gap-4">
+                {groups.map((group, i) => (
+                  <label key={i} className="flex items-center gap-1.5 text-sm">
+                    <Checkbox
+                      checked={ageGroupsField.value.includes(group.value)}
+                      onCheckedChange={(checked) => {
+                        const next = checked
+                          ? [...ageGroupsField.value, group.value]
+                          : ageGroupsField.value.filter((g) => g !== group.value);
+                        ageGroupsField.onChange(next);
+                      }}
+                    />
+                    {group.label}
+                  </label>
+                ))}
+              </div>
+            </Field>
+          );
+        }}
       />
     </div>
   );

@@ -17,6 +17,11 @@ import { FixedFields } from "./FixedFields";
 import { TieredFields } from "./TieredFields";
 
 export function AdmissionsForm({ tenant }: { tenant: Tenant }) {
+  // The tenant's age brackets: its age field's options, edited on the Fields page (an option still
+  // being written, with no value yet, isn't one). null when the age field isn't active.
+  const ageField = tenant.fields_config.misc.find((field) => field.name === "age");
+  const ageOptions = ageField ? (ageField.options ?? []).filter((option) => option.value !== "") : null;
+
   const { form, formProps, isPending, savedRecently } = useAutosaveForm({
     label: "Admissions",
     schema: admissionsConfigSchema,
@@ -65,7 +70,7 @@ export function AdmissionsForm({ tenant }: { tenant: Tenant }) {
 
       {mode === "sliding-scale" && <SlidingScaleFields form={form} />}
       {mode === "fixed" && <FixedFields form={form} />}
-      {mode === "tiered" && <TieredFields form={form} />}
+      {mode === "tiered" && <TieredFields form={form} ageOptions={ageOptions} />}
 
       <Separator />
 

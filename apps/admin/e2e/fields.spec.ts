@@ -40,6 +40,7 @@ test("adding a field saves it with its default config", async ({ page, tenantId 
           { label: "0-2 yr old", value: "0-2" },
         ],
         defaultValue: "adult",
+        firstPersonOptions: ["adult", "13-17"],
         required: true,
       },
     ],

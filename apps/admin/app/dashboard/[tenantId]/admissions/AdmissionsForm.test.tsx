@@ -8,8 +8,8 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { makeTenant } from "@/test/fixtures";
 import { expectLastSave, expectNoSave } from "@/test/autosave";
-import { defaultAdmissionsConfig } from "@repo/tenant-config";
-import type { AdmissionsConfig } from "@repo/tenant-config";
+import { defaultAdmissionsConfig, defaultFieldEntry, defaultFieldsConfig } from "@repo/tenant-config";
+import type { AdmissionsConfig, FieldEntry } from "@repo/tenant-config";
 
 vi.mock("./actions", () => ({ updateAdmissions: vi.fn() }));
 import { updateAdmissions } from "./actions";
@@ -21,6 +21,14 @@ const byId = (id: string) => document.getElementById(id) as HTMLInputElement;
 // are part of it.
 const DEFAULTS = defaultAdmissionsConfig();
 const stored = (overrides: Partial<AdmissionsConfig>): AdmissionsConfig => ({ ...defaultAdmissionsConfig(), ...overrides });
+
+// A tenant with the age field active, whose options are the age groups tiered pricing prices by:
+// the catalog's own options unless given others.
+const withAge = (options?: FieldEntry["options"]) => {
+  const fields = defaultFieldsConfig();
+  fields.misc.push({ ...defaultFieldEntry("age"), ...(options && { options }) });
+  return { fields_config: fields };
+};
 
 const replace = async (user: ReturnType<typeof userEvent.setup>, id: string, text: string) => {
   await user.clear(byId(id));
@@ -63,7 +71,7 @@ describe("AdmissionsForm", () => {
           { label: "Youth", ageGroups: ["6-12", "13-17"], early: 40, later: 50 },
         ],
       });
-      render(<AdmissionsForm tenant={makeTenant({ admissions_config: config })} />);
+      render(<AdmissionsForm tenant={makeTenant({ admissions_config: config, ...withAge() })} />);
 
       expect(byId("admissions-earlybird-cutoff")).toHaveValue("2027-01-15");
       expect(byId("admissions-category-label-0")).toHaveValue("Basic");
@@ -202,7 +210,7 @@ describe("AdmissionsForm", () => {
 
   describe("tiered", () => {
     it("starts with no categories, and adds/fills/removes them", async () => {
-      const tenant = makeTenant();
+      const tenant = makeTenant(withAge());
       const user = userEvent.setup();
       render(<AdmissionsForm tenant={tenant} />);
 
@@ -231,6 +239,48 @@ describe("AdmissionsForm", () => {
 
       await user.click(screen.getByRole("button", { name: "Remove category" }));
       await expectLastSave(vi.mocked(updateAdmissions), tenant.id, expect.objectContaining({ mode: "tiered", categories: [] }));
+    });
+
+    // A tenant's age brackets are its own: whatever options its age field has.
+    it("offers the age field's options as the age groups", async () => {
+      const tenant = makeTenant(withAge([{ label: "Under 30", value: "under-30" }, { label: "30 and over", value: "30-plus" }]));
+      const user = userEvent.setup();
+      render(<AdmissionsForm tenant={tenant} />);
+
+      await user.click(screen.getByRole("radio", { name: "Tiered" }));
+      await user.click(screen.getByRole("button", { name: /Add category/ }));
+      expect(screen.getAllByRole("checkbox").map((box) => box.closest("label")?.textContent)).toEqual(["Under 30", "30 and over"]);
+
+      await user.click(screen.getByRole("checkbox", { name: "Under 30" }));
+      await expectLastSave(vi.mocked(updateAdmissions), tenant.id, expect.objectContaining({
+        categories: [{ label: "", ageGroups: ["under-30"], early: 0, later: 0 }],
+      }));
+    });
+
+    // E.g. the option's value edited on the Fields page after the category was priced.
+    it("lists an age group that's no longer an age option, so it can be unchecked", async () => {
+      const config = stored({ mode: "tiered", categories: [{ label: "Teen", ageGroups: ["teen"], early: 1, later: 1 }] });
+      const tenant = makeTenant({ admissions_config: config, ...withAge() });
+      const user = userEvent.setup();
+      render(<AdmissionsForm tenant={tenant} />);
+
+      const stale = screen.getByRole("checkbox", { name: "teen (not an age option)" });
+      expect(stale).toBeChecked();
+      await user.click(stale);
+      await expectLastSave(vi.mocked(updateAdmissions), tenant.id, expect.objectContaining({
+        categories: [{ label: "Teen", ageGroups: [], early: 1, later: 1 }],
+      }));
+      expect(screen.queryByRole("checkbox", { name: "teen (not an age option)" })).not.toBeInTheDocument();
+    });
+
+    it("says to add the age field when it isn't active", () => {
+      render(<AdmissionsForm tenant={makeTenant({ admissions_config: stored({ mode: "tiered" }) })} />);
+      expect(screen.getByText(/Add the age field on the Fields page/)).toBeInTheDocument();
+    });
+
+    it("says to add options when the age field has none", () => {
+      render(<AdmissionsForm tenant={makeTenant({ admissions_config: stored({ mode: "tiered" }), ...withAge([]) })} />);
+      expect(screen.getByText(/The age field has no options yet/)).toBeInTheDocument();
     });
 
     it("removes the right category from the middle of the list", async () => {

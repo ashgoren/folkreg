@@ -295,4 +295,33 @@ describe("ConfigPanel", () => {
       });
     });
   });
+  // Which age brackets the person registering may choose (the rest are for those they register).
+  describe("options the person registering may choose", () => {
+    const options = [{ label: "Adult", value: "adult" }, { label: "Teen", value: "teen" }, { label: "Child", value: "child" }];
+    const group = () => within(screen.getByRole("group", { name: "Can register a group" }));
+
+    it("are offered for the age field only", () => {
+      renderPanel("dietaryPreferences", { options });
+      expect(screen.queryByRole("group", { name: "Can register a group" })).not.toBeInTheDocument();
+    });
+
+    it("check and uncheck the field's options", async () => {
+      const user = userEvent.setup();
+      const entry = renderPanel("age", { options, firstPersonOptions: ["adult"] });
+
+      expect(group().getByRole("checkbox", { name: "Adult" })).toBeChecked();
+      await user.click(group().getByRole("checkbox", { name: "Teen" }));
+      expect(entry().firstPersonOptions).toEqual(["adult", "teen"]);
+      await user.click(group().getByRole("checkbox", { name: "Adult" }));
+      expect(entry().firstPersonOptions).toEqual(["teen"]);
+    });
+
+    it("list one that's no longer an option, so it can be unchecked", async () => {
+      const user = userEvent.setup();
+      const entry = renderPanel("age", { options, firstPersonOptions: ["adult", "13-17"] });
+
+      await user.click(group().getByRole("checkbox", { name: "13-17 (not an option)" }));
+      expect(entry().firstPersonOptions).toEqual(["adult"]);
+    });
+  });
 });

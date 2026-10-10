@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { X, Plus } from "lucide-react";
-import { ChoiceDefault } from "./ChoiceDefault";
+import { ChoiceDefault, FirstPersonOptions } from "./OptionPickers";
 
 // Where an active field's entry sits in the form's values, e.g. "contact.2".
 export type FieldEntryPath = `${"contact" | "misc"}.${number}`;
@@ -158,6 +158,8 @@ export function ConfigPanel({ form, path, fieldName }: ConfigPanelProps) {
         ) : (
           <TextField control={control} name={`${path}.defaultValue`} id={`config-default-${fieldName}`} label="Default" autoComplete="off" />
         )}
+
+        {def.canLimitFirstPerson && <FirstPersonOptions control={control} path={path} fieldName={fieldName} />}
 
         {showNametagToggle && (
           <Controller

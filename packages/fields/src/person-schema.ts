@@ -9,7 +9,7 @@ import { FIELD_DEFS, type FieldName } from "./catalog";
 import type { FieldType } from "./types";
 
 // A tenant's active field, as stored in its fields_config, narrowed to what validation uses.
-export type FieldSettings = { name: FieldName; required?: boolean };
+export type FieldSettings = { name: FieldName; required?: boolean; firstPersonOptions?: string[] };
 
 // For a required field the catalog gives no message of its own.
 const FALLBACK_REQUIRED_MESSAGES: Record<FieldType, string> = {
@@ -63,9 +63,10 @@ export const personSchema = (activeFields: FieldSettings[], personIndex: number)
         if (!result.success) issue(name, result.error.issues[0]!.message);
       }
 
-      if (isFirstPerson && def.firstPersonOptions && typeof value === "string" && value !== ""
-        && !def.firstPersonOptions.values.includes(value)) {
-        issue(name, def.firstPersonOptions.message);
+      // Worded without naming the options, which are the tenant's (e.g. its age brackets).
+      if (isFirstPerson && def.canLimitFirstPerson && settings.firstPersonOptions && typeof value === "string" && value !== ""
+        && !settings.firstPersonOptions.includes(value)) {
+        issue(name, "This option isn't available for the person registering.");
       }
 
       // The reg form keeps this rule as boxes are checked (toggleOption), so only a request that bypassed it gets here.

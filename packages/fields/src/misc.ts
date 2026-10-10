@@ -4,7 +4,9 @@ export const MISC_FIELD_DEFS = {
   age: {
     type: "radio",
     requiredMessage: "Please select age range.",
-    firstPersonOptions: { values: ["adult", "13-17"], message: "The person registering must be 13 or older." },
+    // Tiered pricing prices each person by the age option they choose, so a tenant's age options
+    // are its price brackets.
+    canLimitFirstPerson: true,
     defaults: {
       required: true,
       title: "Age",
@@ -17,6 +19,7 @@ export const MISC_FIELD_DEFS = {
         { label: "0-2 yr old", value: "0-2" },
       ],
       defaultValue: "adult",
+      firstPersonOptions: ["adult", "13-17"],
     },
   },
   share: {

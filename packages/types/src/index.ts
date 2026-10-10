@@ -1,6 +1,6 @@
 import { Tables, Database } from "./database.types"
 import { type SupabaseClient } from "@supabase/supabase-js"
-import type { AgeGroup, TenantConfig } from "@repo/tenant-config"
+import type { TenantConfig } from "@repo/tenant-config"
 
 export * from "./database.types"
 
@@ -21,7 +21,7 @@ export interface Person {
   city?: string;
   state?: string;
   zip?: string;
-  age?: AgeGroup;
+  age?: string; // one of the tenant's age field options
   share?: string[];
   misc?: string[];
   admission: number;

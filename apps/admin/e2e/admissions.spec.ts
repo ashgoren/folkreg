@@ -1,5 +1,5 @@
-import { defaultAdmissionsConfig } from "@repo/tenant-config";
-import { test, expect, readTenantConfig, waitForSaved } from "./fixtures";
+import { defaultAdmissionsConfig, defaultFieldEntry, defaultFieldsConfig } from "@repo/tenant-config";
+import { test, expect, service, readTenantConfig, waitForSaved } from "./fixtures";
 
 const admissionsConfig = async (tenantId: string) => (await readTenantConfig(tenantId)).admissions_config;
 
@@ -52,6 +52,13 @@ test("a sliding-scale default outside the range shows an error and isn't saved",
 });
 
 test("tiered mode saves categories with their age groups and prices", async ({ page, tenantId }) => {
+  // Age groups are the age field's options, which a new tenant doesn't have active.
+  const fields = defaultFieldsConfig();
+  fields.misc.push(defaultFieldEntry("age"));
+  const { error } = await service.from("tenants").update({ fields_config: fields }).eq("id", tenantId);
+  if (error) throw error;
+  await page.reload();
+
   await page.getByRole("radio", { name: "Tiered" }).click();
   await page.getByLabel("Early-bird cutoff").fill("2027-09-01");
   await page.getByRole("button", { name: "Add category" }).click();

@@ -18,9 +18,6 @@ const requiredNumber = (min: number) => z.number({ error: "Required" }).min(min)
 const optionalEmail = z.union([z.literal(""), z.string().email("Must be a valid email")]);
 const hexColor = z.string().regex(/^#[0-9a-f]{6}$/i, "Must be a hex color, e.g. #d97706");
 
-export const ageGroupSchema = z.enum(["0-2", "3-5", "6-12", "13-17", "adult"]);
-export type AgeGroup = z.infer<typeof ageGroupSchema>;
-
 export const eventConfigSchema = z.object({
   title: z.string(),
   year: z.number().int().min(2000).max(2100),
@@ -75,6 +72,8 @@ export const fieldConfigSchema = z.object({
   width: wholeNumber({ min: 1, max: 12 }, "Must be a whole number from 1 to 12").nullable().optional(),
   required: z.boolean().optional(),
   includeOnNametag: z.boolean().optional(),
+  // Which options the person registering may choose, for a field that can limit them (age).
+  firstPersonOptions: z.array(z.string()).optional(),
 });
 export type FieldConfig = z.infer<typeof fieldConfigSchema>;
 
@@ -103,9 +102,9 @@ export const fieldsConfigSchema = z.object({
   }
 });
 
-// A field's default and options against the catalog's rules for its type. Shown on the Fields page
+// A field's default, first-person options and options against the catalog's rules for its type. Shown on the Fields page
 // under the field's Default and options.
-const checkChoices = ({ name, defaultValue, options = [] }: FieldEntry, issue: (key: keyof FieldEntry, message: string) => void) => {
+const checkChoices = ({ name, defaultValue, firstPersonOptions, options = [] }: FieldEntry, issue: (key: keyof FieldEntry, message: string) => void) => {
   const def = FIELD_DEFS[name];
   const isCheckbox = def.type === "checkbox";
 
@@ -115,14 +114,21 @@ const checkChoices = ({ name, defaultValue, options = [] }: FieldEntry, issue: (
     return;
   }
 
-  // An option's value can change after it's chosen as the default, leaving the default pointing at
-  // nothing. "" is a radio field's "none".
-  if (def.type === "radio" || isCheckbox) {
-    const values = new Set(options.map((option) => option.value));
-    const stale = [defaultValue ?? []].flat().filter((value) => value !== "" && !values.has(value));
+  // An option's value can change after it's chosen, leaving a setting pointing at nothing. "" is a
+  // radio field's "none".
+  const values = new Set(options.map((option) => option.value));
+  const checkChosen = (key: "defaultValue" | "firstPersonOptions", chosen: string | string[] | undefined) => {
+    const stale = [chosen ?? []].flat().filter((value) => value !== "" && !values.has(value));
     if (stale.length > 0) {
-      issue("defaultValue", `${stale.map((value) => `"${value}"`).join(", ")} ${stale.length === 1 ? "isn't one of the options" : "aren't options"}`);
+      issue(key, `${stale.map((value) => `"${value}"`).join(", ")} ${stale.length === 1 ? "isn't one of the options" : "aren't options"}`);
     }
+  };
+  if (def.type === "radio" || isCheckbox) checkChosen("defaultValue", defaultValue);
+
+  if (firstPersonOptions !== undefined) {
+    // No option at all would leave nobody able to register.
+    if (firstPersonOptions.length === 0) issue("firstPersonOptions", "Choose at least one");
+    else checkChosen("firstPersonOptions", firstPersonOptions);
   }
 
   const prerequisite = def.prerequisiteOption;
@@ -139,7 +145,10 @@ export type FieldsConfig = z.infer<typeof fieldsConfigSchema>;
 
 export const tieredCategorySchema = z.object({
   label: z.string(),
-  ageGroups: z.array(ageGroupSchema),
+  // Values of the tenant's age field options (its price brackets), which the Fields page edits.
+  // Not checked against them here: each column is validated on its own, and the Admissions page
+  // lists a value that's no longer an age option so it can be unchecked.
+  ageGroups: z.array(z.string()),
   early: requiredNumber(0),
   later: requiredNumber(0),
 });

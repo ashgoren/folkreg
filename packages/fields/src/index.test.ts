@@ -97,10 +97,16 @@ describe("catalog rules", () => {
 
   // The first person's allowed ages are named by value, so they have to stay among age's options --
   // a renamed option would otherwise quietly stop matching.
-  it("limits the first person's age to values that are age options", () => {
-    const age = MISC_FIELD_DEFS.age!;
-    const values = age.defaults!.options!.map((option) => option.value);
-    expect(age.firstPersonOptions!.values.every((value) => values.includes(value))).toBe(true);
+  // The person registering is an adult or a teen to start with; a tenant can change which.
+  it("starts the first person's age limit on options the age field has", () => {
+    const { options, firstPersonOptions } = MISC_FIELD_DEFS.age.defaults;
+    expect(firstPersonOptions).toEqual(["adult", "13-17"]);
+    expect(firstPersonOptions.every((value) => options.some((option) => option.value === value))).toBe(true);
+  });
+
+  it("lets only the age field limit the first person's choices", () => {
+    const limited = Object.entries(FIELD_DEFS).filter(([, def]) => def.canLimitFirstPerson).map(([name]) => name);
+    expect(limited).toEqual(["age"]);
   });
 
   // Checking any roster detail checks the name too (toggleOption), so the name has to be an option

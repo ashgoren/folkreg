@@ -30,6 +30,12 @@ export interface FieldDefaults {
   defaultValue?: string | string[];
   /** Where the field's Required switch starts when a tenant activates it. */
   required?: boolean;
+  /**
+   * For a field that canLimitFirstPerson: the options the first person may choose. The
+   * registration form disables the rest for them, and personSchema rejects anything else. Other
+   * people may choose any option.
+   */
+  firstPersonOptions?: string[];
 }
 
 export interface FieldDef {
@@ -56,11 +62,11 @@ export interface FieldDef {
    */
   firstPersonOnly?: boolean;
   /**
-   * The options the first person may choose, e.g. the person registering can't be a young child.
-   * The registration form disables the rest for them; personSchema rejects anything else, with
-   * `message`. Other people may choose any option.
+   * The tenant can limit which of the field's options the first person may choose, e.g. the person
+   * registering can't be a young child. The admin offers a picker for it; which options is the
+   * tenant's firstPersonOptions setting (see FieldDefaults), since the options are the tenant's too.
    */
-  firstPersonOptions?: { values: string[]; message: string };
+  canLimitFirstPerson?: boolean;
   /** A rule involving other fields of the same person; returns an error message, or null. */
   crossValidation?: (person: Record<string, unknown>) => string | null;
   followUp?: FollowUp;
