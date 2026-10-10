@@ -2,7 +2,7 @@
 
 import { type UseFormReturn } from "react-hook-form";
 import { FieldGroup } from "@/components/ui/field";
-import { TextField } from "@/components/form-text-field";
+import { DateField } from "@/components/form-date-field";
 import { NumberField } from "@/components/form-number-field";
 import type { AdmissionsConfig } from "@repo/tenant-config";
 import { TieredPrices, type AgeOption } from "./TieredPrices";
@@ -11,7 +11,13 @@ export function TieredFields({ form, ageOptions }: { form: UseFormReturn<Admissi
   return (
     <div className="space-y-6">
       <FieldGroup>
-        <TextField control={form.control} name="earlybirdCutoff" id="admissions-earlybird-cutoff" label="Early-bird cutoff" description="Last day early pricing applies, e.g. 2025-11-10" autoComplete="off" required />
+        <DateField
+          control={form.control}
+          name="earlybirdCutoff"
+          id="admissions-earlybird-cutoff"
+          label="Early-bird cutoff"
+          description="The last day early-bird prices apply, in the event's timezone. Leave blank for no early-bird pricing: prices stay as entered."
+        />
         <NumberField
           control={form.control}
           name="lateIncrease"

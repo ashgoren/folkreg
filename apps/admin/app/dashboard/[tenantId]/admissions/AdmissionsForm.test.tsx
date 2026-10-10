@@ -4,7 +4,7 @@
 // pointer/geometry handling doesn't run in jsdom (see the skipped test in e2e/admissions.spec.ts).
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { makeTenant } from "@/test/fixtures";
 import { expectLastSave, expectNoSave } from "@/test/autosave";
@@ -321,6 +321,37 @@ describe("AdmissionsForm", () => {
 
       expect(ageSection("Adult").getByText("Required")).toBeInTheDocument();
       await expectNoSave(vi.mocked(updateAdmissions));
+    });
+
+    describe("early-bird cutoff", () => {
+      it("saves a picked date, and a cleared one as blank (no early-bird period)", async () => {
+        const tenant = makeTenant({ admissions_config: tiered(), ...withAge() });
+        render(<AdmissionsForm tenant={tenant} />);
+        const cutoff = byId("admissions-earlybird-cutoff");
+        expect(cutoff).toHaveAttribute("type", "date");
+
+        fireEvent.change(cutoff, { target: { value: "2027-09-01" } });
+        await expectLastSave(vi.mocked(updateAdmissions), tenant.id, expect.objectContaining({
+          earlybirdCutoff: "2027-09-01",
+        }));
+
+        fireEvent.change(cutoff, { target: { value: "" } });
+        await expectLastSave(vi.mocked(updateAdmissions), tenant.id, expect.objectContaining({ earlybirdCutoff: "" }));
+      });
+
+      // jsdom doesn't model a date input holding a half-typed date, so this reports it the way a
+      // browser does: an empty value, with validity.badInput set.
+      it("flags a half-typed date rather than saving it as blank", async () => {
+        render(<AdmissionsForm tenant={makeTenant({ admissions_config: tiered({ earlybirdCutoff: "2027-09-01" }), ...withAge() })} />);
+        const cutoff = byId("admissions-earlybird-cutoff");
+        Object.defineProperty(cutoff, "validity", { value: { badInput: true } });
+
+        fireEvent.change(cutoff, { target: { value: "" } });
+        fireEvent.blur(cutoff);
+
+        expect(await screen.findByText("Must be a date")).toBeInTheDocument();
+        await expectNoSave(vi.mocked(updateAdmissions));
+      });
     });
 
     it("says to add the age field when it isn't active", () => {

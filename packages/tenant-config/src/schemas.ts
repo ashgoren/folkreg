@@ -173,7 +173,9 @@ export const admissionsConfigSchema = z.object({
   // fixed
   cost: requiredNumber(0),
   // tiered: each price goes up by lateIncrease after the early-bird cutoff (see priceAfterCutoff)
-  earlybirdCutoff: z.string(),
+  // The last day early-bird prices apply (YYYY-MM-DD), read as a whole day in event_config.timezone.
+  // "" means no early-bird period: prices stay as entered and lateIncrease never applies.
+  earlybirdCutoff: z.union([z.literal(""), z.iso.date({ error: "Must be a date" })], { error: "Must be a date" }),
   lateIncrease: requiredNumber(0),
   prices: z.array(ageGroupPricesSchema),
   admissionQuantityMax: requiredNumber(1).int(),

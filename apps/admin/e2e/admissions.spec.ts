@@ -91,6 +91,26 @@ test("tiered mode saves prices by age group, with the late increase", async ({ p
   await expect.poll(() => admissionsConfig(tenantId)).toMatchObject({ mode: "tiered", prices: [{ ageGroup: "adult", options: [] }] });
 });
 
+// A date input reports a half-typed date as "", the same as an empty one; it mustn't be saved as a
+// cleared cutoff.
+test("a half-typed early-bird cutoff shows an error and isn't saved", async ({ page, tenantId }) => {
+  const { error } = await service.from("tenants")
+    .update({ admissions_config: { ...defaultAdmissionsConfig(), mode: "tiered", earlybirdCutoff: "2027-09-01" } })
+    .eq("id", tenantId);
+  if (error) throw error;
+  await page.reload();
+
+  const cutoff = page.getByLabel("Early-bird cutoff");
+  await cutoff.fill("");
+  await cutoff.click();
+  await page.keyboard.type("09"); // the month only
+  // Tab would move between the date's own parts, so leave it by clicking elsewhere.
+  await page.getByRole("heading", { level: 1 }).click();
+
+  await expect(page.getByText("Must be a date")).toBeVisible();
+  expect((await admissionsConfig(tenantId)).earlybirdCutoff).toBe("2027-09-01");
+});
+
 // Within an age group, prices are listed in the order registrants see them.
 //
 // Skipped: dragging a price reorders it, and the order survives a reload, in a real browser. Under

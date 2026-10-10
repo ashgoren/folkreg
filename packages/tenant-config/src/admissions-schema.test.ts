@@ -71,6 +71,16 @@ describe("admissionsConfigSchema", () => {
   });
 
   describe("tiered", () => {
+    // Blank means no early-bird period at all.
+    it.each(["", "2027-09-01", "2028-02-29"])("accepts a cutoff of %j", (earlybirdCutoff) => {
+      expect(issuePaths({ ...tiered, earlybirdCutoff })).toEqual([]);
+    });
+
+    it.each(["Nov 10", "2027-9-1", "2027-13-01", "2027-02-29"])("rejects a cutoff of %j", (earlybirdCutoff) => {
+      const result = admissionsConfigSchema.safeParse({ ...tiered, earlybirdCutoff });
+      expect(result.error?.issues.map((issue) => [issue.path.join("."), issue.message])).toEqual([["earlybirdCutoff", "Must be a date"]]);
+    });
+
     it("accepts no prices and a blank cutoff", () => {
       expect(issuePaths({ ...tiered, prices: [], earlybirdCutoff: "" })).toEqual([]);
     });
