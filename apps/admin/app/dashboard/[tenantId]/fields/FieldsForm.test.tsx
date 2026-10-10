@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { FIELD_DEFS } from "@repo/fields";
+import { FIELD_DEFS, MISC_FIELD_DEFS } from "@repo/fields";
 import { defaultFieldEntry, defaultFieldsConfig } from "@repo/tenant-config";
 import { makeTenant } from "@/test/fixtures";
 import { expectLastSave, expectNoSave } from "@/test/autosave";
@@ -316,6 +316,51 @@ describe("FieldsForm", () => {
 
       expect(await screen.findByRole("heading", { name: "first" })).toBeInTheDocument();
       await expectLastSave(vi.mocked(updateFields), tenant.id, { contact: [first, { ...email, width: 4 }], misc: [carpool] });
+    });
+  });
+
+  describe("defaults of choice fields", () => {
+    const shareOptions = MISC_FIELD_DEFS.share.defaults.options;
+    const share = { name: "share" as const, options: shareOptions, defaultValue: ["name", "email"] };
+    const withShare: FieldsConfig = { contact: [first], misc: [share] };
+    const defaultGroup = () => within(screen.getByRole("group", { name: "Default" }));
+
+    it("saves a checked default right away, keeping the prerequisite", async () => {
+      const tenant = makeTenant({ fields_config: withShare });
+      const user = userEvent.setup();
+      render(<FieldsForm tenant={tenant} />);
+
+      await user.click(selectButton("share"));
+      await user.click(defaultGroup().getByRole("checkbox", { name: "Include my name in the roster" }));
+
+      await expectLastSave(vi.mocked(updateFields), tenant.id, { contact: [first], misc: [{ ...share, defaultValue: [] }] });
+    });
+
+    // The default still names the old value, which the panel flags rather than changing for them.
+    it("flags a default whose option's value was edited, and doesn't save", async () => {
+      const tenant = makeTenant({ fields_config: withShare });
+      const user = userEvent.setup();
+      render(<FieldsForm tenant={tenant} />);
+
+      await user.click(selectButton("share"));
+      await user.type(screen.getByDisplayValue("email"), "s");
+      await user.tab();
+
+      expect(await screen.findByText('"email" isn\'t one of the options')).toBeInTheDocument();
+      expect(defaultGroup().getByRole("checkbox", { name: "email (not an option)" })).toBeChecked();
+      await expectNoSave(vi.mocked(updateFields));
+    });
+
+    it("flags removing the option the others depend on, and doesn't save", async () => {
+      const tenant = makeTenant({ fields_config: { contact: [first], misc: [{ ...share, defaultValue: [] }] } });
+      const user = userEvent.setup();
+      render(<FieldsForm tenant={tenant} />);
+
+      await user.click(selectButton("share"));
+      await user.click(screen.getAllByRole("button", { name: "Remove option" })[0]!);
+
+      expect(await screen.findByText('Needs an option with the value "name": the other options depend on it')).toBeInTheDocument();
+      await expectNoSave(vi.mocked(updateFields));
     });
   });
 

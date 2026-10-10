@@ -84,6 +84,19 @@ describe("personSchema", () => {
     });
   });
 
+  // Roster details can't be shared without the name; the form checks it along with the others.
+  describe("a prerequisite option", () => {
+    it("rejects other options checked without it", () => {
+      expect(errors({ share: {} }, { share: ["email"] })).toEqual({ share: "This combination of choices isn't allowed." });
+    });
+
+    it("accepts it with or without others, or nothing checked", () => {
+      expect(errors({ share: {} }, { share: ["name", "email"] })).toEqual({});
+      expect(errors({ share: {} }, { share: ["name"] })).toEqual({});
+      expect(errors({ share: {} }, { share: [] })).toEqual({});
+    });
+  });
+
   describe("follow-ups", () => {
     // Choosing the trigger option reveals a text box, stored under its own key, that must be filled in.
     it.each([

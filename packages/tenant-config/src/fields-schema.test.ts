@@ -65,6 +65,54 @@ describe("fieldsConfigSchema", () => {
     expect(fieldsConfigSchema.safeParse({ contact: [{ name: "first", width: null }], misc: [{ name: "comments", rows: null }] }).success).toBe(true);
   });
 
+  describe("defaults", () => {
+    const ageOptions = [{ label: "Adult", value: "adult" }, { label: "Teen", value: "13-17" }];
+    const shareOptions = [{ label: "Name", value: "name" }, { label: "Email", value: "email" }];
+
+    it("accepts a checkbox field's list of options, a radio field's option or none, and any text", () => {
+      expect(issues({
+        contact: [{ name: "first", defaultValue: "Ada" }],
+        misc: [
+          { name: "age", options: ageOptions, defaultValue: "13-17" },
+          { name: "dietaryPreferences", options: [{ label: "Vegan", value: "vegan" }], defaultValue: "" },
+          { name: "share", options: shareOptions, defaultValue: ["name", "email"] },
+          { name: "carpool", options: [{ label: "Ride", value: "ride" }], defaultValue: [] },
+        ],
+      })).toEqual({});
+    });
+
+    // The Fields page only offers the right kind, so these would be stored data that's wrong.
+    it("rejects a single value for a checkbox field, and a list for anything else", () => {
+      expect(issues({ contact: [], misc: [{ name: "share", options: shareOptions, defaultValue: "name" }] }))
+        .toEqual({ "misc.0.defaultValue": "Must be a list of options" });
+      expect(issues({ contact: [{ name: "first", defaultValue: ["Ada"] }], misc: [] }))
+        .toEqual({ "contact.0.defaultValue": "Must be a single value" });
+    });
+
+    // E.g. an option's value edited after it was chosen as the default.
+    it("rejects a default that isn't one of the field's options", () => {
+      expect(issues({ contact: [], misc: [{ name: "age", options: ageOptions, defaultValue: "adlut" }] }))
+        .toEqual({ "misc.0.defaultValue": '"adlut" isn\'t one of the options' });
+      expect(issues({ contact: [], misc: [{ name: "carpool", options: [{ label: "Ride", value: "ride" }], defaultValue: ["rides", "house"] }] }))
+        .toEqual({ "misc.0.defaultValue": '"rides", "house" aren\'t options' });
+    });
+  });
+
+  // A roster can't list someone's email without their name.
+  describe("a prerequisite option", () => {
+    it("must stay among the field's options", () => {
+      expect(issues({ contact: [], misc: [{ name: "share", options: [{ label: "Email", value: "email" }] }] }))
+        .toEqual({ "misc.0.options": 'Needs an option with the value "name": the other options depend on it' });
+    });
+
+    it("must be in a default that checks anything", () => {
+      const options = [{ label: "Name", value: "name" }, { label: "Email", value: "email" }];
+      expect(issues({ contact: [], misc: [{ name: "share", options, defaultValue: ["email"] }] }))
+        .toEqual({ "misc.0.defaultValue": 'Must include "name" when anything else is checked' });
+      expect(issues({ contact: [], misc: [{ name: "share", options, defaultValue: [] }] })).toEqual({});
+    });
+  });
+
   it("rejects malformed options", () => {
     expect(issues({ contact: [], misc: [{ name: "age", options: [{ label: "Adult" }] }] })).toHaveProperty(["misc.0.options.0.value"]);
   });

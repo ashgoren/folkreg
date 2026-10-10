@@ -26,7 +26,8 @@ export interface FieldDefaults {
   rows?: number;
   width?: number;
   options?: { label: string; value: string }[];
-  defaultValue?: string;
+  /** What the field starts with on the registration form: a checkbox field's checked options, or any other field's value. */
+  defaultValue?: string | string[];
   /** Where the field's Required switch starts when a tenant activates it. */
   required?: boolean;
 }
@@ -63,6 +64,12 @@ export interface FieldDef {
   /** A rule involving other fields of the same person; returns an error message, or null. */
   crossValidation?: (person: Record<string, unknown>) => string | null;
   followUp?: FollowUp;
+  /**
+   * For a checkbox field: the option every other option depends on, e.g. a roster can't list
+   * someone's email without their name. Checking any other option checks it too, and unchecking it
+   * unchecks the rest (toggleOption); a selection without it is invalid unless empty.
+   */
+  prerequisiteOption?: string;
   defaults?: FieldDefaults;
   /** Excluded from the Spreadsheet page's available columns (e.g. emailConfirmation, structurally redundant with email) */
   excludeFromSpreadsheet?: boolean;

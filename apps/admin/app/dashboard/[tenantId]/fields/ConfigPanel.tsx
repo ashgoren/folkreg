@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { X, Plus } from "lucide-react";
+import { ChoiceDefault } from "./ChoiceDefault";
 
 // Where an active field's entry sits in the form's values, e.g. "contact.2".
 export type FieldEntryPath = `${"contact" | "misc"}.${number}`;
@@ -99,7 +100,7 @@ export function ConfigPanel({ form, path, fieldName }: ConfigPanelProps) {
           <Controller
             name={`${path}.options`}
             control={control}
-            render={({ field }) => {
+            render={({ field, fieldState }) => {
               const options = field.value ?? [];
               return (
                 <Field>
@@ -144,20 +145,19 @@ export function ConfigPanel({ form, path, fieldName }: ConfigPanelProps) {
                       Add option
                     </Button>
                   </div>
+                  {/* A problem with the list as a whole, e.g. a missing option others depend on. */}
+                  {fieldState.error?.message && <FieldError errors={[fieldState.error]} />}
                 </Field>
               );
             }}
           />
         )}
 
-        <TextField
-          control={control}
-          name={`${path}.defaultValue`}
-          id={`config-default-${fieldName}`}
-          label="Default"
-          description={def.type === "checkbox" ? "Comma-separated option values" : undefined}
-          autoComplete="off"
-        />
+        {showOptions ? (
+          <ChoiceDefault control={control} path={path} fieldName={fieldName} />
+        ) : (
+          <TextField control={control} name={`${path}.defaultValue`} id={`config-default-${fieldName}`} label="Default" autoComplete="off" />
+        )}
 
         {showNametagToggle && (
           <Controller

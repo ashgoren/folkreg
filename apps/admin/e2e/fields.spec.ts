@@ -91,6 +91,21 @@ test("text in the width input that isn't a number shows an error and isn't saved
   expect((await fieldsConfig(tenantId)).contact.find((field) => field.name === "first")).toMatchObject({ width: 6 });
 });
 
+// The roster's other details depend on the name: a new tenant shares everything by default.
+test("unchecking the roster name as a default unchecks the rest; checking a detail rechecks it", async ({ page, tenantId }) => {
+  const shareDefault = async () => (await fieldsConfig(tenantId)).misc.find((field) => field.name === "share")?.defaultValue;
+  await rowButton(page, "share").click();
+  const defaults = page.getByRole("group", { name: "Default" });
+  const nameBox = defaults.getByRole("checkbox", { name: "Include my name in the roster" });
+
+  await nameBox.click();
+  await expect.poll(shareDefault).toEqual([]);
+
+  await defaults.getByRole("checkbox", { name: "Include my email in the roster" }).click();
+  await expect.poll(shareDefault).toEqual(["name", "email"]);
+  await expect(nameBox).toBeChecked();
+});
+
 test("dragging a row reorders the contact fields", async ({ page, tenantId }) => {
   await dragRowOnto(page, activeRow(page, "email").getByRole("button", { name: "Drag to reorder" }), activeRow(page, "first"));
 

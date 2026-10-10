@@ -21,6 +21,7 @@ export const MISC_FIELD_DEFS = {
   },
   share: {
     type: "checkbox",
+    prerequisiteOption: "name",
     defaults: {
       title: "Roster",
       label: "What information do you want shared in the roster?",
@@ -31,7 +32,7 @@ export const MISC_FIELD_DEFS = {
         { label: "Include my phone number in the roster", value: "phone" },
         { label: "Include my address in the roster", value: "address" },
       ],
-      defaultValue: "name, pronouns, email, phone, address",
+      defaultValue: ["name", "pronouns", "email", "phone", "address"],
     },
   },
   carpool: {

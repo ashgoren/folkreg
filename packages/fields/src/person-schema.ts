@@ -68,6 +68,11 @@ export const personSchema = (activeFields: FieldSettings[], personIndex: number)
         issue(name, def.firstPersonOptions.message);
       }
 
+      // The reg form keeps this rule as boxes are checked (toggleOption), so only a request that bypassed it gets here.
+      if (def.prerequisiteOption && Array.isArray(value) && value.length > 0 && !value.includes(def.prerequisiteOption)) {
+        issue(name, "This combination of choices isn't allowed.");
+      }
+
       if (def.followUp && hasValue(value, def.followUp.triggerValue) && isBlank(person[def.followUp.storageKey])) {
         issue(def.followUp.storageKey, def.followUp.requiredMessage);
       }

@@ -4,11 +4,11 @@
 // Which controls appear depends on the field's type and group, as defined in @repo/fields.
 
 import { describe, it, expect } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useForm, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FIELD_DEFS, type FieldName } from "@repo/fields";
+import { FIELD_DEFS, MISC_FIELD_DEFS, type FieldName } from "@repo/fields";
 import { fieldsConfigSchema, type FieldConfig, type FieldsConfig } from "@repo/tenant-config";
 import { ConfigPanel } from "./ConfigPanel";
 
@@ -185,10 +185,9 @@ describe("ConfigPanel", () => {
       expect(screen.getByDisplayValue("adult")).toBeInTheDocument();
     });
 
-    it("checkbox fields explain their comma-separated default", () => {
-      renderPanel("share");
+    it("checkbox fields edit checkbox options", () => {
+      renderPanel("carpool");
       expect(screen.getByText("Checkbox options")).toBeInTheDocument();
-      expect(screen.getByText("Comma-separated option values")).toBeInTheDocument();
     });
 
     it("add, edit, and remove options", async () => {
@@ -207,6 +206,93 @@ describe("ConfigPanel", () => {
 
       await user.click(screen.getAllByRole("button", { name: "Remove option" })[0]!);
       expect(entry().options).toEqual([{ label: "No!", value: "no" }, { label: "", value: "" }]);
+    });
+  });
+  // A choice field's default is picked from its own options, the way a registrant would pick.
+  describe("defaults of choice fields", () => {
+    const defaultGroup = () => within(screen.getByRole("group", { name: "Default" }));
+    const ride = { label: "I can offer a ride", value: "ride" };
+    const host = { label: "I can host", value: "host" };
+
+    it("text fields keep a text box", () => {
+      renderPanel("first", { defaultValue: "Ada" });
+      expect(screen.getByLabelText("Default")).toHaveValue("Ada");
+    });
+
+    describe("checkbox fields", () => {
+      it("check and uncheck options", async () => {
+        const user = userEvent.setup();
+        const entry = renderPanel("carpool", { options: [ride, host], defaultValue: ["ride"] });
+
+        expect(defaultGroup().getByRole("checkbox", { name: ride.label })).toBeChecked();
+        expect(defaultGroup().getByRole("checkbox", { name: host.label })).not.toBeChecked();
+
+        await user.click(defaultGroup().getByRole("checkbox", { name: host.label }));
+        expect(entry().defaultValue).toEqual(["ride", "host"]);
+        await user.click(defaultGroup().getByRole("checkbox", { name: ride.label }));
+        expect(entry().defaultValue).toEqual(["host"]);
+      });
+
+      // The roster's other details depend on the name.
+      it("keep the field's prerequisite option", async () => {
+        const user = userEvent.setup();
+        const entry = renderPanel("share", { options: MISC_FIELD_DEFS.share.defaults.options, defaultValue: [] });
+        const box = (label: string) => defaultGroup().getByRole("checkbox", { name: label });
+
+        await user.click(box("Include my email in the roster"));
+        expect(entry().defaultValue).toEqual(["name", "email"]);
+        expect(box("Include my name in the roster")).toBeChecked();
+
+        await user.click(box("Include my name in the roster"));
+        expect(entry().defaultValue).toEqual([]);
+        expect(box("Include my email in the roster")).not.toBeChecked();
+      });
+
+      // An option's value edited (or the option removed) after it was chosen.
+      it("list a default that's no longer an option, so it can be unchecked", async () => {
+        const user = userEvent.setup();
+        const entry = renderPanel("carpool", { options: [ride], defaultValue: ["ride", "house"] });
+
+        const stale = defaultGroup().getByRole("checkbox", { name: "house (not an option)" });
+        expect(stale).toBeChecked();
+        await user.click(stale);
+        expect(entry().defaultValue).toEqual(["ride"]);
+      });
+
+      it("offer only options that have a value", () => {
+        renderPanel("carpool", { options: [ride, { label: "Half-written", value: "" }] });
+        expect(defaultGroup().getAllByRole("checkbox")).toHaveLength(1);
+      });
+    });
+
+    describe("radio fields", () => {
+      const options = [{ label: "Adult", value: "adult" }, { label: "13-17 yr old", value: "13-17" }];
+
+      it("choose one option, or none", async () => {
+        const user = userEvent.setup();
+        const entry = renderPanel("age", { options, defaultValue: "adult" });
+
+        expect(defaultGroup().getByRole("radio", { name: "Adult" })).toBeChecked();
+        await user.click(defaultGroup().getByRole("radio", { name: "13-17 yr old" }));
+        expect(entry().defaultValue).toBe("13-17");
+        await user.click(defaultGroup().getByRole("radio", { name: "None" }));
+        expect(entry().defaultValue).toBe("");
+      });
+
+      it("start on None when there's no default", () => {
+        renderPanel("age", { options });
+        expect(defaultGroup().getByRole("radio", { name: "None" })).toBeChecked();
+      });
+
+      it("show a default that's no longer an option as chosen, until another is", async () => {
+        const user = userEvent.setup();
+        const entry = renderPanel("age", { options, defaultValue: "adlut" });
+
+        expect(defaultGroup().getByRole("radio", { name: "adlut (not an option)" })).toBeChecked();
+        await user.click(defaultGroup().getByRole("radio", { name: "Adult" }));
+        expect(entry().defaultValue).toBe("adult");
+        expect(defaultGroup().queryByRole("radio", { name: "adlut (not an option)" })).not.toBeInTheDocument();
+      });
     });
   });
 });

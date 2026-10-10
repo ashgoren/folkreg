@@ -30,12 +30,17 @@ describe("FIELD_DEFS", () => {
     }
   });
 
-  // A default value for a radio field has to be one of its options, or the field would
-  // render with nothing selected despite having a default.
-  it("only defaults a radio field to one of its own options", () => {
+  // A field's default is its starting value on the registration form: a list of checked options
+  // for a checkbox field, a single value otherwise. A choice field's default has to be among its
+  // own options, or the field would start with nothing showing as chosen.
+  it("gives each field a default of the right kind, from its own options", () => {
     for (const [name, def] of Object.entries(FIELD_DEFS)) {
-      if (def.type !== "radio" || !def.defaults?.defaultValue || !def.defaults.options) continue;
-      expect(def.defaults.options.map((o) => o.value), name).toContain(def.defaults.defaultValue);
+      const defaultValue = def.defaults?.defaultValue;
+      if (defaultValue === undefined) continue;
+      expect(Array.isArray(defaultValue), name).toBe(def.type === "checkbox");
+      if (def.type !== "radio" && def.type !== "checkbox") continue;
+      const values = def.defaults?.options?.map((option) => option.value) ?? [];
+      for (const value of [defaultValue].flat()) expect(values, name).toContain(value);
     }
   });
 
@@ -96,6 +101,20 @@ describe("catalog rules", () => {
     const age = MISC_FIELD_DEFS.age!;
     const values = age.defaults!.options!.map((option) => option.value);
     expect(age.firstPersonOptions!.values.every((value) => values.includes(value))).toBe(true);
+  });
+
+  // Checking any roster detail checks the name too (toggleOption), so the name has to be an option
+  // and part of any non-empty default.
+  it("makes the roster's name option a prerequisite for the others", () => {
+    const share = MISC_FIELD_DEFS.share;
+    expect(share.prerequisiteOption).toBe("name");
+    expect(share.defaults.options.map((option) => option.value)).toContain("name");
+    expect(share.defaults.defaultValue).toContain("name");
+  });
+
+  it("gives only checkbox fields a prerequisite option", () => {
+    const withPrerequisite = Object.entries(FIELD_DEFS).filter(([, def]) => def.prerequisiteOption);
+    expect(withPrerequisite.map(([name, def]) => [name, def.type])).toEqual([["share", "checkbox"]]);
   });
 
   it("offers state suggestions from STATE_OPTIONS", () => {

@@ -63,7 +63,10 @@ export const fieldConfigSchema = z.object({
   label: z.string().optional(),
   placeholder: z.string().optional(),
   options: z.array(z.object({ label: z.string(), value: z.string() })).optional(),
-  defaultValue: z.string().optional(),
+  // The field's starting value on the registration form: the checked options of a checkbox field,
+  // any other field's value ("" for none). Which of the two a field takes is checked against the
+  // catalog in fieldsConfigSchema.
+  defaultValue: z.union([z.string(), z.array(z.string())]).optional(),
   // Rows of a textarea; width in columns of the registration form's 12-column grid.
   // Rows and width are null once an organizer clears them (an undefined value would show in the
   // form as the one it loaded with), and absent if never set. Either way the registration form
@@ -89,14 +92,49 @@ export const fieldsConfigSchema = z.object({
 }).superRefine((config, ctx) => {
   const seen = new Set<string>();
   for (const group of ["contact", "misc"] as const) {
-    config[group].forEach(({ name }, index) => {
-      const path = [group, index, "name"];
-      if (FIELD_DEFS[name].group !== group) ctx.addIssue({ code: "custom", path, message: `${name} belongs in ${FIELD_DEFS[name].group}` });
-      if (seen.has(name)) ctx.addIssue({ code: "custom", path, message: `${name} is listed more than once` });
+    config[group].forEach((entry, index) => {
+      const { name } = entry;
+      const issue = (key: keyof FieldEntry, message: string) => ctx.addIssue({ code: "custom", path: [group, index, key], message });
+      if (FIELD_DEFS[name].group !== group) issue("name", `${name} belongs in ${FIELD_DEFS[name].group}`);
+      if (seen.has(name)) issue("name", `${name} is listed more than once`);
       seen.add(name);
+      checkChoices(entry, issue);
     });
   }
 });
+
+// A field's default and options against the catalog's rules for its type. Shown on the Fields page
+// under the field's Default and options.
+const checkChoices = ({ name, defaultValue, options = [] }: FieldEntry, issue: (key: keyof FieldEntry, message: string) => void) => {
+  const def = FIELD_DEFS[name];
+  const isCheckbox = def.type === "checkbox";
+
+  // The Fields page only offers the right kind, so a mismatch is stored data that's wrong.
+  if (defaultValue !== undefined && Array.isArray(defaultValue) !== isCheckbox) {
+    issue("defaultValue", isCheckbox ? "Must be a list of options" : "Must be a single value");
+    return;
+  }
+
+  // An option's value can change after it's chosen as the default, leaving the default pointing at
+  // nothing. "" is a radio field's "none".
+  if (def.type === "radio" || isCheckbox) {
+    const values = new Set(options.map((option) => option.value));
+    const stale = [defaultValue ?? []].flat().filter((value) => value !== "" && !values.has(value));
+    if (stale.length > 0) {
+      issue("defaultValue", `${stale.map((value) => `"${value}"`).join(", ")} ${stale.length === 1 ? "isn't one of the options" : "aren't options"}`);
+    }
+  }
+
+  const prerequisite = def.prerequisiteOption;
+  if (prerequisite !== undefined) {
+    if (!options.some((option) => option.value === prerequisite)) {
+      issue("options", `Needs an option with the value "${prerequisite}": the other options depend on it`);
+    }
+    if (Array.isArray(defaultValue) && defaultValue.length > 0 && !defaultValue.includes(prerequisite)) {
+      issue("defaultValue", `Must include "${prerequisite}" when anything else is checked`);
+    }
+  }
+};
 export type FieldsConfig = z.infer<typeof fieldsConfigSchema>;
 
 export const tieredCategorySchema = z.object({
