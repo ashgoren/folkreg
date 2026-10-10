@@ -4,14 +4,17 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 /**
- * Serialized autosave for admin config pages: at most one save is ever in flight, so a
- * slow-to-resolve request can never land after (and clobber) a fresher one. A save requested while
- * one is in flight is queued, and re-fires with the latest data once it resolves.
+ * The save queue behind useAutosaveForm, which is what config pages use: this knows nothing about
+ * forms, only how to send saves one at a time and report on them.
  *
- * Callers decide when to save (text when its field loses focus, any other change right away; see
- * text-entry.ts). `save` keeps the same identity across renders (forms list it in effect
- * dependencies) and still calls the saveFn from the latest render: it's read from a ref at call
- * time.
+ * At most one save is ever in flight, so a slow-to-resolve request can never land after (and
+ * clobber) a fresher one. Saves requested while one is in flight collapse into a single follow-up
+ * with the latest data, sent once it resolves. An error string from saveFn (or a thrown error) is
+ * shown as a toast; a success shows "Saved ✓" for 2s via savedRecently.
+ *
+ * useAutosaveForm decides when to save. `save` keeps the same identity across renders (it's in that
+ * hook's effect dependencies) and still calls the saveFn from the latest render: it's read from a
+ * ref at call time.
  */
 export function useAutosave<T>(saveFn: (data: T) => Promise<string | null>) {
   const [isPending, startTransition] = useTransition();
@@ -39,35 +42,33 @@ export function useAutosave<T>(saveFn: (data: T) => Promise<string | null>) {
 
   const save = useCallback((data: T) => {
     latestRef.current = data;
+    // The loop below will pick this up when the save in flight resolves.
     if (savingRef.current) {
       pendingRef.current = true;
       return;
     }
     savingRef.current = true;
     startTransition(async () => {
-      // saveFn returns an error string for expected failures, but can also throw (a network
-      // failure, or a server action re-throwing an unexpected DB error). The catch turns that
-      // into a toast instead of letting the transition rethrow into an error boundary, and the
-      // finally releases the in-flight guard either way -- otherwise one thrown save would leave
-      // savingRef stuck true and silently queue every later save forever.
-      let error: string | null;
-      try {
-        error = await saveFnRef.current(latestRef.current as T);
-      } catch (thrown) {
-        console.error(thrown);
-        error = "Couldn't save changes. Please try again.";
-      } finally {
-        savingRef.current = false;
-      }
-      if (error) {
-        toast.error(error);
-      } else {
-        markSaved();
-      }
-      if (pendingRef.current) {
+      // Each pass sends the latest data. Saves requested during a pass set pendingRef, and however
+      // many there were, the loop goes round once more with whatever is latest by then.
+      do {
         pendingRef.current = false;
-        save(latestRef.current as T);
-      }
+        // saveFn returns an error string for expected failures, but can also throw (a network
+        // failure, or a server action re-throwing an unexpected DB error). The catch turns that
+        // into a toast instead of letting the transition rethrow into an error boundary, and keeps
+        // the loop going, so the in-flight guard below is always released -- otherwise one thrown
+        // save would leave savingRef stuck true and silently queue every later save forever.
+        let error: string | null;
+        try {
+          error = await saveFnRef.current(latestRef.current as T);
+        } catch (thrown) {
+          console.error(thrown);
+          error = "Couldn't save changes. Please try again.";
+        }
+        if (error) toast.error(error);
+        else markSaved();
+      } while (pendingRef.current);
+      savingRef.current = false;
     });
   }, [markSaved]);
 

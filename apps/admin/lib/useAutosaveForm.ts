@@ -9,7 +9,9 @@ import { isTextEntry } from "./text-entry";
 import { useAutosave } from "./useAutosave";
 
 /**
- * A react-hook-form form that autosaves through useAutosave: every config page except Fields.
+ * A react-hook-form form that autosaves: what every admin config page is built on, together with
+ * <AutosaveStatus> for the "Saving…"/"Saved ✓" label. Sending the saves (one at a time, with error
+ * toasts) is useAutosave's job; this hook decides when to save and what.
  *
  * When a change saves depends on how it was made:
  * - Typing into a text field saves when the field loses focus, the same moment its validation

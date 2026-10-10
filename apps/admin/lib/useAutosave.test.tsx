@@ -65,6 +65,28 @@ describe("useAutosave", () => {
       expect(maxInFlight).toBe(1);
     });
 
+    // The follow-up goes out as part of the same run, so "Saving…" doesn't flicker off between them;
+    // once the queue is empty, the next save goes out straight away.
+    it("stays pending through a queued follow-up, then saves the next change immediately", async () => {
+      const first = deferred<string | null>();
+      const second = deferred<string | null>();
+      const saveFn = vi.fn((data: string) => (data === "first" ? first.promise : data === "second" ? second.promise : Promise.resolve(null)));
+      const { result } = renderHook(() => useAutosave<string>(saveFn));
+
+      await act(async () => result.current.save("first"));
+      await act(async () => result.current.save("second"));
+      await act(async () => first.resolve(null));
+      expect(saveFn).toHaveBeenLastCalledWith("second");
+      expect(result.current.isPending).toBe(true);
+
+      await act(async () => second.resolve(null));
+      expect(result.current.isPending).toBe(false);
+
+      await act(async () => result.current.save("third"));
+      expect(saveFn).toHaveBeenCalledTimes(3);
+      expect(saveFn).toHaveBeenLastCalledWith("third");
+    });
+
     it("reports isPending while a save is in flight", async () => {
       const save = deferred<string | null>();
       const { result } = renderHook(() => useAutosave<string>(() => save.promise));
