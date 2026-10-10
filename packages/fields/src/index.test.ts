@@ -46,9 +46,9 @@ describe("FIELD_DEFS", () => {
   });
 
   // `required` in the defaults is where a tenant's Required switch starts when the field is
-  // activated: the fields ../template required, which are also the ones whose validation
-  // insists on a value.
-  it("starts exactly ../template's required fields as required", () => {
+  // activated: the name, email, phone and address fields needed to identify and reach a registrant,
+  // plus the age, dietary preference, photo consent and agreement questions.
+  it("starts exactly these fields as required", () => {
     const required = Object.entries(FIELD_DEFS).filter(([, def]) => def.defaults?.required).map(([name]) => name);
     expect(required).toEqual([
       "first", "last", "nametag", "email", "emailConfirmation", "phone", "address", "city", "state", "zip",
@@ -64,87 +64,20 @@ describe("FIELD_DEFS", () => {
   });
 });
 
-describe("contact field validation", () => {
-  const validate = (name: string, value: unknown) => FIELD_DEFS[name]!.validation.safeParse(value);
-  const message = (name: string, value: unknown) => validate(name, value).error?.issues[0]?.message;
-
-  it.each([
-    ["first", "Please enter first name."],
-    ["last", "Please enter last name."],
-    ["nametag", "Please enter name for roster."],
-    ["phone", "Please enter phone number."],
-    ["address", "Please enter street address."],
-    ["city", "Please enter city."],
-    ["state", "Please enter state or province."],
-    ["zip", "Please enter zip/postal code."],
-  ])("%s rejects a blank value with a field-specific message", (name, expected) => {
-    expect(message(name, "")).toBe(expected);
-    expect(validate(name, "x").success).toBe(true);
+// What each field's value must look like is tested through personSchema (person-schema.test.ts),
+// since a field's rules only mean something combined with a tenant's settings. These check the
+// catalog entries themselves.
+describe("catalog rules", () => {
+  // A field that starts required shows in a new tenant's form as required, so its message is one a
+  // registrant actually sees -- worth writing for the field rather than falling back to a generic one.
+  it("gives every field that starts required its own required message", () => {
+    const missing = Object.entries(FIELD_DEFS)
+      .filter(([, def]) => def.defaults?.required && !def.requiredMessage)
+      .map(([name]) => name);
+    expect(missing).toEqual([]);
   });
 
-  it.each(["pronouns", "apartment"])("%s allows a blank value", (name) => {
-    expect(validate(name, "").success).toBe(true);
-  });
-
-  it.each(["email", "emailConfirmation"])("%s requires a valid address", (name) => {
-    expect(validate(name, "dancer@example.org").success).toBe(true);
-    expect(message(name, "dancer@")).toBe("Please enter a valid email address.");
-    expect(message(name, "")).toBe("Please enter a valid email address.");
-  });
-
-  describe("emailConfirmation cross-validation", () => {
-    const check = CONTACT_FIELD_DEFS.emailConfirmation!.crossValidation!;
-
-    it("passes when both addresses match", () => {
-      expect(check({ email: "a@example.org", emailConfirmation: "a@example.org" }, 0)).toBeNull();
-    });
-
-    it("fails when they differ", () => {
-      expect(check({ email: "a@example.org", emailConfirmation: "b@example.org" }, 0)).toBe("Email addresses must match.");
-    });
-
-    // An exact comparison, not a normalized one -- a case difference counts as a mismatch.
-    it("treats a case difference as a mismatch", () => {
-      expect(check({ email: "A@example.org", emailConfirmation: "a@example.org" }, 0)).toBe("Email addresses must match.");
-    });
-
-    it("applies to every person in the order, not just the first", () => {
-      expect(check({ email: "a@example.org", emailConfirmation: "b@example.org" }, 2)).toBe("Email addresses must match.");
-    });
-  });
-
-  it("offers state suggestions from STATE_OPTIONS", () => {
-    expect(CONTACT_FIELD_DEFS.state!.suggestions).toBe(STATE_OPTIONS);
-    expect(STATE_OPTIONS.length).toBeGreaterThan(50);
-  });
-});
-
-describe("misc field validation", () => {
-  const validate = (name: string, value: unknown) => MISC_FIELD_DEFS[name]!.validation.safeParse(value);
-
-  it.each(["age", "dietaryPreferences", "photo"])("radio field %s requires a selection", (name) => {
-    expect(validate(name, "").success).toBe(false);
-    expect(validate(name, "anything").success).toBe(true);
-  });
-
-  it("checkbox fields take an array of selected values, including none", () => {
-    const checkboxes = Object.entries(MISC_FIELD_DEFS).filter(([, def]) => def.type === "checkbox");
-    expect(checkboxes.length).toBeGreaterThan(0);
-    for (const [name] of checkboxes) {
-      expect(validate(name, []).success, name).toBe(true);
-      expect(validate(name, ["a", "b"]).success, name).toBe(true);
-      expect(validate(name, "a").success, name).toBe(false);
-    }
-  });
-
-  it("textarea fields allow a blank value", () => {
-    for (const [name, def] of Object.entries(MISC_FIELD_DEFS)) {
-      if (def.type === "textarea") expect(validate(name, "").success, name).toBe(true);
-    }
-  });
-
-  // The conditional pairs from the old app: picking the trigger option reveals a follow-up
-  // text field stored under its own key.
+  // Picking the trigger option reveals a follow-up text field, stored under its own key.
   it.each([
     ["dietaryRestrictions", "other", "dietaryRestrictionsOther"],
     ["photo", "Other", "photoComments"],
@@ -153,23 +86,21 @@ describe("misc field validation", () => {
     expect(MISC_FIELD_DEFS[name]!.followUp).toMatchObject({ triggerValue: trigger, storageKey });
   });
 
-  describe("agreement cross-validation", () => {
-    const check = MISC_FIELD_DEFS.agreement!.crossValidation!;
+  it("asks only the agreement of the first person alone", () => {
+    const firstOnly = Object.entries(FIELD_DEFS).filter(([, def]) => def.firstPersonOnly).map(([name]) => name);
+    expect(firstOnly).toEqual(["agreement"]);
+  });
 
-    // Only the purchaser (person 0) agrees on behalf of everyone they're registering.
-    it("requires the first person to check yes", () => {
-      expect(check({ agreement: ["yes"] }, 0)).toBeNull();
-      expect(check({ agreement: [] }, 0)).toBe("You must agree to the values and expectations.");
-      expect(check({}, 0)).toBe("You must agree to the values and expectations.");
-    });
+  // The first person's allowed ages are named by value, so they have to stay among age's options --
+  // a renamed option would otherwise quietly stop matching.
+  it("limits the first person's age to values that are age options", () => {
+    const age = MISC_FIELD_DEFS.age!;
+    const values = age.defaults!.options!.map((option) => option.value);
+    expect(age.firstPersonOptions!.values.every((value) => values.includes(value))).toBe(true);
+  });
 
-    it("doesn't require anyone after the first person to agree", () => {
-      expect(check({ agreement: [] }, 1)).toBeNull();
-      expect(check({}, 3)).toBeNull();
-    });
-
-    it("rejects a non-array value rather than substring-matching it", () => {
-      expect(check({ agreement: "yes" }, 0)).toBe("You must agree to the values and expectations.");
-    });
+  it("offers state suggestions from STATE_OPTIONS", () => {
+    expect(CONTACT_FIELD_DEFS.state!.suggestions).toBe(STATE_OPTIONS);
+    expect(STATE_OPTIONS.length).toBeGreaterThan(50);
   });
 });

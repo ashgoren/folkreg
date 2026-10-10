@@ -70,10 +70,10 @@ test("the sidebar links to every config section", async ({ page, dashboardUrl })
 
 // KNOWN BUG: Back/forward navigation restores a page from the router's client-side cache, as it
 // was first loaded -- before any edit made since. Back shows the old values, and the next
-// autosave there writes that old copy of the page's config over the edit. Accepted for now (a
-// single admin user, who can reload); fixing it means either invalidating the router cache on
-// every save (revalidatePath, which visibly re-renders the page on each blur) or a version check
-// that refuses stale saves (see the plan's Deferred section).
+// autosave there writes that old copy of the page's config over the edit. A reload shows the
+// saved values. Fixing it means either invalidating the router cache on every save
+// (revalidatePath, which visibly re-renders the page on each blur) or a version check that refuses
+// saves from a stale copy.
 test.fail("Back after an edit shows the saved value, not the page as first loaded", async ({ page, tenantId, dashboardUrl }) => {
   await page.goto(dashboardUrl("event"));
   await page.locator("#event-title").fill("Edited before leaving");
