@@ -16,9 +16,6 @@ import { FIELD_DEFS, FIELD_NAMES } from "@repo/fields";
 
 const requiredNumber = (min: number) => z.number({ error: "Required" }).min(min);
 const optionalEmail = z.union([z.literal(""), z.string().email("Must be a valid email")]);
-// A setting that may be left unset. The Fields page clears one to null, since react-hook-form shows
-// an undefined value as the value the form loaded with; null parses to no setting at all.
-const optionalSetting = <T extends z.ZodType>(schema: T) => schema.nullish().transform((value) => value ?? undefined).optional();
 const hexColor = z.string().regex(/^#[0-9a-f]{6}$/i, "Must be a hex color, e.g. #d97706");
 
 export const ageGroupSchema = z.enum(["0-2", "3-5", "6-12", "13-17", "adult"]);
@@ -68,8 +65,11 @@ export const fieldConfigSchema = z.object({
   options: z.array(z.object({ label: z.string(), value: z.string() })).optional(),
   defaultValue: z.string().optional(),
   // Rows of a textarea; width in columns of the registration form's 12-column grid.
-  rows: optionalSetting(wholeNumber({ min: 1 }, "Must be a whole number, 1 or more")),
-  width: optionalSetting(wholeNumber({ min: 1, max: 12 }, "Must be a whole number from 1 to 12")),
+  // Rows and width are null once an organizer clears them (an undefined value would show in the
+  // form as the one it loaded with), and absent if never set. Either way the registration form
+  // uses its own layout default.
+  rows: wholeNumber({ min: 1 }, "Must be a whole number, 1 or more").nullable().optional(),
+  width: wholeNumber({ min: 1, max: 12 }, "Must be a whole number from 1 to 12").nullable().optional(),
   required: z.boolean().optional(),
   includeOnNametag: z.boolean().optional(),
 });
@@ -98,8 +98,6 @@ export const fieldsConfigSchema = z.object({
   }
 });
 export type FieldsConfig = z.infer<typeof fieldsConfigSchema>;
-// What the Fields page edits: the stored shape, except that a cleared rows or width is null.
-export type FieldsConfigInput = z.input<typeof fieldsConfigSchema>;
 
 export const tieredCategorySchema = z.object({
   label: z.string(),

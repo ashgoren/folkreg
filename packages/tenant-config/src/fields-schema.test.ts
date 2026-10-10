@@ -60,11 +60,9 @@ describe("fieldsConfigSchema", () => {
     expect(issues({ contact: [], misc: [{ name: "comments", rows }] })).toEqual({ "misc.0.rows": "Must be a whole number, 1 or more" });
   });
 
-  // The Fields page clears these to null. They parse to undefined, which the JSON column doesn't
-  // store, so a cleared setting is saved as no setting at all.
-  it("parses a null width or rows to no setting", () => {
-    const result = fieldsConfigSchema.parse({ contact: [{ name: "first", width: null }], misc: [{ name: "comments", rows: null }] });
-    expect(JSON.parse(JSON.stringify(result))).toStrictEqual({ contact: [{ name: "first" }], misc: [{ name: "comments" }] });
+  // The Fields page clears these to null, meaning no setting.
+  it("accepts a null width or rows", () => {
+    expect(fieldsConfigSchema.safeParse({ contact: [{ name: "first", width: null }], misc: [{ name: "comments", rows: null }] }).success).toBe(true);
   });
 
   it("rejects malformed options", () => {

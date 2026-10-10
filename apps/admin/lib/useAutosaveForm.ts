@@ -34,6 +34,10 @@ import { useAutosave } from "./useAutosave";
  * and there it memoizes form.watch(name) on the never-changing form object, so the value would
  * never update. useWatch is a hook with its own subscription, which the compiler handles.
  */
+// JSON writes NaN (a number input holding something that isn't a number) as null, the same as a
+// cleared optional number, so it's written distinctly here: changing one to the other is an edit.
+const serialize = (values: unknown) => JSON.stringify(values, (_key, value) => (Number.isNaN(value) ? "NaN" : value));
+
 export function useAutosaveForm<TInput extends FieldValues, TOutput>({ label, schema, defaultValues, save }: {
   /** The page's name, as the sidebar shows it, for the unsaved-change toast. */
   label: string;
@@ -87,11 +91,11 @@ export function useAutosaveForm<TInput extends FieldValues, TOutput>({ label, sc
   // The form's values as of the last change seen, serialized for comparison. react-hook-form also
   // notifies watchers when nothing changed -- useFieldArray does when it mounts and after each of
   // its own operations -- so a notification only counts as an edit if the values differ.
-  const lastValuesRef = useRef(JSON.stringify(defaultValues));
+  const lastValuesRef = useRef(serialize(defaultValues));
 
   useEffect(() => {
     const subscription = form.watch((values) => {
-      const serialized = JSON.stringify(values);
+      const serialized = serialize(values);
       if (serialized === lastValuesRef.current) return;
       lastValuesRef.current = serialized;
 

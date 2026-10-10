@@ -229,6 +229,26 @@ describe("useAutosaveForm", () => {
     });
   });
 
+  // A cleared optional number is null; text in a number input that isn't a number is NaN. Both
+  // serialize as null in JSON, but going from one to the other is still a change.
+  it("treats a change between null and NaN as a change", async () => {
+    const save = vi.fn().mockResolvedValue(null);
+    const { result, unmount } = renderHook(() => useAutosaveForm({
+      label: "Test",
+      schema: z.object({ n: z.number().nullable() }),
+      defaultValues: { n: 1 as number | null },
+      save,
+    }));
+
+    act(() => result.current.form.setValue("n", null));
+    await vi.waitFor(() => expect(save).toHaveBeenCalledExactlyOnceWith({ n: null }));
+
+    act(() => result.current.form.setValue("n", NaN));
+    await vi.waitFor(() => expect(result.current.form.getFieldState("n").invalid).toBe(true));
+    unmount();
+    expect(toast.error).toHaveBeenCalledExactlyOnceWith("Your last change on Test wasn't saved: a field is invalid.");
+  });
+
   // The same schema drives the inline errors, through the resolver. Read with getFieldState:
   // formState is a proxy that only tracks what a component read during render.
   it("validates fields against the schema", async () => {

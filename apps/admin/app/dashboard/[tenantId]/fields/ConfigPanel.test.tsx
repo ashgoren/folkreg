@@ -9,17 +9,17 @@ import userEvent from "@testing-library/user-event";
 import { useForm, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FIELD_DEFS, type FieldName } from "@repo/fields";
-import { fieldsConfigSchema, type FieldConfig, type FieldsConfig, type FieldsConfigInput } from "@repo/tenant-config";
+import { fieldsConfigSchema, type FieldConfig, type FieldsConfig } from "@repo/tenant-config";
 import { ConfigPanel } from "./ConfigPanel";
 
 // Renders the panel for one field, returning a function that reads its entry's current values.
 const renderPanel = (fieldName: FieldName, config: FieldConfig = {}) => {
   const group = FIELD_DEFS[fieldName].group;
-  const values: FieldsConfigInput = { contact: [], misc: [] };
+  const values: FieldsConfig = { contact: [], misc: [] };
   values[group] = [{ name: fieldName, ...config }];
-  let form!: UseFormReturn<FieldsConfigInput, unknown, FieldsConfig>;
+  let form!: UseFormReturn<FieldsConfig>;
   function Harness() {
-    form = useForm<FieldsConfigInput, unknown, FieldsConfig>({ mode: "onBlur", resolver: zodResolver(fieldsConfigSchema), defaultValues: values });
+    form = useForm<FieldsConfig>({ mode: "onBlur", resolver: zodResolver(fieldsConfigSchema), defaultValues: values });
     return <ConfigPanel form={form} path={`${group}.0`} fieldName={fieldName} />;
   }
   render(<Harness />);
@@ -61,8 +61,7 @@ describe("ConfigPanel", () => {
       expect(entry()).toEqual({ name: "first", placeholder: "J", width: 4, required: true });
     });
 
-    // Cleared to null, which the schema parses to no width at all: react-hook-form would show an
-    // undefined value as the width the form loaded with.
+    // Cleared to null: react-hook-form would show an undefined value as the width the form loaded with.
     it("clear width to unset, leaving the input empty to type into", async () => {
       const user = userEvent.setup();
       const entry = renderPanel("first", { width: 6 });

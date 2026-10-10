@@ -2,7 +2,7 @@
 
 import { Controller, type Control, type UseFormReturn } from "react-hook-form";
 import { FIELD_DEFS, type FieldName } from "@repo/fields";
-import type { FieldsConfig, FieldsConfigInput } from "@repo/tenant-config";
+import type { FieldsConfig } from "@repo/tenant-config";
 import { Field, FieldContent, FieldError, FieldGroup } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
 import { TextField } from "@/components/form-text-field";
@@ -16,7 +16,7 @@ import { X, Plus } from "lucide-react";
 export type FieldEntryPath = `${"contact" | "misc"}.${number}`;
 
 interface ConfigPanelProps {
-  form: UseFormReturn<FieldsConfigInput, unknown, FieldsConfig>;
+  form: UseFormReturn<FieldsConfig>;
   path: FieldEntryPath;
   fieldName: FieldName;
 }
@@ -202,7 +202,7 @@ function NumberSetting({
   caption,
   max,
 }: {
-  control: Control<FieldsConfigInput, unknown, FieldsConfig>;
+  control: Control<FieldsConfig>;
   name: `${FieldEntryPath}.width` | `${FieldEntryPath}.rows`;
   caption: string;
   max?: number;

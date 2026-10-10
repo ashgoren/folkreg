@@ -282,7 +282,7 @@ describe("FieldsForm", () => {
       await expectNoSave(vi.mocked(updateFields));
     });
 
-    it("saves a cleared width as no width at all", async () => {
+    it("saves a cleared width as null", async () => {
       const tenant = makeTenant({ fields_config: config });
       const user = userEvent.setup();
       render(<FieldsForm tenant={tenant} />);
@@ -291,8 +291,7 @@ describe("FieldsForm", () => {
       await user.clear(widthInput());
       await user.tab();
 
-      // Sent as width: undefined, which the JSON column doesn't store.
-      await expectLastSave(vi.mocked(updateFields), tenant.id, { contact: [first, { name: "email", label: "Email" }], misc: [carpool] });
+      await expectLastSave(vi.mocked(updateFields), tenant.id, { contact: [first, { ...email, width: null }], misc: [carpool] });
     });
 
     // Another field's panel would hide the error while it still blocked every save.

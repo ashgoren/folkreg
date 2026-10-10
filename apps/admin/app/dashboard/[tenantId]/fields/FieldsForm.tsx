@@ -5,7 +5,7 @@ import { useFieldArray, useWatch } from "react-hook-form";
 import { DragDropProvider } from "@dnd-kit/react";
 import { move as reorder } from "@dnd-kit/helpers";
 import { FIELD_DEFS, FIELD_NAMES, type FieldName } from "@repo/fields";
-import { defaultFieldEntry, fieldsConfigSchema, type FieldsConfigInput } from "@repo/tenant-config";
+import { defaultFieldEntry, fieldsConfigSchema, type FieldEntry } from "@repo/tenant-config";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useAutosaveForm } from "@/lib/useAutosaveForm";
 import { AutosaveStatus } from "@/components/autosave-status";
@@ -20,11 +20,10 @@ const GROUPS = [
 ] as const;
 
 type Group = (typeof GROUPS)[number]["group"];
-type Entry = FieldsConfigInput[Group][number];
 
 // A radio or checkbox field with nothing to choose from: allowed (an organizer may add the field
 // before writing its options), but flagged in the list.
-const missingOptions = (entry: Entry) => {
+const missingOptions = (entry: FieldEntry) => {
   const type = FIELD_DEFS[entry.name].type;
   return (type === "radio" || type === "checkbox") && !entry.options?.length;
 };
@@ -44,7 +43,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
     misc: useFieldArray({ control: form.control, name: "misc" }),
   };
   const [contact, misc] = useWatch({ control: form.control, name: ["contact", "misc"] });
-  const entries: Record<Group, Entry[]> = { contact, misc };
+  const entries: Record<Group, FieldEntry[]> = { contact, misc };
 
   // Which field the config panel shows. UI state, not form data, so it's kept by name, and its
   // place in the form's values worked out on each render: a drag or a removal above it moves it.
