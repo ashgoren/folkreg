@@ -2,12 +2,11 @@
 
 import { Controller, useWatch } from "react-hook-form";
 import { AutosaveStatus } from "@/components/autosave-status";
-import { Field, FieldContent, FieldDescription, FieldGroup } from "@/components/ui/field";
+import { Field, FieldContent, FieldGroup } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
 import { NumberField } from "@/components/form-number-field";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import { useAutosaveForm } from "@/lib/useAutosaveForm";
 import type { Tenant } from "@repo/types";
 import { admissionsConfigSchema, type AdmissionsConfig } from "@repo/tenant-config";
@@ -15,6 +14,7 @@ import { updateAdmissions } from "./actions";
 import { SlidingScaleFields } from "./SlidingScaleFields";
 import { FixedFields } from "./FixedFields";
 import { TieredFields } from "./TieredFields";
+import { WaitlistFields } from "./WaitlistFields";
 
 export function AdmissionsForm({ tenant }: { tenant: Tenant }) {
   // The tenant's age brackets: its age field's options, edited on the Fields page (an option still
@@ -84,35 +84,7 @@ export function AdmissionsForm({ tenant }: { tenant: Tenant }) {
           required
         />
 
-        <NumberField
-          control={form.control}
-          name="waitlistCutoff"
-          id="admissions-waitlist-cutoff"
-          label="Total number of tickets for sale (before waitlist)"
-          description="Registrations beyond this number go to the waitlist"
-          required
-        />
-
-        <Controller
-          name="forceWaitlist"
-          control={form.control}
-          render={({ field, fieldState }) => (
-            <Field orientation="horizontal" data-invalid={fieldState.invalid}>
-              <FieldContent>
-                <FormLabel htmlFor="admissions-force-waitlist">Force waitlist mode?</FormLabel>
-                <FieldDescription>
-                  When on, all new registrations go straight to the waitlist, bypassing the cutoff above
-                </FieldDescription>
-              </FieldContent>
-              <Switch
-                id="admissions-force-waitlist"
-                checked={field.value}
-                onCheckedChange={field.onChange}
-                aria-invalid={fieldState.invalid}
-              />
-            </Field>
-          )}
-        />
+        <WaitlistFields form={form} />
       </FieldGroup>
 
       <AutosaveStatus isPending={isPending} savedRecently={savedRecently} />

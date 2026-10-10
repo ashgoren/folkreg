@@ -179,8 +179,12 @@ export const admissionsConfigSchema = z.object({
   lateIncrease: requiredNumber(0),
   prices: z.array(ageGroupPricesSchema),
   admissionQuantityMax: requiredNumber(1).int(),
-  waitlistCutoff: requiredNumber(1).int(),
-  forceWaitlist: z.boolean(),
+  // When new registrants join the waitlist instead of paying: never, once `capacity` people have
+  // registered, or now. Capacity is kept whichever is chosen, so switching back restores it.
+  waitlist: z.object({
+    when: z.enum(["never", "when-full", "now"]),
+    capacity: wholeNumber({ min: 1 }, "Must be a whole number, 1 or more"),
+  }),
 }).refine((data) => data.costDefault >= data.costRange[0] && data.costDefault <= data.costRange[1], {
   message: "Must be between minimum and maximum",
   path: ["costDefault"],

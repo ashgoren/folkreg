@@ -12,7 +12,7 @@ const base: AdmissionsConfig = {
   earlybirdCutoff: "2026-03-01",
   lateIncrease: 15,
   prices: [{ ageGroup: "adult", options: [{ label: "Basic", price: 80 }] }],
-  waitlistCutoff: 200,
+  waitlist: { when: "when-full", capacity: 200 },
 };
 const slidingScale = { ...base, mode: "sliding-scale" as const };
 const fixed = { ...base, mode: "fixed" as const };
@@ -124,17 +124,29 @@ describe("admissionsConfigSchema", () => {
       expect(issuePaths({ ...fixed, admissionQuantityMax })).toEqual(["admissionQuantityMax"]);
     });
 
-    it.each([0, 2.5, NaN])("rejects waitlistCutoff of %s", (waitlistCutoff) => {
-      expect(issuePaths({ ...fixed, waitlistCutoff })).toEqual(["waitlistCutoff"]);
-    });
+
 
     it("uses the Required message for a cleared number", () => {
       const result = admissionsConfigSchema.safeParse({ ...fixed, admissionQuantityMax: NaN });
       expect(result.error?.issues[0]?.message).toBe("Required");
     });
 
-    it("requires forceWaitlist", () => {
-      expect(issuePaths({ ...fixed, forceWaitlist: undefined })).toEqual(["forceWaitlist"]);
+  });
+
+  describe("waitlist", () => {
+    it.each(["never", "when-full", "now"] as const)("accepts %s", (when) => {
+      expect(issuePaths({ ...fixed, waitlist: { when, capacity: 50 } })).toEqual([]);
+    });
+
+    it("rejects any other choice", () => {
+      expect(issuePaths({ ...fixed, waitlist: { when: "sometimes", capacity: 50 } })).toEqual(["waitlist.when"]);
+    });
+
+    // Kept whichever is chosen, so it's always checked.
+    it.each([0, 2.5, NaN])("rejects a capacity of %s, whichever is chosen", (capacity) => {
+      const result = admissionsConfigSchema.safeParse({ ...fixed, waitlist: { when: "never", capacity } });
+      expect(result.error?.issues.map((issue) => [issue.path.join("."), issue.message]))
+        .toEqual([["waitlist.capacity", "Must be a whole number, 1 or more"]]);
     });
   });
 });

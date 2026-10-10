@@ -78,8 +78,8 @@ export const defaultAdmissionsConfig = (): AdmissionsConfig => ({
     { ageGroup: "0-2", options: [{ label: "", price: 0 }] },
   ],
   admissionQuantityMax: 4,
-  waitlistCutoff: 999, // high enough that a new event doesn't waitlist anyone
-  forceWaitlist: false,
+  // No waitlist to start, with a capacity ready for when one is wanted.
+  waitlist: { when: "never", capacity: 100 },
 });
 
 // processor has no "not chosen" value, so Stripe stands in until the organizer picks. Every key
