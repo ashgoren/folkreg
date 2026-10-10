@@ -378,6 +378,24 @@ describe("FieldsForm", () => {
     await expectNoSave(vi.mocked(updateFields));
   });
 
+  // The panel's controls are bound by position. A field that moves into a position another field
+  // held when the page loaded must show its own settings, not that field's (react-hook-form falls
+  // back to the loaded value at a path for a setting that's absent).
+  it("shows a moved field its own settings, not those of the field that was there before", async () => {
+    const share = { name: "share" as const, options: MISC_FIELD_DEFS.share.defaults.options, defaultValue: ["name", "email"] };
+    const allergies = { name: "allergies" as const, title: "Allergies", rows: 2 };
+    const tenant = makeTenant({ fields_config: { contact: [first], misc: [share, allergies] } });
+    const user = userEvent.setup();
+    render(<FieldsForm tenant={tenant} />);
+
+    await user.click(within(activeRow("share")).getByRole("button", { name: "Remove field" }));
+    await user.click(selectButton("allergies"));
+
+    expect(screen.getByLabelText("Default")).toHaveValue("");
+    await expectLastSave(vi.mocked(updateFields), tenant.id, { contact: [first], misc: [allergies] });
+    expect(screen.queryByText("Must be a single value")).not.toBeInTheDocument();
+  });
+
   describe("group sections", () => {
     it("collapse and expand independently", async () => {
       const user = userEvent.setup();

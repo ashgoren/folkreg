@@ -67,14 +67,24 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
     setSelectedField(name);
   }
 
+  // After an entry is added, removed, or moved, positions hold different fields than when the
+  // page loaded. For a setting a field doesn't have (e.g. no default), react-hook-form shows -- and
+  // on registering, writes -- the loaded value at that position, which by then is another field's.
+  // So the loaded values are re-based on the current ones. They're identical to what's in the form,
+  // so nothing on screen changes and nothing new is saved.
+  const rebaseLoadedValues = () =>
+    form.reset(form.getValues(), { keepErrors: true, keepDirty: true, keepTouched: true, keepIsSubmitted: true, keepSubmitCount: true });
+
   function activateField(name: FieldName) {
     fieldArrays[FIELD_DEFS[name].group].append(defaultFieldEntry(name));
+    rebaseLoadedValues();
   }
 
   function deactivateField(name: FieldName) {
     if (selectedField === name) setSelectedField(null);
     const group = FIELD_DEFS[name].group;
     fieldArrays[group].remove(entries[group].findIndex((entry) => entry.name === name));
+    rebaseLoadedValues();
   }
 
   const activeNames = new Set([...contact, ...misc].map((entry) => entry.name));
@@ -100,6 +110,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
                   const { source } = event.operation;
                   if (event.canceled || !isSortable(source) || source.initialIndex === source.index) return;
                   fieldArrays[group].move(source.initialIndex, source.index);
+                  rebaseLoadedValues();
                 }}
               >
                 <div className="flex flex-col gap-1">

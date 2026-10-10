@@ -107,6 +107,19 @@ test("unchecking the roster name as a default unchecks the rest; checking a deta
   await expect(nameBox).toBeChecked();
 });
 
+// A new tenant's misc fields start with share (which has a default) then allergies (which has
+// none). After the drag, allergies sits where share was, and must still show its own settings.
+test("a field dragged into another's place keeps its own settings", async ({ page, tenantId }) => {
+  await dragRowOnto(page, activeRow(page, "share").getByRole("button", { name: "Drag to reorder" }), activeRow(page, "allergies"));
+  await expect.poll(async () => (await fieldsConfig(tenantId)).misc[0]?.name).toBe("allergies");
+
+  await rowButton(page, "allergies").click();
+  await expect(page.locator("#config-default-allergies")).toHaveValue("");
+  await expect(page.getByText("Must be a single value")).toHaveCount(0);
+  await page.waitForTimeout(1000); // nothing further should save
+  expect((await fieldsConfig(tenantId)).misc.find((field) => field.name === "allergies")).not.toHaveProperty("defaultValue");
+});
+
 test("dragging a row reorders the contact fields", async ({ page, tenantId }) => {
   await dragRowOnto(page, activeRow(page, "email").getByRole("button", { name: "Drag to reorder" }), activeRow(page, "first"));
 
