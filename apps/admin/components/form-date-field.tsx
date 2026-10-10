@@ -1,7 +1,7 @@
-// A date Input wired to react-hook-form via Controller. Its value is "" or YYYY-MM-DD, the format
-// a date input gives and z.iso.date() checks.
+// A date (or date and time) Input wired to react-hook-form via Controller. Its value is "" or what
+// the input gives: YYYY-MM-DD for a date, YYYY-MM-DDTHH:mm for a date and time.
 //
-// A date input reports a half-typed date (e.g. 09/__/2027) as "", the same as an empty one. Saved
+// Either input reports a half-typed value (e.g. 09/__/2027) as "", the same as an empty one. Saved
 // as is, it would quietly clear the date. So a half-typed date is held as INCOMPLETE_DATE, which no
 // date schema accepts, and the field shows its error instead. The input is then given "", which
 // leaves the browser's half-typed text on screen rather than wiping it.
@@ -22,12 +22,15 @@ export function DateField<TFieldValues extends FieldValues>({
   id,
   label,
   description,
+  withTime = false,
 }: {
   control: Control<TFieldValues>;
   name: FieldPath<TFieldValues>;
   id: string;
   label: string;
   description?: string;
+  /** A date and time (datetime-local) rather than a date alone. */
+  withTime?: boolean;
 }) {
   return (
     <Controller
@@ -39,7 +42,7 @@ export function DateField<TFieldValues extends FieldValues>({
           {description && <FieldDescription>{description}</FieldDescription>}
           <Input
             id={id}
-            type="date"
+            type={withTime ? "datetime-local" : "date"}
             className="w-fit"
             aria-invalid={fieldState.invalid}
             value={field.value === INCOMPLETE_DATE ? "" : field.value}

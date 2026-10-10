@@ -32,10 +32,7 @@ describe("createTenant", () => {
     created.tenantIds.push(tenantId);
 
     const { data: tenant } = await supabase.from("tenants").select("*").eq("id", tenantId).single();
-    // event_config's year is computed per call, so it's compared separately from the rest.
-    const { event_config, ...defaults } = defaultTenantConfig();
-    expect(tenant).toMatchObject({ slug, owner_id: null, is_live: false, spreadsheet_config: null, ...defaults });
-    expect(tenant?.event_config).toEqual(event_config);
+    expect(tenant).toMatchObject({ slug, owner_id: null, is_live: false, spreadsheet_config: null, ...defaultTenantConfig() });
 
     const { data: secrets } = await supabase.from("tenant_secrets").select("tenant_id").eq("tenant_id", tenantId);
     expect(secrets).toHaveLength(1);

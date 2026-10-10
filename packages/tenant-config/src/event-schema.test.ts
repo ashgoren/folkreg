@@ -3,29 +3,31 @@ import { eventConfigSchema, TIMEZONES, type EventConfig } from "./schemas";
 
 const blank: EventConfig = {
   title: "",
-  year: 2026,
   location: "",
-  date: "",
+  start: "",
+  end: "",
   timezone: "America/Los_Angeles",
-  calendar: { title: "", description: "", location: "", start: "", end: "" },
+  date: "",
+  calendar: { show: false, description: "", location: "" },
   contacts: { info: "", housing: "" },
   links: { info: "", health: "", safety: "" },
 };
 
 describe("eventConfigSchema", () => {
-  // Format-only: an organizer who has only filled in the year so far can still save.
-  it("accepts an otherwise-blank event", () => {
+  // Format-only: an organizer who hasn't filled anything in yet can still save.
+  it("accepts a blank event", () => {
     expect(eventConfigSchema.safeParse(blank).success).toBe(true);
   });
 
   it("accepts a fully filled-in event", () => {
     const full: EventConfig = {
       title: "Spring Dance Weekend",
-      year: 2026,
       location: "Grange Hall",
-      date: "April 3-5",
+      start: "2026-04-03T19:00",
+      end: "2026-04-05T15:00",
       timezone: "America/Los_Angeles",
-      calendar: { title: "SDW", description: "Dancing", location: "Grange Hall", start: "2026-04-03T19:00", end: "2026-04-05T15:00" },
+      date: "April 3-5",
+      calendar: { show: true, description: "Dancing", location: "123 Main St, Portland, OR 97201" },
       contacts: { info: "info@example.org", housing: "housing@example.org" },
       links: { info: "https://example.org", health: "https://example.org/health", safety: "https://example.org/safety" },
     };
@@ -42,14 +44,50 @@ describe("eventConfigSchema", () => {
     expect(result.error?.issues[0]?.message).toBe("Must be a valid email");
   });
 
-  it.each([1999, 2101, 2026.5, NaN])("rejects year %s", (year) => {
-    const result = eventConfigSchema.safeParse({ ...blank, year });
-    expect(result.success).toBe(false);
-    expect(result.error?.issues[0]?.path).toEqual(["year"]);
+  // The messages each problem gets, by path.
+  const issues = (value: object) =>
+    eventConfigSchema.safeParse({ ...blank, ...value }).error?.issues.map((issue) => [issue.path.join("."), issue.message]) ?? [];
+
+  describe("start and end", () => {
+    it.each(["2026-04-03T19:00", "2026-04-03T19:00:30"])("accepts %j", (start) => {
+      expect(issues({ start })).toEqual([]);
+    });
+
+    // A date alone, an impossible date, a time with an offset (the timezone supplies that), or a
+    // half-typed value from the date-time input.
+    it.each(["2026-04-03", "2026-02-30T19:00", "2026-04-03T19:00Z", "2026-04-03T19:00-07:00", "incomplete"])(
+      "rejects %j",
+      (start) => {
+        expect(issues({ start })).toEqual([["start", "Must be a date and time"]]);
+      },
+    );
+
+    it("rejects an end that isn't after the start", () => {
+      expect(issues({ start: "2026-04-03T19:00", end: "2026-04-03T19:00" })).toEqual([["end", "Must be after the start"]]);
+      expect(issues({ start: "2026-04-03T19:00", end: "2026-04-02T19:00" })).toEqual([["end", "Must be after the start"]]);
+    });
+
+    // Either can be filled in before the other.
+    it("accepts one without the other", () => {
+      expect(issues({ start: "2026-04-03T19:00" })).toEqual([]);
+      expect(issues({ end: "2026-04-05T15:00" })).toEqual([]);
+    });
   });
 
-  it.each([2000, 2100])("accepts boundary year %s", (year) => {
-    expect(eventConfigSchema.safeParse({ ...blank, year }).success).toBe(true);
+  describe("calendar links", () => {
+    it("need both times when they're shown", () => {
+      expect(issues({ calendar: { ...blank.calendar, show: true } })).toEqual([
+        ["start", "Needed for the calendar links"],
+        ["end", "Needed for the calendar links"],
+      ]);
+      expect(issues({ calendar: { ...blank.calendar, show: true }, start: "2026-04-03T19:00", end: "2026-04-05T15:00" })).toEqual([]);
+    });
+
+    // Blank means the calendar uses the event's own location.
+    it("leave the maps location optional", () => {
+      expect(issues({ calendar: { show: true, description: "", location: "" }, start: "2026-04-03T19:00", end: "2026-04-05T15:00" }))
+        .toEqual([]);
+    });
   });
 
   describe("links", () => {

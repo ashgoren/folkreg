@@ -10,11 +10,12 @@ import type { EventConfig } from "@repo/tenant-config";
 
 const blank = (): EventConfig => ({
   title: "Spring Dance Weekend",
-  year: 2026,
   location: "Grange Hall",
-  date: "April 3-5",
+  start: "",
+  end: "",
   timezone: "America/Los_Angeles",
-  calendar: { title: "", description: "", location: "", start: "", end: "" },
+  date: "April 3-5",
+  calendar: { show: false, description: "", location: "" },
   contacts: { info: "", housing: "" },
   links: { info: "", health: "", safety: "" },
 });
@@ -29,10 +30,12 @@ describe("updateEvent", () => {
     expect(await savedConfig()).toEqual(blank());
   });
 
-  it("saves filled-in calendar, contact, and link fields", async () => {
+  it("saves filled-in times, calendar, contact, and link fields", async () => {
     const values: EventConfig = {
       ...blank(),
-      calendar: { title: "SDW", description: "", location: "", start: "", end: "" },
+      start: "2026-04-03T19:00",
+      end: "2026-04-05T15:00",
+      calendar: { show: true, description: "Dancing", location: "123 Main St, Portland, OR 97201" },
       contacts: { info: "info@example.org", housing: "housing@example.org" },
       links: { info: "https://example.org", health: "", safety: "https://example.org/safety" },
     };

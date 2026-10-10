@@ -1,8 +1,11 @@
 "use client";
 
-import { FieldGroup } from "@/components/ui/field";
+import { Controller } from "react-hook-form";
+import { Field, FieldContent, FieldDescription, FieldGroup } from "@/components/ui/field";
+import { FormLabel } from "@/components/form-label";
+import { DateField } from "@/components/form-date-field";
+import { Switch } from "@/components/ui/switch";
 import { AutosaveStatus } from "@/components/autosave-status";
-import { NumberField } from "@/components/form-number-field";
 import { SelectField } from "@/components/form-select-field";
 import { TextField } from "@/components/form-text-field";
 import { Separator } from "@/components/ui/separator";
@@ -25,11 +28,13 @@ export function EventForm({ tenant }: { tenant: Tenant }) {
       <FieldGroup>
         <TextField control={form.control} name="title" id="event-title" label="Title" description="Event name" autoComplete="off" required />
 
-        <NumberField control={form.control} name="year" id="event-year" label="Year" required />
-
         <TextField control={form.control} name="location" id="event-location" label="Location" description="Display string shown to registrants, e.g. Example Hall, Portland, OR" autoComplete="off" required />
 
-        <TextField control={form.control} name="date" id="event-date" label="Date" description="Display string shown to registrants, e.g. October 3-5, 2025" autoComplete="off" required />
+        {/* The event's own clock times; Timezone below says which clock. */}
+        <div className="flex flex-wrap gap-4">
+          <DateField control={form.control} name="start" id="event-start" label="Starts" withTime />
+          <DateField control={form.control} name="end" id="event-end" label="Ends" withTime />
+        </div>
 
         <SelectField
           control={form.control}
@@ -39,22 +44,46 @@ export function EventForm({ tenant }: { tenant: Tenant }) {
           options={TIMEZONES}
           required
         />
+
+        <TextField
+          control={form.control}
+          name="date"
+          id="event-date"
+          label="Date shown to registrants"
+          description="Optional override; leave blank to derive from above."
+          autoComplete="off"
+        />
       </FieldGroup>
 
       <Separator />
 
       <div className="space-y-4">
-        <h2 className="text-base font-medium">Google Calendar Event (optional)</h2>
+        <h2 className="text-base font-medium">Add to calendar</h2>
         <FieldGroup>
-          <TextField control={form.control} name="calendar.title" id="event-cal-title" label="Title" autoComplete="off" />
+          <Controller
+            name="calendar.show"
+            control={form.control}
+            render={({ field }) => (
+              <Field orientation="horizontal">
+                <FieldContent>
+                  <FormLabel htmlFor="event-cal-show">Show &ldquo;Add to calendar&rdquo; links</FormLabel>
+                  <FieldDescription>Registrants can add the event, with its start and end, to their calendar.</FieldDescription>
+                </FieldContent>
+                <Switch id="event-cal-show" checked={field.value} onCheckedChange={field.onChange} />
+              </Field>
+            )}
+          />
 
           <TextField control={form.control} name="calendar.description" id="event-cal-description" label="Description" autoComplete="off" />
 
-          <TextField control={form.control} name="calendar.location" id="event-cal-location" label="Location" autoComplete="off" />
-
-          <TextField control={form.control} name="calendar.start" id="event-cal-start" label="Start" description="ISO 8601 with offset, e.g. 2025-10-03T19:00:00-07:00" autoComplete="off" />
-
-          <TextField control={form.control} name="calendar.end" id="event-cal-end" label="End" description="ISO 8601 with offset, e.g. 2025-10-05T15:00:00-07:00" autoComplete="off" />
+          <TextField
+            control={form.control}
+            name="calendar.location"
+            id="event-cal-location"
+            label="Location for maps"
+            description="Optional. A street address maps apps can find, e.g. 123 Main St, Portland, OR 97201. Leave blank to use the location above."
+            autoComplete="off"
+          />
         </FieldGroup>
       </div>
 

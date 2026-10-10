@@ -16,14 +16,14 @@ import type {
   AdmissionsConfig, EventConfig, FieldConfig, FieldEntry, FieldsConfig, PaymentsConfig, ReceiptsConfig, ThemeConfig, WaiverConfig,
 } from "./schemas";
 
-// A function rather than a constant because the year is the current one at the time of the call.
 export const defaultEventConfig = (): EventConfig => ({
   title: "",
-  year: new Date().getFullYear(),
   location: "",
-  date: "",
+  start: "",
+  end: "",
   timezone: "America/Los_Angeles",
-  calendar: { title: "", description: "", location: "", start: "", end: "" },
+  date: "",
+  calendar: { show: false, description: "", location: "" },
   contacts: { info: "", housing: "" },
   links: { info: "", health: "", safety: "" },
 });

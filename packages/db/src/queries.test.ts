@@ -80,7 +80,7 @@ describe("getTenant / getSecrets", () => {
 });
 
 describe("updateTenant", () => {
-  const event = { ...defaultEventConfig(), title: "Dance", year: 2026 };
+  const event = { ...defaultEventConfig(), title: "Dance", start: "2026-04-03T19:00" };
 
   it("writes only the columns passed, leaving the rest untouched", async () => {
     await db.updateTenant({ event_config: event });

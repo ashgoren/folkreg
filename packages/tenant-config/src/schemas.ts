@@ -38,18 +38,31 @@ export const TIMEZONES = [
 export type Timezone = (typeof TIMEZONES)[number]["value"];
 const timezoneSchema = z.enum(TIMEZONES.map((timezone) => timezone.value) as [Timezone, ...Timezone[]], { error: "Choose a timezone" });
 
+// A date and time on the event's own clock, e.g. "2026-04-03T19:00": no offset, since `timezone`
+// says which clock (and so handles daylight saving). "" while it isn't known yet.
+const localDateTime = z.iso.datetime({ local: true });
+const optionalLocalDateTime = z.string().refine(
+  (value) => value === "" || (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(value) && localDateTime.safeParse(value).success),
+  { error: "Must be a date and time" },
+);
+
+// The event's facts, each stored once. What's shown elsewhere is derived from them: the year from
+// `start`, the calendar entry's title, times, and (unless overridden) location from the event's own.
+// `date` and `calendar.location` are overrides: blank means "use the derived value".
 export const eventConfigSchema = z.object({
   title: z.string(),
-  year: z.number().int().min(2000).max(2100),
   location: z.string(),
-  date: z.string(),
+  start: optionalLocalDateTime,
+  end: optionalLocalDateTime,
   timezone: timezoneSchema,
+  // The dates as registrants read them; blank shows the range from start to end.
+  date: z.string(),
   calendar: z.object({
-    title: z.string(),
+    // Whether registrants are offered "Add to calendar" links.
+    show: z.boolean(),
     description: z.string(),
+    // For maps apps, which look the location up; blank uses the event's location.
     location: z.string(),
-    start: z.string(),
-    end: z.string(),
   }),
   contacts: z.object({
     info: optionalEmail,
@@ -60,6 +73,17 @@ export const eventConfigSchema = z.object({
     health: optionalUrl,
     safety: optionalUrl,
   }),
+}).superRefine((event, ctx) => {
+  if (event.start !== "" && event.end !== "" && event.end <= event.start) {
+    ctx.addIssue({ code: "custom", path: ["end"], message: "Must be after the start" });
+  }
+  // Calendar links need real times. A deliberate exception to blanks being allowed: with the links
+  // on, a missing time would reach registrants as a broken calendar entry.
+  if (event.calendar.show) {
+    for (const key of ["start", "end"] as const) {
+      if (event[key] === "") ctx.addIssue({ code: "custom", path: [key], message: "Needed for the calendar links" });
+    }
+  }
 });
 export type EventConfig = z.infer<typeof eventConfigSchema>;
 
