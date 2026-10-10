@@ -21,9 +21,10 @@ describe("updateAdmissions", () => {
     ["tiered", values({
       mode: "tiered",
       earlybirdCutoff: "2026-03-01",
-      categories: [
-        { label: "Adult", ageGroups: ["adult"], early: 80, later: 100 },
-        { label: "Youth", ageGroups: ["6-12", "13-17"], early: 40, later: 50 },
+      lateIncrease: 10,
+      prices: [
+        { ageGroup: "adult", options: [{ label: "Supporter", price: 120 }, { label: "Basic", price: 80 }] },
+        { ageGroup: "6-12", options: [{ label: "", price: 40 }] },
       ],
     })],
   ])("saves a %s config as-is", async (_, config) => {
@@ -32,12 +33,12 @@ describe("updateAdmissions", () => {
   });
 
   // Switching modes only changes which values apply, so an accidental switch can't cost an
-  // organizer the prices or categories entered for another mode.
+  // organizer the prices entered for another mode.
   it("keeps the other modes' values when the mode changes", async () => {
-    const categories = [{ label: "Adult", ageGroups: ["adult" as const], early: 80, later: 100 }];
-    await updateAdmissions(harness.tenantId, values({ mode: "tiered", categories }));
-    await updateAdmissions(harness.tenantId, values({ mode: "sliding-scale", categories }));
-    expect(await savedConfig()).toMatchObject({ mode: "sliding-scale", categories });
+    const prices = [{ ageGroup: "adult", options: [{ label: "", price: 80 }] }];
+    await updateAdmissions(harness.tenantId, values({ mode: "tiered", prices }));
+    await updateAdmissions(harness.tenantId, values({ mode: "sliding-scale", prices }));
+    expect(await savedConfig()).toMatchObject({ mode: "sliding-scale", prices });
   });
 
   itGuardsTheAction({

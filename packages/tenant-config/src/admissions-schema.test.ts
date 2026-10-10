@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { defaultAdmissionsConfig } from "./defaults";
 import type { AdmissionsConfig } from "./schemas";
-import { admissionsConfigSchema } from "./schemas";
+import { admissionsConfigSchema, priceAfterCutoff } from "./schemas";
 
 // Every mode's values are always present; `mode` picks which one applies.
 const base: AdmissionsConfig = {
@@ -10,7 +10,8 @@ const base: AdmissionsConfig = {
   costDefault: 60,
   cost: 60,
   earlybirdCutoff: "2026-03-01",
-  categories: [{ label: "Adult", ageGroups: ["adult"], early: 80, later: 100 }],
+  lateIncrease: 15,
+  prices: [{ ageGroup: "adult", options: [{ label: "Basic", price: 80 }] }],
   waitlistCutoff: 200,
 };
 const slidingScale = { ...base, mode: "sliding-scale" as const };
@@ -70,24 +71,39 @@ describe("admissionsConfigSchema", () => {
   });
 
   describe("tiered", () => {
-    it("accepts no categories and a blank cutoff", () => {
-      expect(admissionsConfigSchema.safeParse({ ...tiered, categories: [], earlybirdCutoff: "" }).success).toBe(true);
-    });
-
-    it("accepts a category with every age group", () => {
-      const category = { label: "Any", ageGroups: ["0-2", "3-5", "6-12", "13-17", "adult"], early: 0, later: 0 };
-      expect(admissionsConfigSchema.safeParse({ ...tiered, categories: [category] }).success).toBe(true);
+    it("accepts no prices and a blank cutoff", () => {
+      expect(issuePaths({ ...tiered, prices: [], earlybirdCutoff: "" })).toEqual([]);
     });
 
     // Age groups are the tenant's own age field options, defined on the Fields page.
-    it("accepts any age group the tenant defines", () => {
-      const category = { label: "Senior", ageGroups: ["65+"], early: 50, later: 60 };
-      expect(issuePaths({ ...tiered, categories: [category] })).toEqual([]);
+    it("accepts prices for any age group the tenant defines, labeled or not", () => {
+      const prices = [{ ageGroup: "65+", options: [{ label: "", price: 50 }] }, { ageGroup: "under-30", options: [] }];
+      expect(issuePaths({ ...tiered, prices })).toEqual([]);
     });
 
-    it("rejects a cleared (NaN) price on a category", () => {
-      const category = { label: "Adult", ageGroups: ["adult"], early: NaN, later: 100 };
-      expect(issuePaths({ ...tiered, categories: [category] })).toEqual(["categories.0.early"]);
+    it("rejects an age group listed twice", () => {
+      const prices = [{ ageGroup: "adult", options: [] }, { ageGroup: "adult", options: [] }];
+      expect(issuePaths({ ...tiered, prices })).toEqual(["prices"]);
+    });
+
+    it.each([NaN, -1])("rejects a price of %s", (price) => {
+      expect(issuePaths({ ...tiered, prices: [{ ageGroup: "adult", options: [{ label: "", price }] }] }))
+        .toEqual(["prices.0.options.0.price"]);
+    });
+
+    it.each([NaN, -1])("rejects a late increase of %s", (lateIncrease) => {
+      expect(issuePaths({ ...tiered, lateIncrease })).toEqual(["lateIncrease"]);
+    });
+  });
+
+  describe("priceAfterCutoff", () => {
+    it("adds the late increase", () => {
+      expect(priceAfterCutoff(340, 15)).toBe(355);
+    });
+
+    // E.g. the youngest attend free whenever they register.
+    it("keeps a free price free", () => {
+      expect(priceAfterCutoff(0, 15)).toBe(0);
     });
   });
 

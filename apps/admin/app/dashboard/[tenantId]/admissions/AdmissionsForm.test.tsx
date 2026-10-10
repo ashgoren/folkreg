@@ -30,6 +30,14 @@ const withAge = (options?: FieldEntry["options"]) => {
   return { fields_config: fields };
 };
 
+// Tiered prices are a section per age group, titled with the age option's label; the nth price's
+// inputs are named after its section and position.
+const ageSection = (title: string) => within(screen.getByRole("region", { name: title }));
+const priceAmount = (title: string, n: number) => screen.getByRole("spinbutton", { name: `${title} price ${n} amount` });
+const priceLabel = (title: string, n: number) => screen.getByRole("textbox", { name: `${title} price ${n} label` });
+const afterCutoff = (title: string) =>
+  [...screen.getByRole("region", { name: title }).querySelectorAll("[data-after-cutoff]")].map((cell) => cell.textContent);
+
 const replace = async (user: ReturnType<typeof userEvent.setup>, id: string, text: string) => {
   await user.clear(byId(id));
   await user.type(byId(id), text);
@@ -62,27 +70,21 @@ describe("AdmissionsForm", () => {
       expect(screen.getByRole("switch", { name: /Force waitlist/ })).toBeChecked();
     });
 
-    it("populates a stored tiered config, one card per category", () => {
+    it("populates a stored tiered config, a section per age group", () => {
       const config = stored({
         mode: "tiered",
         earlybirdCutoff: "2027-01-15",
-        categories: [
-          { label: "Basic", ageGroups: ["adult"], early: 80, later: 100 },
-          { label: "Youth", ageGroups: ["6-12", "13-17"], early: 40, later: 50 },
-        ],
+        lateIncrease: 10,
+        prices: [{ ageGroup: "adult", options: [{ label: "Basic", price: 80 }, { label: "Supporter", price: 120 }] }],
       });
       render(<AdmissionsForm tenant={makeTenant({ admissions_config: config, ...withAge() })} />);
 
       expect(byId("admissions-earlybird-cutoff")).toHaveValue("2027-01-15");
-      expect(byId("admissions-category-label-0")).toHaveValue("Basic");
-      expect(byId("admissions-category-later-1")).toHaveValue(50);
-      expect(screen.getAllByRole("button", { name: "Remove category" })).toHaveLength(2);
-
-      // Age groups render as checkboxes per card; the second card has 6-12 and 13-17 checked.
-      const youthCard = byId("admissions-category-label-1").closest(".rounded.border") as HTMLElement;
-      expect(within(youthCard).getByRole("checkbox", { name: "6-12 yr old" })).toBeChecked();
-      expect(within(youthCard).getByRole("checkbox", { name: "13-17 yr old" })).toBeChecked();
-      expect(within(youthCard).getByRole("checkbox", { name: "Adult" })).not.toBeChecked();
+      expect(byId("admissions-late-increase")).toHaveValue(10);
+      expect(priceLabel("Adult", 2)).toHaveValue("Supporter");
+      expect(priceAmount("Adult", 2)).toHaveValue(120);
+      expect(afterCutoff("Adult")).toEqual(["$90 after cutoff", "$130 after cutoff"]);
+      expect(ageSection("6-12 yr old").getByText(/No price yet/)).toBeInTheDocument();
     });
   });
 
@@ -209,128 +211,127 @@ describe("AdmissionsForm", () => {
   });
 
   describe("tiered", () => {
-    // A typical event's tiers, priced by the options the age field starts with.
-    it("starts a new tenant with the default categories, their age groups checked", async () => {
+    const tiered = (overrides: Partial<AdmissionsConfig> = {}) => stored({ mode: "tiered", ...overrides });
+
+    // A typical event's prices, by the age groups the age field starts with.
+    it("starts a new tenant with the default prices, by age group", async () => {
       const user = userEvent.setup();
       render(<AdmissionsForm tenant={makeTenant(withAge())} />);
-
       await user.click(screen.getByRole("radio", { name: "Tiered" }));
-      expect(screen.getAllByRole("button", { name: "Remove category" })).toHaveLength(DEFAULTS.categories.length);
-      expect(byId("admissions-category-label-0")).toHaveValue("Benefactor");
-      const benefactor = byId("admissions-category-label-0").closest(".rounded.border") as HTMLElement;
-      expect(within(benefactor).getByRole("checkbox", { name: "Adult" })).toBeChecked();
-      expect(within(benefactor).queryByRole("checkbox", { name: /not an age option/ })).not.toBeInTheDocument();
+
+      expect(screen.getAllByRole("region").map((region) => region.getAttribute("aria-label")))
+        .toEqual(["Adult", "13-17 yr old", "6-12 yr old", "3-5 yr old", "0-2 yr old"]);
+      expect(priceLabel("Adult", 1)).toHaveValue("Benefactor");
+      expect(afterCutoff("Adult")).toEqual(["$355 after cutoff", "$295 after cutoff", "$235 after cutoff"]);
+      // An unlabeled price, and a free one, which stays free.
+      expect(priceLabel("6-12 yr old", 1)).toHaveValue("");
+      expect(afterCutoff("0-2 yr old")).toEqual(["free"]);
     });
 
-    it("adds, fills, and removes categories", async () => {
-      const tenant = makeTenant({ admissions_config: stored({ categories: [] }), ...withAge() });
+    it("saves an edited price, showing what it becomes after the cutoff", async () => {
+      const tenant = makeTenant({ admissions_config: tiered(), ...withAge() });
       const user = userEvent.setup();
       render(<AdmissionsForm tenant={tenant} />);
 
-      await user.click(screen.getByRole("radio", { name: "Tiered" }));
-      expect(screen.queryByRole("button", { name: "Remove category" })).not.toBeInTheDocument();
+      await user.clear(priceAmount("Adult", 1));
+      await user.type(priceAmount("Adult", 1), "350");
+      expect(afterCutoff("Adult")[0]).toBe("$365 after cutoff");
+      await user.tab();
 
-      await user.type(byId("admissions-earlybird-cutoff"), "2027-01-15");
-      await user.click(screen.getByRole("button", { name: /Add category/ }));
-      await user.type(byId("admissions-category-label-0"), "Basic");
-      await replace(user, "admissions-category-early-0", "80");
-      await replace(user, "admissions-category-later-0", "100");
-      await user.click(screen.getByRole("checkbox", { name: "Adult" }));
-      await user.click(screen.getByRole("checkbox", { name: "13-17 yr old" }));
-
-      await expectLastSave(vi.mocked(updateAdmissions), tenant.id, {
-        ...DEFAULTS,
-        mode: "tiered",
-        earlybirdCutoff: "2027-01-15",
-        categories: [{ label: "Basic", ageGroups: ["adult", "13-17"], early: 80, later: 100 }],
-      });
-
-      await user.click(screen.getByRole("checkbox", { name: "Adult" }));
+      const [adult, ...rest] = DEFAULTS.prices;
       await expectLastSave(vi.mocked(updateAdmissions), tenant.id, expect.objectContaining({
-        categories: [{ label: "Basic", ageGroups: ["13-17"], early: 80, later: 100 }],
+        prices: [{ ...adult, options: [{ label: "Benefactor", price: 350 }, ...adult!.options.slice(1)] }, ...rest],
+      }));
+    });
+
+    it("applies a new late increase to every price but a free one", async () => {
+      const tenant = makeTenant({ admissions_config: tiered(), ...withAge() });
+      const user = userEvent.setup();
+      render(<AdmissionsForm tenant={tenant} />);
+
+      await replace(user, "admissions-late-increase", "20");
+      expect(afterCutoff("Adult")).toEqual(["$360 after cutoff", "$300 after cutoff", "$240 after cutoff"]);
+      expect(afterCutoff("0-2 yr old")).toEqual(["free"]);
+      await user.tab();
+      await expectLastSave(vi.mocked(updateAdmissions), tenant.id, expect.objectContaining({ lateIncrease: 20 }));
+    });
+
+    it("adds and removes prices within an age group", async () => {
+      const prices = [{ ageGroup: "adult", options: [{ label: "Basic", price: 80 }] }];
+      const tenant = makeTenant({ admissions_config: tiered({ prices }), ...withAge() });
+      const user = userEvent.setup();
+      render(<AdmissionsForm tenant={tenant} />);
+
+      await user.click(screen.getByRole("button", { name: "Add a price for Adult" }));
+      await user.type(priceLabel("Adult", 2), "Student");
+      await user.clear(priceAmount("Adult", 2));
+      await user.type(priceAmount("Adult", 2), "50");
+      await user.tab();
+      await expectLastSave(vi.mocked(updateAdmissions), tenant.id, expect.objectContaining({
+        prices: [{ ageGroup: "adult", options: [{ label: "Basic", price: 80 }, { label: "Student", price: 50 }] }],
       }));
 
-      await user.click(screen.getByRole("button", { name: "Remove category" }));
-      await expectLastSave(vi.mocked(updateAdmissions), tenant.id, expect.objectContaining({ mode: "tiered", categories: [] }));
+      await user.click(screen.getByRole("button", { name: "Remove Adult price 1" }));
+      await expectLastSave(vi.mocked(updateAdmissions), tenant.id, expect.objectContaining({
+        prices: [{ ageGroup: "adult", options: [{ label: "Student", price: 50 }] }],
+      }));
     });
 
     // A tenant's age brackets are its own: whatever options its age field has.
-    it("offers the age field's options as the age groups", async () => {
+    it("gives each of the age field's options a section, adding its first price", async () => {
       const tenant = makeTenant({
-        admissions_config: stored({ categories: [] }),
+        admissions_config: tiered({ prices: [] }),
         ...withAge([{ label: "Under 30", value: "under-30" }, { label: "30 and over", value: "30-plus" }]),
       });
       const user = userEvent.setup();
       render(<AdmissionsForm tenant={tenant} />);
 
-      await user.click(screen.getByRole("radio", { name: "Tiered" }));
-      await user.click(screen.getByRole("button", { name: /Add category/ }));
-      expect(screen.getAllByRole("checkbox").map((box) => box.closest("label")?.textContent)).toEqual(["Under 30", "30 and over"]);
-
-      await user.click(screen.getByRole("checkbox", { name: "Under 30" }));
+      expect(ageSection("Under 30").getByText(/No price yet/)).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Add a price for 30 and over" }));
       await expectLastSave(vi.mocked(updateAdmissions), tenant.id, expect.objectContaining({
-        categories: [{ label: "", ageGroups: ["under-30"], early: 0, later: 0 }],
+        prices: [{ ageGroup: "30-plus", options: [{ label: "", price: 0 }] }],
       }));
+      expect(priceAmount("30 and over", 1)).toHaveValue(0);
     });
 
-    // E.g. the option's value edited on the Fields page after the category was priced.
-    it("lists an age group that's no longer an age option, so it can be unchecked", async () => {
-      const config = stored({ mode: "tiered", categories: [{ label: "Teen", ageGroups: ["teen"], early: 1, later: 1 }] });
-      const tenant = makeTenant({ admissions_config: config, ...withAge() });
+    // E.g. the option's value edited on the Fields page after it was priced.
+    it("lists prices for an age group that's no longer an age option, so they can be removed", async () => {
+      const prices = [
+        { ageGroup: "adult", options: [{ label: "", price: 80 }] },
+        { ageGroup: "teen", options: [{ label: "", price: 40 }] },
+      ];
+      const tenant = makeTenant({ admissions_config: tiered({ prices }), ...withAge() });
       const user = userEvent.setup();
       render(<AdmissionsForm tenant={tenant} />);
 
-      const stale = screen.getByRole("checkbox", { name: "teen (not an age option)" });
-      expect(stale).toBeChecked();
-      await user.click(stale);
-      await expectLastSave(vi.mocked(updateAdmissions), tenant.id, expect.objectContaining({
-        categories: [{ label: "Teen", ageGroups: [], early: 1, later: 1 }],
-      }));
-      expect(screen.queryByRole("checkbox", { name: "teen (not an age option)" })).not.toBeInTheDocument();
+      expect(priceAmount("teen (not an age option)", 1)).toHaveValue(40);
+      await user.click(ageSection("teen (not an age option)").getByRole("button", { name: "Remove these prices" }));
+      await expectLastSave(vi.mocked(updateAdmissions), tenant.id, expect.objectContaining({ prices: [prices[0]] }));
+      expect(screen.queryByRole("region", { name: "teen (not an age option)" })).not.toBeInTheDocument();
+      // The section below it, bound by position, still edits the right prices.
+      expect(priceAmount("Adult", 1)).toHaveValue(80);
+    });
+
+    it("flags a cleared price and doesn't save it", async () => {
+      const user = userEvent.setup();
+      render(<AdmissionsForm tenant={makeTenant({ admissions_config: tiered(), ...withAge() })} />);
+
+      await user.clear(priceAmount("Adult", 1));
+      await user.tab();
+
+      expect(ageSection("Adult").getByText("Required")).toBeInTheDocument();
+      await expectNoSave(vi.mocked(updateAdmissions));
     });
 
     it("says to add the age field when it isn't active", () => {
-      render(<AdmissionsForm tenant={makeTenant({ admissions_config: stored({ mode: "tiered" }) })} />);
+      render(<AdmissionsForm tenant={makeTenant({ admissions_config: tiered() })} />);
       expect(screen.getByText(/Add the age field on the Fields page/)).toBeInTheDocument();
+      expect(screen.queryByRole("region")).not.toBeInTheDocument();
     });
 
     it("says to add options when the age field has none", () => {
-      render(<AdmissionsForm tenant={makeTenant({ admissions_config: stored({ mode: "tiered" }), ...withAge([]) })} />);
+      render(<AdmissionsForm tenant={makeTenant({ admissions_config: tiered(), ...withAge([]) })} />);
       expect(screen.getByText(/The age field has no options yet/)).toBeInTheDocument();
-    });
-
-    it("removes the right category from the middle of the list", async () => {
-      const config = stored({
-        mode: "tiered",
-        categories: [
-          { label: "A", ageGroups: [], early: 1, later: 1 },
-          { label: "B", ageGroups: [], early: 2, later: 2 },
-          { label: "C", ageGroups: [], early: 3, later: 3 },
-        ],
-      });
-      const tenant = makeTenant({ admissions_config: config });
-      const user = userEvent.setup();
-      render(<AdmissionsForm tenant={tenant} />);
-
-      await user.click(screen.getAllByRole("button", { name: "Remove category" })[1]!);
-
-      expect(byId("admissions-category-label-0")).toHaveValue("A");
-      expect(byId("admissions-category-label-1")).toHaveValue("C");
-      await expectLastSave(vi.mocked(updateAdmissions), tenant.id, expect.objectContaining({
-        categories: [config.categories[0], config.categories[2]],
-      }));
-    });
-
-    it("flags a cleared category price and doesn't save it", async () => {
-      const config = stored({ mode: "tiered", categories: [{ label: "A", ageGroups: [], early: 1, later: 1 }] });
-      const user = userEvent.setup();
-      render(<AdmissionsForm tenant={makeTenant({ admissions_config: config })} />);
-
-      await user.clear(byId("admissions-category-early-0"));
-      await user.tab();
-
-      expect(screen.getByRole("alert")).toHaveTextContent("Required");
-      await expectNoSave(vi.mocked(updateAdmissions));
     });
   });
 });

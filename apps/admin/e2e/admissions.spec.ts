@@ -51,25 +51,23 @@ test("a sliding-scale default outside the range shows an error and isn't saved",
   });
 });
 
-test("tiered mode saves categories with their age groups and prices", async ({ page, tenantId }) => {
+test("tiered mode saves prices by age group, with the late increase", async ({ page, tenantId }) => {
   // Age groups are the age field's options, which a new tenant doesn't have active. Starts from no
-  // categories, rather than the defaults, to build one from scratch.
+  // prices, rather than the defaults, to build them from scratch.
   const fields = defaultFieldsConfig();
   fields.misc.push(defaultFieldEntry("age"));
   const { error } = await service.from("tenants")
-    .update({ fields_config: fields, admissions_config: { ...defaultAdmissionsConfig(), categories: [] } })
+    .update({ fields_config: fields, admissions_config: { ...defaultAdmissionsConfig(), prices: [] } })
     .eq("id", tenantId);
   if (error) throw error;
   await page.reload();
 
   await page.getByRole("radio", { name: "Tiered" }).click();
   await page.getByLabel("Early-bird cutoff").fill("2027-09-01");
-  await page.getByRole("button", { name: "Add category" }).click();
-  await page.locator("#admissions-category-label-0").fill("Basic");
-  await page.getByRole("checkbox", { name: "Adult" }).click();
-  await page.getByRole("checkbox", { name: "13-17 yr old" }).click();
-  await page.locator("#admissions-category-early-0").fill("80");
-  await page.locator("#admissions-category-later-0").fill("100");
+  await page.getByLabel("Increase after the cutoff").fill("20");
+  await page.getByRole("button", { name: "Add a price for Adult" }).click();
+  await page.getByRole("textbox", { name: "Adult price 1 label" }).fill("Basic");
+  await page.getByRole("spinbutton", { name: "Adult price 1 amount" }).fill("80");
   await page.getByRole("switch", { name: "Force waitlist mode?" }).click();
   await waitForSaved(page);
 
@@ -77,18 +75,20 @@ test("tiered mode saves categories with their age groups and prices", async ({ p
     ...defaultAdmissionsConfig(),
     mode: "tiered",
     earlybirdCutoff: "2027-09-01",
-    categories: [{ label: "Basic", ageGroups: ["adult", "13-17"], early: 80, later: 100 }],
+    lateIncrease: 20,
+    prices: [{ ageGroup: "adult", options: [{ label: "Basic", price: 80 }] }],
     forceWaitlist: true,
   });
 
   await page.reload();
   await expect(page.getByRole("radio", { name: "Tiered" })).toBeChecked();
-  await expect(page.locator("#admissions-category-label-0")).toHaveValue("Basic");
-  await expect(page.getByRole("checkbox", { name: "Adult" })).toBeChecked();
-  await expect(page.getByRole("checkbox", { name: "0-2 yr old" })).not.toBeChecked();
+  const adult = page.getByRole("region", { name: "Adult" });
+  await expect(adult.getByRole("textbox", { name: "Adult price 1 label" })).toHaveValue("Basic");
+  await expect(adult).toContainText("$100 after cutoff");
+  await expect(page.getByRole("region", { name: "0-2 yr old" })).toContainText("No price yet");
 
-  await page.getByRole("button", { name: "Remove category" }).click();
-  await expect.poll(() => admissionsConfig(tenantId)).toMatchObject({ mode: "tiered", categories: [] });
+  await page.getByRole("button", { name: "Remove Adult price 1" }).click();
+  await expect.poll(() => admissionsConfig(tenantId)).toMatchObject({ mode: "tiered", prices: [{ ageGroup: "adult", options: [] }] });
 });
 
 // Leaving through the sidebar unmounts the page right after the click's blur shows the errors, so

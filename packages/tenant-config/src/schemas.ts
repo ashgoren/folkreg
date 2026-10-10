@@ -143,19 +143,26 @@ const checkChoices = ({ name, defaultValue, firstPersonOptions, options = [] }: 
 };
 export type FieldsConfig = z.infer<typeof fieldsConfigSchema>;
 
-export const tieredCategorySchema = z.object({
+// One price a registrant of some age group can choose, e.g. "Sustaining", $280. The label tells
+// apart several prices for the same age group; a lone price can go without one.
+export const tieredPriceSchema = z.object({
   label: z.string(),
-  // Values of the tenant's age field options (its price brackets), which the Fields page edits.
-  // Not checked against them here: each column is validated on its own, and the Admissions page
-  // lists a value that's no longer an age option so it can be unchecked.
-  ageGroups: z.array(z.string()),
-  early: requiredNumber(0),
-  later: requiredNumber(0),
+  price: requiredNumber(0),
 });
-export type TieredCategory = z.infer<typeof tieredCategorySchema>;
+export type TieredPrice = z.infer<typeof tieredPriceSchema>;
+
+// An age group's prices, in the order registrants see them. `ageGroup` is the value of one of the
+// tenant's age field options (its price brackets), which the Fields page edits. Not checked against
+// them here: each column is validated on its own, and the Admissions page lists prices for a value
+// that's no longer an age option, so they can be removed.
+export const ageGroupPricesSchema = z.object({
+  ageGroup: z.string(),
+  options: z.array(tieredPriceSchema),
+});
+export type AgeGroupPrices = z.infer<typeof ageGroupPricesSchema>;
 
 // One flat shape holding every pricing mode's values; `mode` picks which one applies, so switching
-// modes (even by accident) never discards another mode's prices or categories. All of them are
+// modes (even by accident) never discards another mode's prices. All of them are
 // validated whichever mode is active -- the Admissions page only lets an organizer switch modes
 // while the current one is valid, and a hidden mode's fields can't be edited, so they stay valid.
 export const admissionsConfigSchema = z.object({
@@ -165,16 +172,24 @@ export const admissionsConfigSchema = z.object({
   costDefault: requiredNumber(0),
   // fixed
   cost: requiredNumber(0),
-  // tiered
+  // tiered: each price goes up by lateIncrease after the early-bird cutoff (see priceAfterCutoff)
   earlybirdCutoff: z.string(),
-  categories: z.array(tieredCategorySchema),
+  lateIncrease: requiredNumber(0),
+  prices: z.array(ageGroupPricesSchema),
   admissionQuantityMax: requiredNumber(1).int(),
   waitlistCutoff: requiredNumber(1).int(),
   forceWaitlist: z.boolean(),
 }).refine((data) => data.costDefault >= data.costRange[0] && data.costDefault <= data.costRange[1], {
   message: "Must be between minimum and maximum",
   path: ["costDefault"],
+}).refine((data) => new Set(data.prices.map((entry) => entry.ageGroup)).size === data.prices.length, {
+  // The Admissions page only ever adds an age group's entry once, so this is stored data that's wrong.
+  message: "An age group is listed more than once",
+  path: ["prices"],
 });
+
+/** A tiered price after the early-bird cutoff: higher by lateIncrease, except that free stays free. */
+export const priceAfterCutoff = (price: number, lateIncrease: number) => (price > 0 ? price + lateIncrease : 0);
 export type AdmissionsConfig = z.infer<typeof admissionsConfigSchema>;
 
 export const paymentProcessorSchema = z.enum(["stripe", "paypal"]);
