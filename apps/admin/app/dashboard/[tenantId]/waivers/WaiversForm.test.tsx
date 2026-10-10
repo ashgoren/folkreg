@@ -4,13 +4,14 @@ import userEvent from "@testing-library/user-event";
 import { makeSecrets, makeTenant } from "@/test/fixtures";
 import { expectLastSave } from "@/test/autosave";
 
-vi.mock("./actions", () => ({ updateWaivers: vi.fn() }));
-import { updateWaivers } from "./actions";
+vi.mock("./actions", () => ({ updateWaivers: vi.fn(), updateWaiverSecrets: vi.fn() }));
+import { updateWaivers, updateWaiverSecrets } from "./actions";
 import { WaiversForm } from "./WaiversForm";
 
 describe("WaiversForm", () => {
   beforeEach(() => {
     vi.mocked(updateWaivers).mockReset().mockResolvedValue(null);
+    vi.mocked(updateWaiverSecrets).mockReset().mockResolvedValue(null);
   });
 
   it("hides the DocuSeal fields while the waiver is off", () => {
@@ -33,7 +34,8 @@ describe("WaiversForm", () => {
     expect(screen.getByLabelText("DocuSeal API key")).toHaveAttribute("type", "password");
   });
 
-  it("autosaves template id and API key together", async () => {
+  // waiver_config and the key are separate tables, each saved by its own action.
+  it("autosaves the template id to waiver_config and the API key to the secrets", async () => {
     const tenant = makeTenant();
     const user = userEvent.setup();
     render(<WaiversForm tenant={tenant} secrets={makeSecrets()} />);
@@ -43,7 +45,8 @@ describe("WaiversForm", () => {
     await user.type(screen.getByLabelText("DocuSeal API key"), "key_9");
     await user.tab();
 
-    await expectLastSave(vi.mocked(updateWaivers), tenant.id, { show: true, docusealTemplateId: "tmpl_9", docuseal_key: "key_9" });
+    await expectLastSave(vi.mocked(updateWaivers), tenant.id, { show: true, docusealTemplateId: "tmpl_9" });
+    await expectLastSave(vi.mocked(updateWaiverSecrets), tenant.id, { docuseal_key: "key_9" });
   });
 
   it("keeps the DocuSeal values while toggled off, and restores them when toggled back on", async () => {
@@ -55,11 +58,13 @@ describe("WaiversForm", () => {
     expect(screen.queryByLabelText("DocuSeal template ID")).not.toBeInTheDocument();
     // react-hook-form keeps an unmounted field's value (shouldUnregister defaults to false), so
     // turning the waiver off doesn't wipe credentials the organizer already entered.
-    await expectLastSave(vi.mocked(updateWaivers), tenant.id, { show: false, docusealTemplateId: "tmpl_1", docuseal_key: "key_1" });
+    await expectLastSave(vi.mocked(updateWaivers), tenant.id, { show: false, docusealTemplateId: "tmpl_1" });
 
     await user.click(screen.getByRole("switch", { name: /Show waiver/ }));
     expect(screen.getByLabelText("DocuSeal template ID")).toHaveValue("tmpl_1");
     expect(screen.getByLabelText("DocuSeal API key")).toHaveValue("key_1");
-    await expectLastSave(vi.mocked(updateWaivers), tenant.id, { show: true, docusealTemplateId: "tmpl_1", docuseal_key: "key_1" });
+    await expectLastSave(vi.mocked(updateWaivers), tenant.id, { show: true, docusealTemplateId: "tmpl_1" });
+    // The key never changed, so it was never sent.
+    expect(updateWaiverSecrets).not.toHaveBeenCalled();
   });
 });

@@ -12,15 +12,15 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useAutosaveForm } from "@/lib/useAutosaveForm";
 import type { Tenant, TenantSecrets } from "@repo/types";
-import { paymentsSchema, type PaymentsValues } from "./schema";
-import { updatePayments } from "./actions";
+import { paymentsConfigSchema } from "@repo/tenant-config";
+import { pickKeys, useSaveChangedParts } from "@/lib/useSaveChangedParts";
+import { paymentSecretsSchema, paymentsSchema, type PaymentSecretsValues, type PaymentsValues } from "./schema";
+import { updatePayments, updatePaymentSecrets } from "./actions";
 import { StripeCredentials } from "./StripeCredentials";
 import { PaypalCredentials } from "./PaypalCredentials";
 
-// The stored payments_config plus the credential secrets, which live in tenant_secrets (where an
-// unset column is null; the form's blank is "").
-const toFormValues = (tenant: Tenant, secrets: TenantSecrets): PaymentsValues => ({
-  ...tenant.payments_config,
+// The credential secrets as the form edits them: tenant_secrets' unset null is the form's "".
+const toSecretValues = (secrets: TenantSecrets): PaymentSecretsValues => ({
   stripe_secret_key_live: secrets.stripe_secret_key_live ?? "",
   stripe_webhook_secret_live: secrets.stripe_webhook_secret_live ?? "",
   stripe_secret_key_test: secrets.stripe_secret_key_test ?? "",
@@ -32,11 +32,22 @@ const toFormValues = (tenant: Tenant, secrets: TenantSecrets): PaymentsValues =>
 });
 
 export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: TenantSecrets }) {
+  const initial: PaymentsValues = { ...tenant.payments_config, ...toSecretValues(secrets) };
+  // payments_config and the secrets are saved separately, each only when it changed.
+  const save = useSaveChangedParts({
+    initial,
+    split: (data: PaymentsValues) => ({ config: pickKeys(paymentsConfigSchema, data), secrets: pickKeys(paymentSecretsSchema, data) }),
+    save: {
+      config: (config) => updatePayments(tenant.id, config),
+      secrets: (secretValues) => updatePaymentSecrets(tenant.id, secretValues),
+    },
+  });
+
   const { form, formProps, isPending, savedRecently } = useAutosaveForm({
     label: "Payments",
     schema: paymentsSchema,
-    defaultValues: toFormValues(tenant, secrets),
-    save: (data) => updatePayments(tenant.id, data),
+    defaultValues: initial,
+    save,
   });
 
   // Only the active processor's credentials are shown; the other's stay as they were.

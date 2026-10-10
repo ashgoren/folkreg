@@ -10,18 +10,29 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useAutosaveForm } from "@/lib/useAutosaveForm";
 import type { Tenant, TenantSecrets } from "@repo/types";
-import { waiversSchema } from "./schema";
-import { updateWaivers } from "./actions";
+import { waiverConfigSchema } from "@repo/tenant-config";
+import { pickKeys, useSaveChangedParts } from "@/lib/useSaveChangedParts";
+import { waiverSecretsSchema, waiversSchema, type WaiversValues } from "./schema";
+import { updateWaivers, updateWaiverSecrets } from "./actions";
 
 export function WaiversForm({ tenant, secrets }: { tenant: Tenant; secrets: TenantSecrets }) {
+  // tenant_secrets' unset null is the form's "".
+  const initial: WaiversValues = { ...tenant.waiver_config, docuseal_key: secrets.docuseal_key ?? "" };
+  // waiver_config and the key are saved separately, each only when it changed.
+  const save = useSaveChangedParts({
+    initial,
+    split: (data: WaiversValues) => ({ config: pickKeys(waiverConfigSchema, data), secrets: pickKeys(waiverSecretsSchema, data) }),
+    save: {
+      config: (config) => updateWaivers(tenant.id, config),
+      secrets: (secretValues) => updateWaiverSecrets(tenant.id, secretValues),
+    },
+  });
+
   const { form, formProps, isPending, savedRecently } = useAutosaveForm({
     label: "Waivers",
     schema: waiversSchema,
-    defaultValues: {
-      ...tenant.waiver_config,
-      docuseal_key: secrets.docuseal_key ?? "",
-    },
-    save: (data) => updateWaivers(tenant.id, data),
+    defaultValues: initial,
+    save,
   });
 
   const showWaiver = useWatch({ control: form.control, name: "show" });

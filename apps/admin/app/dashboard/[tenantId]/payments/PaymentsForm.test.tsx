@@ -9,17 +9,17 @@ import { expectLastSave, expectNoSave } from "@/test/autosave";
 import { defaultPaymentsConfig } from "@repo/tenant-config";
 import type { PaymentsConfig } from "@repo/tenant-config";
 
-vi.mock("./actions", () => ({ updatePayments: vi.fn() }));
-import { updatePayments } from "./actions";
+vi.mock("./actions", () => ({ updatePayments: vi.fn(), updatePaymentSecrets: vi.fn() }));
+import { updatePayments, updatePaymentSecrets } from "./actions";
 import { PaymentsForm } from "./PaymentsForm";
-import type { PaymentsValues } from "./schema";
+import type { PaymentSecretsValues } from "./schema";
 
 const byId = (id: string) => document.getElementById(id) as HTMLInputElement;
 
 // What a new tenant's form starts with, and so what an edit to it saves: the default
-// payments_config plus blank secrets.
-const BLANK: PaymentsValues = {
-  ...defaultPaymentsConfig(),
+// payments_config (saved by updatePayments) and blank secrets (saved by updatePaymentSecrets).
+const BLANK = defaultPaymentsConfig();
+const BLANK_SECRETS: PaymentSecretsValues = {
   stripe_secret_key_live: "",
   stripe_webhook_secret_live: "",
   stripe_secret_key_test: "",
@@ -48,6 +48,7 @@ const storedConfig = (overrides: Partial<PaymentsConfig> = {}): PaymentsConfig =
 describe("PaymentsForm", () => {
   beforeEach(() => {
     vi.mocked(updatePayments).mockReset().mockResolvedValue(null);
+    vi.mocked(updatePaymentSecrets).mockReset().mockResolvedValue(null);
   });
 
   describe("initial state", () => {
@@ -115,9 +116,11 @@ describe("PaymentsForm", () => {
       await user.type(screen.getByLabelText("Secret key (Test)"), "sk_test");
       await user.tab();
 
-      await expectLastSave(vi.mocked(updatePayments), tenant.id, {
-        ...BLANK, stripe_secret_key_live: "sk_live", stripe_secret_key_test: "sk_test",
+      await expectLastSave(vi.mocked(updatePaymentSecrets), tenant.id, {
+        ...BLANK_SECRETS, stripe_secret_key_live: "sk_live", stripe_secret_key_test: "sk_test",
       });
+      // Nothing in payments_config changed, so it isn't written.
+      expect(updatePayments).not.toHaveBeenCalled();
 
       await user.click(screen.getByRole("tab", { name: "Live" }));
       expect(screen.getByLabelText("Secret key (Live)")).toHaveValue("sk_live");
@@ -133,9 +136,9 @@ describe("PaymentsForm", () => {
       await user.type(screen.getByLabelText("Client ID (Test)"), "client_test");
       await user.tab();
 
-      await expectLastSave(vi.mocked(updatePayments), tenant.id, expect.objectContaining({
-        processor: "paypal", paypal_webhook_id_live: "wh_live", paypalClientIdTest: "client_test",
-      }));
+      // The webhook ID is a secret; the client ID is public config.
+      await expectLastSave(vi.mocked(updatePaymentSecrets), tenant.id, expect.objectContaining({ paypal_webhook_id_live: "wh_live" }));
+      await expectLastSave(vi.mocked(updatePayments), tenant.id, expect.objectContaining({ processor: "paypal", paypalClientIdTest: "client_test" }));
     });
 
     // Publishable keys and client IDs are sent to every registrant's browser; secrets never are.
@@ -145,6 +148,34 @@ describe("PaymentsForm", () => {
       expect(screen.getByLabelText("Secret key (Live)")).toHaveAttribute("type", "password");
       expect(screen.getByLabelText("Webhook secret (Live)")).toHaveAttribute("type", "password");
     });
+  });
+
+  // The point of saving the two tables separately: config changes never resend the secrets.
+  it("saves a config change without sending the secrets", async () => {
+    const tenant = makeTenant();
+    const user = userEvent.setup();
+    render(<PaymentsForm tenant={tenant} secrets={makeSecrets({ stripe_secret_key_live: "sk_live" })} />);
+
+    await user.click(screen.getByRole("switch", { name: /payment summary/ }));
+    await expectLastSave(vi.mocked(updatePayments), tenant.id, { ...BLANK, showPaymentSummary: false });
+    expect(updatePaymentSecrets).not.toHaveBeenCalled();
+  });
+
+  // Each part's last save only moves on when it succeeds, so a failed one is sent again with the
+  // next change.
+  it("sends the secrets again with the next change after their save fails", async () => {
+    vi.mocked(updatePaymentSecrets).mockResolvedValueOnce("Couldn't save");
+    const tenant = makeTenant();
+    const user = userEvent.setup();
+    render(<PaymentsForm tenant={tenant} secrets={makeSecrets()} />);
+
+    await user.type(screen.getByLabelText("Secret key (Live)"), "sk_live");
+    await user.tab();
+    await expectLastSave(vi.mocked(updatePaymentSecrets), tenant.id, { ...BLANK_SECRETS, stripe_secret_key_live: "sk_live" });
+
+    await user.click(screen.getByRole("switch", { name: /payment summary/ }));
+    await expectLastSave(vi.mocked(updatePayments), tenant.id, { ...BLANK, showPaymentSummary: false });
+    expect(updatePaymentSecrets).toHaveBeenCalledTimes(2);
   });
 
   describe("switching processors", () => {
@@ -163,8 +194,9 @@ describe("PaymentsForm", () => {
       expect(screen.getByLabelText("Client ID (Live)")).toHaveValue("");
       expect(screen.getByRole("switch", { name: /cover fees/ })).toBeChecked();
       await expectLastSave(vi.mocked(updatePayments), tenant.id, {
-        ...BLANK, processor: "paypal", stripe_secret_key_live: "sk_live", coverFees: { enabled: true, percent: 2.9, fixed: 0.3 },
+        ...BLANK, processor: "paypal", coverFees: { enabled: true, percent: 2.9, fixed: 0.3 },
       });
+      await expectLastSave(vi.mocked(updatePaymentSecrets), tenant.id, { ...BLANK_SECRETS, stripe_secret_key_live: "sk_live" });
     });
 
     it("shows each processor's values again when switching back", async () => {
