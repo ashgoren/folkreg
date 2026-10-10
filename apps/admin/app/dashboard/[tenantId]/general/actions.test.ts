@@ -8,11 +8,10 @@ import { itGuardsTheAction, useActionHarness } from "@/test/action-harness";
 // in @repo/db.
 vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
 import { createClient } from "@/lib/supabase/server";
-import { updateGeneral } from "./actions";
+import { updateGeneral, updateSlug } from "./actions";
 import type { GeneralValues } from "./schema";
 
 const values = (overrides: Partial<GeneralValues> = {}): GeneralValues => ({
-  slug: ADMIN_TENANT_SLUG,
   is_live: true,
   show_preregistration: true,
   ...overrides,
@@ -21,13 +20,13 @@ const values = (overrides: Partial<GeneralValues> = {}): GeneralValues => ({
 describe("updateGeneral", () => {
   const harness = useActionHarness(createClient);
 
-  it("saves slug, is_live, and show_preregistration", async () => {
-    expect(await updateGeneral(harness.tenantId, values({ slug: "renamed-tenant" }))).toBeNull();
+  it("saves is_live and show_preregistration, leaving the slug alone", async () => {
+    expect(await updateGeneral(harness.tenantId, values())).toBeNull();
 
     const tenant = await readTenant(harness.service, harness.tenantId);
-    expect(tenant.slug).toBe("renamed-tenant");
     expect(tenant.is_live).toBe(true);
     expect(tenant.show_preregistration).toBe(true);
+    expect(tenant.slug).toBe(ADMIN_TENANT_SLUG);
   });
 
   it("leaves every config column alone", async () => {
@@ -46,20 +45,34 @@ describe("updateGeneral", () => {
     expect(configColumns(await readTenant(harness.service, harness.tenantId))).toEqual(before);
   });
 
-  // PostgREST names the violated constraint only in `message` -- `details` is null for this
-  // error under the authenticated role -- so that's what the action matches on.
-  it("maps a duplicate-slug unique violation to a readable message", async () => {
-    expect(await updateGeneral(harness.tenantId, values({ slug: OTHER_TENANT_SLUG }))).toBe("That slug is already taken");
+  itGuardsTheAction({
+    harness, createClient, run: updateGeneral,
+    validValues: () => values(),
+    invalidValues: () => ({ is_live: "yes" }),
+  });
+});
+
+describe("updateSlug", () => {
+  const harness = useActionHarness(createClient);
+
+  it("saves the subdomain alone", async () => {
+    const before = await readTenant(harness.service, harness.tenantId);
+    expect(await updateSlug(harness.tenantId, "renamed-tenant")).toBeNull();
+    const tenant = await readTenant(harness.service, harness.tenantId);
+    expect(tenant.slug).toBe("renamed-tenant");
+    expect(tenant.is_live).toBe(before.is_live);
   });
 
-  it("never applies a duplicate slug", async () => {
-    await updateGeneral(harness.tenantId, values({ slug: OTHER_TENANT_SLUG }));
+  // PostgREST names the violated constraint only in `message` -- `details` is null for this
+  // error under the authenticated role -- so that's what the action matches on.
+  it("says so, and changes nothing, when another tenant has the subdomain", async () => {
+    expect(await updateSlug(harness.tenantId, OTHER_TENANT_SLUG)).toBe("That subdomain is already taken");
     expect((await readTenant(harness.service, harness.tenantId)).slug).toBe(ADMIN_TENANT_SLUG);
   });
 
   itGuardsTheAction({
-    harness, createClient, run: updateGeneral,
-    validValues: () => values(),
-    invalidValues: () => values({ slug: "Has Spaces" }),
+    harness, createClient, run: updateSlug,
+    validValues: () => "renamed-tenant",
+    invalidValues: () => "admin",
   });
 });
