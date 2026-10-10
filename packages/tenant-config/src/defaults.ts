@@ -63,7 +63,19 @@ export const defaultAdmissionsConfig = (): AdmissionsConfig => ({
   costDefault: 350,
   cost: 200,
   earlybirdCutoff: "",
-  categories: [],
+  // A typical event's tiers, in the order registrants see them. They price by the age field's
+  // options, and these are the values that field starts with. Ages 0-12 have one price each, so
+  // their categories are unnamed: the registration form shows just the price.
+  categories: [
+    { label: "Benefactor", ageGroups: ["adult"], early: 340, later: 355 },
+    { label: "Sustaining", ageGroups: ["adult"], early: 280, later: 295 },
+    { label: "Sustaining", ageGroups: ["13-17"], early: 220, later: 235 },
+    { label: "Basic", ageGroups: ["adult"], early: 220, later: 235 },
+    { label: "Basic", ageGroups: ["13-17"], early: 160, later: 175 },
+    { label: "", ageGroups: ["6-12"], early: 160, later: 175 },
+    { label: "", ageGroups: ["3-5"], early: 105, later: 120 },
+    { label: "", ageGroups: ["0-2"], early: 0, later: 0 },
+  ],
   admissionQuantityMax: 4,
   waitlistCutoff: 999, // high enough that a new event doesn't waitlist anyone
   forceWaitlist: false,
@@ -83,8 +95,9 @@ export const defaultPaymentsConfig = (): PaymentsConfig => ({
   directPaymentUrl: "",
   coverFeesCheckbox: false,
   showPaymentSummary: true,
-  deposit: { enabled: false, amount: 0 },
-  donation: { enabled: false, max: 0 },
+  // Off to start, with amounts ready for when they're switched on.
+  deposit: { enabled: false, amount: 50 },
+  donation: { enabled: false, max: 999 },
   checks: { allowed: false, showPostalAddress: false, payee: "", address: "" },
   statementDescriptorSuffix: "",
 });

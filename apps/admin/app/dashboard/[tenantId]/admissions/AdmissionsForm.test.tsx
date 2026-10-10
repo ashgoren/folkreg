@@ -209,8 +209,21 @@ describe("AdmissionsForm", () => {
   });
 
   describe("tiered", () => {
-    it("starts with no categories, and adds/fills/removes them", async () => {
-      const tenant = makeTenant(withAge());
+    // A typical event's tiers, priced by the options the age field starts with.
+    it("starts a new tenant with the default categories, their age groups checked", async () => {
+      const user = userEvent.setup();
+      render(<AdmissionsForm tenant={makeTenant(withAge())} />);
+
+      await user.click(screen.getByRole("radio", { name: "Tiered" }));
+      expect(screen.getAllByRole("button", { name: "Remove category" })).toHaveLength(DEFAULTS.categories.length);
+      expect(byId("admissions-category-label-0")).toHaveValue("Benefactor");
+      const benefactor = byId("admissions-category-label-0").closest(".rounded.border") as HTMLElement;
+      expect(within(benefactor).getByRole("checkbox", { name: "Adult" })).toBeChecked();
+      expect(within(benefactor).queryByRole("checkbox", { name: /not an age option/ })).not.toBeInTheDocument();
+    });
+
+    it("adds, fills, and removes categories", async () => {
+      const tenant = makeTenant({ admissions_config: stored({ categories: [] }), ...withAge() });
       const user = userEvent.setup();
       render(<AdmissionsForm tenant={tenant} />);
 
@@ -243,7 +256,10 @@ describe("AdmissionsForm", () => {
 
     // A tenant's age brackets are its own: whatever options its age field has.
     it("offers the age field's options as the age groups", async () => {
-      const tenant = makeTenant(withAge([{ label: "Under 30", value: "under-30" }, { label: "30 and over", value: "30-plus" }]));
+      const tenant = makeTenant({
+        admissions_config: stored({ categories: [] }),
+        ...withAge([{ label: "Under 30", value: "under-30" }, { label: "30 and over", value: "30-plus" }]),
+      });
       const user = userEvent.setup();
       render(<AdmissionsForm tenant={tenant} />);
 

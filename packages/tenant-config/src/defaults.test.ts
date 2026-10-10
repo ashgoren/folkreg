@@ -14,6 +14,14 @@ describe("defaultTenantConfig", () => {
   it.each(["sliding-scale", "fixed", "tiered"] as const)("has valid admissions values in %s mode", (mode) => {
     expect(admissionsConfigSchema.safeParse({ ...defaultAdmissionsConfig(), mode }).success).toBe(true);
   });
+
+  // Tiered pricing prices people by their answer to the age field, so the default categories only
+  // work if their age groups are the options that field starts with.
+  it("prices only age groups the age field starts with, each of them at least once", () => {
+    const ageValues = defaultFieldConfig("age").options!.map((option) => option.value);
+    const priced = defaultAdmissionsConfig().categories.flatMap((category) => category.ageGroups);
+    expect(new Set(priced)).toEqual(new Set(ageValues));
+  });
 });
 
 describe("defaultFieldsConfig", () => {

@@ -90,6 +90,23 @@ describe("catalog rules", () => {
     expect(FIELD_DEFS[name].followUp).toMatchObject({ triggerValue: trigger, storageKey });
   });
 
+  // The follow-up appears when its trigger option is chosen, so a field that starts without that
+  // option could never show it.
+  it("starts every field with a follow-up with its trigger option", () => {
+    for (const [name, def] of Object.entries(FIELD_DEFS)) {
+      if (!def.followUp) continue;
+      expect(def.defaults?.options?.map((option) => option.value), name).toContain(def.followUp.triggerValue);
+    }
+  });
+
+  // An option list is part of what makes a choice field usable as soon as it's added.
+  it("starts every radio and checkbox field with options to choose from", () => {
+    const without = Object.entries(FIELD_DEFS)
+      .filter(([, def]) => (def.type === "radio" || def.type === "checkbox") && !def.defaults?.options?.length)
+      .map(([name]) => name);
+    expect(without).toEqual([]);
+  });
+
   it("asks only the agreement of the first person alone", () => {
     const firstOnly = Object.entries(FIELD_DEFS).filter(([, def]) => def.firstPersonOnly).map(([name]) => name);
     expect(firstOnly).toEqual(["agreement"]);

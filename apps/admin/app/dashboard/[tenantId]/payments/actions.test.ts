@@ -94,7 +94,8 @@ describe("updatePayments", () => {
   describe("shared settings", () => {
     it("rejects a cleared (NaN) deposit amount without saving", async () => {
       expect(await updatePayments(harness.tenantId, values({ deposit: { enabled: true, amount: NaN } }))).toBe("Invalid data");
-      expect(await savedConfig()).toMatchObject({ deposit: { enabled: false, amount: 0 } });
+      // Still the tenant's default deposit settings.
+      expect(await savedConfig()).toMatchObject({ deposit: defaultPaymentsConfig().deposit });
     });
 
     it("saves deposit, donation, fee, summary, and direct-payment settings", async () => {

@@ -188,6 +188,7 @@ describe("PaymentsForm", () => {
       render(<PaymentsForm tenant={tenant} secrets={makeSecrets()} />);
 
       await user.click(screen.getByRole("switch", { name: /Allow deposit/ }));
+      await user.clear(byId("payments-deposit-amount"));
       await user.type(byId("payments-deposit-amount"), "25");
       await user.type(byId("payments-due-date"), "June 1");
       await user.tab();
@@ -208,6 +209,7 @@ describe("PaymentsForm", () => {
       render(<PaymentsForm tenant={tenant} secrets={makeSecrets()} />);
 
       await user.click(screen.getByRole("switch", { name: /Allow donation/ }));
+      await user.clear(byId("payments-donation-max"));
       await user.type(byId("payments-donation-max"), "500");
       await user.tab();
       await expectLastSave(vi.mocked(updatePayments), tenant.id, expect.objectContaining({ donation: { enabled: true, max: 500 } }));

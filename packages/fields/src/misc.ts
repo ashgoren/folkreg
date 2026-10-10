@@ -42,7 +42,16 @@ export const MISC_FIELD_DEFS = {
     type: "checkbox",
     defaults: {
       title: "Transportation and Hosting",
-      label: "If you check any of these boxes we will be in touch closer to camp to coordinate.",
+      label: "If you check any of these boxes we will be in touch closer to camp to coordinate. We will do our best to meet everyone's carpool needs. For housing, we will put people directly in touch with possible matches if there are any. NOTE: historically, carpools and housing are tight. If you are able to offer a ride or a place to stay, please check the box!",
+      options: [
+        { label: "I can offer a ride to camp", value: "offer-ride" },
+        { label: "I might be able to give a ride to camp", value: "offer-ride-maybe" },
+        { label: "I need a ride to camp", value: "need-ride" },
+        { label: "I might need a ride to camp", value: "need-ride-maybe" },
+        { label: "I am willing and able to rent a car to drive to camp if necessary", value: "rent-car" },
+        { label: "I can offer a place to stay in the area before or after camp", value: "offer-housing" },
+        { label: "I could use help finding a place to stay in the area before or after camp", value: "need-housing" },
+      ],
     },
   },
   volunteer: {
@@ -50,6 +59,12 @@ export const MISC_FIELD_DEFS = {
     defaults: {
       title: "Volunteering",
       label: "Everyone will be asked to help with camp, but we need a few people who can commit in advance or in larger ways.",
+      options: [
+        { label: "I can come early to help with camp set up", value: "setup" },
+        { label: "I can stay late to help with camp take down", value: "strike" },
+        { label: "I can take on a lead volunteer role during camp (e.g. button maker or snack coordinator)", value: "lead" },
+        { label: "I can help coordinate in the months before camp", value: "pre" },
+      ],
     },
   },
   dietaryPreferences: {
@@ -59,6 +74,12 @@ export const MISC_FIELD_DEFS = {
       required: true,
       title: "Dietary Preferences",
       label: "Please choose one.",
+      options: [
+        { label: "Vegan", value: "Vegan" },
+        { label: "Vegetarian", value: "Vegetarian" },
+        { label: "No Red Meat", value: "No Red Meat" },
+        { label: "Omnivore", value: "Omnivore" },
+      ],
     },
   },
   dietaryRestrictions: {
@@ -72,14 +93,22 @@ export const MISC_FIELD_DEFS = {
     },
     defaults: {
       title: "Additional Dietary Restrictions",
-      label: "Please note, we will try our best to accommodate you with the prepared meals.",
+      label: "Please note, we will try our best to accommodate you with the prepared meals, but the kitchen has limited options. They do their best, but if you're very worried about your restrictions (if highly allergic, or highly specific requirements) we recommend bringing your own food as well. We have a refrigerator and storage space available for personal use that campers who need it may use. There's room to elaborate on allergies or safety needs below.",
+      options: [
+        { label: "Gluten-free", value: "gluten" },
+        { label: "Soy-free", value: "soy" },
+        { label: "Dairy-free", value: "dairy" },
+        { label: "Kosher for Passover (stringent)", value: "kosher-strict" },
+        { label: "Kosher for Passover (chill, just won't eat bread)", value: "kosher" },
+        { label: "Other (please describe below)", value: "other" },
+      ],
     },
   },
   allergies: {
     type: "textarea",
     defaults: {
       title: "Allergy / Safety Information",
-      label: "Please elaborate on any allergy or safety needs, including non-food items.",
+      label: "So there's \"I don't eat gluten\" and then there's \"if a single crumb of gluten cross-contaminates my food I will be sick all weekend.\" Please elaborate as much as you need to feel comfortable that we know your safety and allergy needs. This can include non-food things as well.",
       rows: 2,
     },
   },
@@ -87,7 +116,7 @@ export const MISC_FIELD_DEFS = {
     type: "textarea",
     defaults: {
       title: "Camp housing needs or requests",
-      label: "e.g. accessibility needs, I plan on camping, etc.",
+      label: "(e.g. accessibility needs, I plan on camping, etc.)",
       rows: 2,
     },
   },
@@ -95,7 +124,7 @@ export const MISC_FIELD_DEFS = {
     type: "textarea",
     defaults: {
       title: "Room sharing preferences",
-      label: "If there are people you would like to room with, list their names here.",
+      label: "We now pre-assign housing and try our best to meet everyone's needs and preferences. If there are people you would like to room with, list their names here.",
       rows: 2,
     },
   },
@@ -112,14 +141,26 @@ export const MISC_FIELD_DEFS = {
     defaults: {
       required: true,
       title: "Photo Consent",
-      label: "Please let us know if you have any concerns about your photo being taken or posted publicly.",
+      label: "People at the event take photos. Please let us know if you have any concerns about your photo being taken or posted publicly.",
+      options: [
+        { label: "Photos are fine!", value: "Yes" },
+        { label: "Photos are fine, but I don't want to be tagged online", value: "No tags" },
+        { label: "Please do not post photos of me.", value: "No" },
+        { label: "Other", value: "Other" },
+      ],
     },
   },
   bedding: {
     type: "checkbox",
     defaults: {
       title: "Bedding and Towels",
-      label: "Campers will need a pillow, a towel, and sheets or a sleeping bag.",
+      label: "Campers will need a pillow, a towel, and sheets and blanket or a sleeping bag. If at all possible, please bring your own or arrange with a friend directly to borrow.",
+      options: [
+        { label: "I can offer bedding and a towel to a camper from out of town", value: "offer-bedding" },
+        { label: "I might be able to offer bedding and a towel", value: "offer-bedding-maybe" },
+        { label: "I am coming from out of town and will need help finding bedding and a towel", value: "need-bedding" },
+        { label: "I might need bedding and a towel", value: "need-bedding-maybe" },
+      ],
     },
   },
   hospitality: {
@@ -127,27 +168,36 @@ export const MISC_FIELD_DEFS = {
     defaults: {
       title: "Housing",
       label: "Do you need housing or can you offer housing?",
+      options: [
+        { label: "I can offer housing", value: "offering" },
+        { label: "I need housing (limited availability)", value: "requesting" },
+      ],
     },
   },
   scholarship: {
     type: "checkbox",
     defaults: {
       title: "Scholarships (limited availability)",
-      label: "If you are limited financially, we have a small number of half price scholarships available.",
+      label: "We feel we've kept the price of camp remarkably low. However, if you are limited financially, we have a small number of half price scholarships available for camp. If you'd like to be considered for one of these, please let us know.",
+      options: [{ label: "Yes, please consider me for a scholarship", value: "yes" }],
     },
   },
   tests: {
     type: "checkbox",
     defaults: {
       title: "Covid Tests",
-      label: "You will need to test shortly before arriving at camp. If you cannot bring your own tests, please let us know.",
+      label: "You will need to test shortly before arriving at camp AND again on Saturday afternoon. Please also bring an extra test or two, for your own use if you should feel ill during the weekend. If you can not bring your own tests, please let us know here.",
+      options: [
+        { label: "I need 1 test", value: "1" },
+        { label: "I need 2 tests", value: "2" },
+      ],
     },
   },
   comments: {
     type: "textarea",
     defaults: {
       title: "Anything else?",
-      label: "Tell us anything else you'd like us to know.",
+      label: "Tell us anything else you'd like us to know. We want to be sure we don't miss anything that could make the weekend welcoming and enjoyable.",
       rows: 5,
     },
   },
@@ -162,6 +212,11 @@ export const MISC_FIELD_DEFS = {
     },
     defaults: {
       title: "Do any of the following apply to you?",
+      options: [
+        { label: "I am under 18 years old", value: "minor" },
+        { label: "I am new to contra and interested in a beginner's lesson", value: "beginner" },
+        { label: "I do not want photos of me to be posted online (note that we already ask that no one tag photos)", value: "no-photos" },
+      ],
     },
   },
   agreement: {

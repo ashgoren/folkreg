@@ -52,10 +52,13 @@ test("a sliding-scale default outside the range shows an error and isn't saved",
 });
 
 test("tiered mode saves categories with their age groups and prices", async ({ page, tenantId }) => {
-  // Age groups are the age field's options, which a new tenant doesn't have active.
+  // Age groups are the age field's options, which a new tenant doesn't have active. Starts from no
+  // categories, rather than the defaults, to build one from scratch.
   const fields = defaultFieldsConfig();
   fields.misc.push(defaultFieldEntry("age"));
-  const { error } = await service.from("tenants").update({ fields_config: fields }).eq("id", tenantId);
+  const { error } = await service.from("tenants")
+    .update({ fields_config: fields, admissions_config: { ...defaultAdmissionsConfig(), categories: [] } })
+    .eq("id", tenantId);
   if (error) throw error;
   await page.reload();
 
