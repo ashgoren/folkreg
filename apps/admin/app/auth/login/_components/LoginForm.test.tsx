@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 vi.mock("../actions", () => ({ login: vi.fn() }));
@@ -62,6 +62,7 @@ describe("LoginForm", () => {
 
     finish("Invalid login credentials");
     expect(await screen.findByRole("button", { name: "Sign in" })).toBeEnabled();
-    expect(screen.getByLabelText("Email")).toHaveFocus();
+    // Focus moves in an effect after the render that re-enables the button, so wait for it too.
+    await waitFor(() => expect(screen.getByLabelText("Email")).toHaveFocus());
   });
 });
