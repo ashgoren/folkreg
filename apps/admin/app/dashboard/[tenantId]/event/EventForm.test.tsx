@@ -135,4 +135,17 @@ describe("EventForm", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Must be a web address starting with https://");
     await expectNoSave(vi.mocked(updateEvent));
   });
+
+  // A choice from a list is a complete gesture, so it saves right away, as a switch does.
+  it("offers the US timezones and saves a choice immediately", async () => {
+    const tenant = makeTenant();
+    const user = userEvent.setup();
+    render(<EventForm tenant={tenant} />);
+
+    expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual([
+      "Eastern", "Central", "Mountain", "Arizona (no DST)", "Pacific", "Alaska", "Hawaii",
+    ]);
+    await user.selectOptions(byId("event-timezone"), "Mountain");
+    await expectLastSave(vi.mocked(updateEvent), tenant.id, blankValues({ timezone: "America/Denver" }));
+  });
 });

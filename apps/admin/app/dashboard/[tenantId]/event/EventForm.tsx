@@ -3,11 +3,12 @@
 import { FieldGroup } from "@/components/ui/field";
 import { AutosaveStatus } from "@/components/autosave-status";
 import { NumberField } from "@/components/form-number-field";
+import { SelectField } from "@/components/form-select-field";
 import { TextField } from "@/components/form-text-field";
 import { Separator } from "@/components/ui/separator";
 import { useAutosaveForm } from "@/lib/useAutosaveForm";
 import type { Tenant } from "@repo/types";
-import { eventConfigSchema } from "@repo/tenant-config";
+import { eventConfigSchema, TIMEZONES } from "@repo/tenant-config";
 import { updateEvent } from "./actions";
 
 export function EventForm({ tenant }: { tenant: Tenant }) {
@@ -30,7 +31,14 @@ export function EventForm({ tenant }: { tenant: Tenant }) {
 
         <TextField control={form.control} name="date" id="event-date" label="Date" description="Display string shown to registrants, e.g. October 3-5, 2025" autoComplete="off" required />
 
-        <TextField control={form.control} name="timezone" id="event-timezone" label="Timezone" description="IANA timezone" autoComplete="off" required />
+        <SelectField
+          control={form.control}
+          name="timezone"
+          id="event-timezone"
+          label="Timezone"
+          options={TIMEZONES}
+          required
+        />
       </FieldGroup>
 
       <Separator />

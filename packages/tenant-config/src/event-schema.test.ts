@@ -1,12 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { eventConfigSchema, type EventConfig } from "./schemas";
+import { eventConfigSchema, TIMEZONES, type EventConfig } from "./schemas";
 
 const blank: EventConfig = {
   title: "",
   year: 2026,
   location: "",
   date: "",
-  timezone: "",
+  timezone: "America/Los_Angeles",
   calendar: { title: "", description: "", location: "", start: "", end: "" },
   contacts: { info: "", housing: "" },
   links: { info: "", health: "", safety: "" },
@@ -66,5 +66,23 @@ describe("eventConfigSchema", () => {
           .toEqual([["links.safety", "Must be a web address starting with https://"]]);
       },
     );
+  });
+
+  describe("timezone", () => {
+    it.each(TIMEZONES.map((timezone) => timezone.value))("accepts %s", (timezone) => {
+      expect(eventConfigSchema.safeParse({ ...blank, timezone }).success).toBe(true);
+    });
+
+    // A timezone outside the list, a misspelling, or none: each would break every time-based rule.
+    it.each(["Europe/London", "America/Los_Angles", "Pacific", ""])("rejects %j", (timezone) => {
+      const result = eventConfigSchema.safeParse({ ...blank, timezone });
+      expect(result.error?.issues.map((issue) => [issue.path.join("."), issue.message])).toEqual([["timezone", "Choose a timezone"]]);
+    });
+
+    // The names are what date-fns-tz and Intl take, so each has to be a real IANA timezone.
+    it("lists only real IANA timezones", () => {
+      const known = new Set(Intl.supportedValuesOf("timeZone"));
+      expect(TIMEZONES.filter((timezone) => !known.has(timezone.value))).toEqual([]);
+    });
   });
 });

@@ -25,12 +25,25 @@ const optionalUrl = z.string().refine((value) => value === "" || webUrl.safePars
 });
 const hexColor = z.string().regex(/^#[0-9a-f]{6}$/i, "Must be a hex color, e.g. #d97706");
 
+// The timezones an event can be in by IANA name, which is what timezone arithmetic needs.
+export const TIMEZONES = [
+  { value: "America/New_York", label: "Eastern" },
+  { value: "America/Chicago", label: "Central" },
+  { value: "America/Denver", label: "Mountain" },
+  { value: "America/Phoenix", label: "Arizona (no DST)" },
+  { value: "America/Los_Angeles", label: "Pacific" },
+  { value: "America/Anchorage", label: "Alaska" },
+  { value: "Pacific/Honolulu", label: "Hawaii" },
+] as const;
+export type Timezone = (typeof TIMEZONES)[number]["value"];
+const timezoneSchema = z.enum(TIMEZONES.map((timezone) => timezone.value) as [Timezone, ...Timezone[]], { error: "Choose a timezone" });
+
 export const eventConfigSchema = z.object({
   title: z.string(),
   year: z.number().int().min(2000).max(2100),
   location: z.string(),
   date: z.string(),
-  timezone: z.string(),
+  timezone: timezoneSchema,
   calendar: z.object({
     title: z.string(),
     description: z.string(),
