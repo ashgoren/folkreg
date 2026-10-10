@@ -123,4 +123,16 @@ describe("EventForm", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Must be a valid email");
     await expectNoSave(vi.mocked(updateEvent));
   });
+
+  // Without "https://", the link would point at a page on the registration site itself.
+  it("flags a link without https:// and doesn't save it", async () => {
+    const user = userEvent.setup();
+    render(<EventForm tenant={makeTenant()} />);
+
+    await user.type(byId("event-link-safety"), "example.org/safety");
+    await user.tab();
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Must be a web address starting with https://");
+    await expectNoSave(vi.mocked(updateEvent));
+  });
 });

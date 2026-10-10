@@ -16,6 +16,13 @@ import { FIELD_DEFS, FIELD_NAMES } from "@repo/fields";
 
 const requiredNumber = (min: number) => z.number({ error: "Required" }).min(min);
 const optionalEmail = z.union([z.literal(""), z.string().email("Must be a valid email")]);
+// A web link registrants follow: http(s) on a real domain, so a missing "https://" (which would
+// make the link relative to the registration site) or a mailto:/javascript: link is caught.
+// One check, so a value wrong in several ways (e.g. mailto:, with no domain) gets one message.
+const webUrl = z.url({ protocol: /^https?$/, hostname: z.regexes.domain });
+const optionalUrl = z.string().refine((value) => value === "" || webUrl.safeParse(value).success, {
+  error: "Must be a web address starting with https://",
+});
 const hexColor = z.string().regex(/^#[0-9a-f]{6}$/i, "Must be a hex color, e.g. #d97706");
 
 export const eventConfigSchema = z.object({
@@ -36,9 +43,9 @@ export const eventConfigSchema = z.object({
     housing: optionalEmail,
   }),
   links: z.object({
-    info: z.string(),
-    health: z.string(),
-    safety: z.string(),
+    info: optionalUrl,
+    health: optionalUrl,
+    safety: optionalUrl,
   }),
 });
 export type EventConfig = z.infer<typeof eventConfigSchema>;

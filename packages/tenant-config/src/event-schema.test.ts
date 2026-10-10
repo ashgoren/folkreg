@@ -51,4 +51,20 @@ describe("eventConfigSchema", () => {
   it.each([2000, 2100])("accepts boundary year %s", (year) => {
     expect(eventConfigSchema.safeParse({ ...blank, year }).success).toBe(true);
   });
+
+  describe("links", () => {
+    it.each(["", "https://example.org/policy", "http://example.org"])("accepts %j", (info) => {
+      expect(eventConfigSchema.safeParse({ ...blank, links: { ...blank.links, info } }).success).toBe(true);
+    });
+
+    // Without a scheme, a link would be relative to the registration site; other schemes aren't web pages.
+    it.each(["example.org/policy", "www.example.org", "mailto:info@example.org", "javascript:alert(1)", "https://example"])(
+      "rejects %j",
+      (safety) => {
+        const result = eventConfigSchema.safeParse({ ...blank, links: { ...blank.links, safety } });
+        expect(result.error?.issues.map((issue) => [issue.path.join("."), issue.message]))
+          .toEqual([["links.safety", "Must be a web address starting with https://"]]);
+      },
+    );
+  });
 });
