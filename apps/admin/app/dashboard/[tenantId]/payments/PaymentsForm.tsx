@@ -144,7 +144,7 @@ export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: Ten
             <Switch
               id="payments-deposit-enabled"
               checked={field.value}
-              onCheckedChange={async (checked) => { if (checked || await form.trigger("deposit.amount")) field.onChange(checked); }}
+              onCheckedChange={async (checked) => { if (checked || await form.trigger(["deposit.amount", "paymentDueDate"])) field.onChange(checked); }}
               aria-invalid={fieldState.invalid}
             />
           </Field>

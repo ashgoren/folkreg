@@ -334,6 +334,22 @@ describe("PaymentsForm", () => {
       await expectNoSave(vi.mocked(updatePayments));
     });
 
+    // The switch also hides the due date, so its error would vanish while still blocking saves.
+    it("keeps deposits on while the balance due date has an error", async () => {
+      const user = userEvent.setup();
+      render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={makeSecrets()} />);
+      const due = byId("payments-due-date");
+      Object.defineProperty(due, "validity", { value: { badInput: true } }); // a half-typed date
+      fireEvent.change(due, { target: { value: "" } });
+      fireEvent.blur(due);
+
+      await user.click(screen.getByRole("switch", { name: /Allow deposit/ }));
+
+      expect(screen.getByRole("switch", { name: /Allow deposit/ })).toBeChecked();
+      expect(screen.getByText("Must be a date")).toBeInTheDocument();
+      await expectNoSave(vi.mocked(updatePayments));
+    });
+
     it("walks check payments from allowed -> email vs. mailing address -> payee and address", async () => {
       const tenant = makeTenant();
       const user = userEvent.setup();
