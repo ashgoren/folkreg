@@ -1,19 +1,29 @@
-// ConfigPanel is a controlled component -- it renders `config` and reports edits through
-// `onChange(partialUpdate)`, holding no state of its own -- so these tests render it directly and
-// assert on the partial updates it emits. Which controls appear depends on the field's type and
-// group, as defined in @repo/fields.
+// ConfigPanel binds its controls to one field's entry in the Fields form (e.g. "misc.0.label"),
+// so these tests render it inside a minimal react-hook-form form holding just that entry, with
+// the same schema resolver and blur validation as the page, and read the entry back from the form.
+// Which controls appear depends on the field's type and group, as defined in @repo/fields.
 
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { FieldName } from "@repo/fields";
-import type { FieldConfig } from "@repo/tenant-config";
+import { useForm, type UseFormReturn } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { FIELD_DEFS, type FieldName } from "@repo/fields";
+import { fieldsConfigSchema, type FieldConfig, type FieldsConfig, type FieldsConfigInput } from "@repo/tenant-config";
 import { ConfigPanel } from "./ConfigPanel";
 
-const renderPanel = (fieldName: FieldName, group: "contact" | "misc", config: FieldConfig = {}) => {
-  const onChange = vi.fn();
-  render(<ConfigPanel fieldName={fieldName} group={group} config={config} onChange={onChange} />);
-  return onChange;
+// Renders the panel for one field, returning a function that reads its entry's current values.
+const renderPanel = (fieldName: FieldName, config: FieldConfig = {}) => {
+  const group = FIELD_DEFS[fieldName].group;
+  const values: FieldsConfigInput = { contact: [], misc: [] };
+  values[group] = [{ name: fieldName, ...config }];
+  let form!: UseFormReturn<FieldsConfigInput, unknown, FieldsConfig>;
+  function Harness() {
+    form = useForm<FieldsConfigInput, unknown, FieldsConfig>({ mode: "onBlur", resolver: zodResolver(fieldsConfigSchema), defaultValues: values });
+    return <ConfigPanel form={form} path={`${group}.0`} fieldName={fieldName} />;
+  }
+  render(<Harness />);
+  return () => form.getValues(`${group}.0`);
 };
 
 // The Width/Rows number inputs sit next to a plain <span> caption rather than a <label>.
@@ -21,7 +31,7 @@ const captionedInput = (caption: string) => screen.getByText(caption).nextElemen
 
 describe("ConfigPanel", () => {
   it("shows the field's name and type", () => {
-    renderPanel("email", "contact");
+    renderPanel("email");
     expect(screen.getByRole("heading", { name: "email" })).toBeInTheDocument();
     // "email input", not a bare "email", which would read like a field name.
     expect(screen.getByText("email input", { selector: "span" })).toBeInTheDocument();
@@ -29,7 +39,7 @@ describe("ConfigPanel", () => {
 
   describe("contact text fields", () => {
     it("offer label, placeholder, default, and width -- but no heading, rows, or options", () => {
-      renderPanel("first", "contact", { label: "First name", width: 6 });
+      renderPanel("first", { label: "First name", width: 6 });
       expect(screen.getByLabelText("Label")).toHaveValue("First name");
       expect(screen.getByLabelText("Label").tagName).toBe("INPUT");
       expect(screen.getByLabelText("Placeholder")).toBeInTheDocument();
@@ -40,78 +50,136 @@ describe("ConfigPanel", () => {
       expect(screen.queryByRole("button", { name: /Add option/ })).not.toBeInTheDocument();
     });
 
-    it("report each edit as a partial update", async () => {
+    it("write each edit into the field's entry", async () => {
       const user = userEvent.setup();
-      const onChange = renderPanel("first", "contact");
+      const entry = renderPanel("first");
 
       await user.type(screen.getByLabelText("Placeholder"), "J");
-      expect(onChange).toHaveBeenLastCalledWith({ placeholder: "J" });
-
       await user.type(captionedInput("Width"), "4");
-      expect(onChange).toHaveBeenLastCalledWith({ width: 4 });
-
       await user.click(document.getElementById("config-required-first")!);
-      expect(onChange).toHaveBeenLastCalledWith({ required: true });
+
+      expect(entry()).toEqual({ name: "first", placeholder: "J", width: 4, required: true });
     });
 
-    it("clear width and default back to undefined rather than storing empties", async () => {
+    // Cleared to null, which the schema parses to no width at all: react-hook-form would show an
+    // undefined value as the width the form loaded with.
+    it("clear width to unset, leaving the input empty to type into", async () => {
       const user = userEvent.setup();
-      const onChange = renderPanel("first", "contact", { width: 6, defaultValue: "x" });
+      const entry = renderPanel("first", { width: 6 });
 
       await user.clear(captionedInput("Width"));
-      expect(onChange).toHaveBeenLastCalledWith({ width: undefined });
+      expect(entry().width).toBeNull();
+      expect(captionedInput("Width")).toHaveValue(null);
+
+      await user.type(captionedInput("Width"), "4");
+      expect(entry().width).toBe(4);
+    });
+
+    // jsdom doesn't model a number input holding unparseable text, so this reports it the way a
+    // browser does: an empty value, with validity.badInput set.
+    it("show an error for a width that isn't a number, rather than unsetting it", async () => {
+      const entry = renderPanel("first", { width: 6 });
+      const input = captionedInput("Width");
+      Object.defineProperty(input, "validity", { value: { badInput: true } });
+
+      fireEvent.change(input, { target: { value: "" } });
+      expect(entry().width).toBeNaN();
+      fireEvent.blur(input);
+      expect(await screen.findByText("Must be a whole number from 1 to 12")).toBeInTheDocument();
+    });
+
+    // Typed into an empty input, the text doesn't change the value (still ""), so there's no
+    // change event; it's caught when the input loses focus.
+    it("show an error for text that isn't a number typed into an empty width", async () => {
+      const entry = renderPanel("first");
+      const input = captionedInput("Width");
+      Object.defineProperty(input, "validity", { value: { badInput: true } });
+
+      fireEvent.blur(input);
+      expect(entry().width).toBeNaN();
+      expect(await screen.findByText("Must be a whole number from 1 to 12")).toBeInTheDocument();
+    });
+
+    it("clear the default to blank", async () => {
+      const user = userEvent.setup();
+      const entry = renderPanel("first", { defaultValue: "x" });
 
       await user.clear(screen.getByLabelText("Default"));
-      expect(onChange).toHaveBeenLastCalledWith({ defaultValue: undefined });
+      expect(entry().defaultValue).toBe("");
+      expect(screen.getByLabelText("Default")).toHaveValue("");
     });
+
+    it.each(["13", "0", "6.5"])(
+      "show an error for a width of %s once it loses focus",
+      async (width) => {
+        const message = "Must be a whole number from 1 to 12";
+        const user = userEvent.setup();
+        renderPanel("first");
+
+        await user.type(captionedInput("Width"), width);
+        expect(screen.queryByText(message)).not.toBeInTheDocument();
+        await user.tab();
+        expect(await screen.findByText(message)).toBeInTheDocument();
+        expect(captionedInput("Width")).toHaveAttribute("aria-invalid", "true");
+      },
+    );
   });
 
   describe("the nametag toggle", () => {
     it.each(["last", "pronouns"] as const)("appears for %s", async (name) => {
       const user = userEvent.setup();
-      const onChange = renderPanel(name, "contact");
+      const entry = renderPanel(name);
       await user.click(screen.getByRole("switch", { name: "Include on nametag?" }));
-      expect(onChange).toHaveBeenLastCalledWith({ includeOnNametag: true });
+      expect(entry().includeOnNametag).toBe(true);
     });
 
     it.each(["first", "email", "nametag"] as const)("doesn't appear for %s", (name) => {
-      renderPanel(name, "contact");
+      renderPanel(name);
       expect(screen.queryByRole("switch", { name: "Include on nametag?" })).not.toBeInTheDocument();
     });
   });
 
   describe("misc fields", () => {
     it("get a heading and a multi-line label, but no width", () => {
-      renderPanel("comments", "misc", { title: "Anything else?", label: "Tell us", rows: 5 });
+      renderPanel("comments", { title: "Anything else?", label: "Tell us", rows: 5 });
       expect(screen.getByLabelText("Heading")).toHaveValue("Anything else?");
       expect(screen.getByLabelText("Label").tagName).toBe("TEXTAREA");
       expect(screen.queryByText("Width")).not.toBeInTheDocument();
     });
 
-    it("textareas get a rows control that reports numbers", async () => {
+    it("textareas get a rows control that stores numbers", async () => {
       const user = userEvent.setup();
-      const onChange = renderPanel("comments", "misc");
+      const entry = renderPanel("comments");
       await user.type(captionedInput("Rows"), "3");
-      expect(onChange).toHaveBeenLastCalledWith({ rows: 3 });
+      expect(entry().rows).toBe(3);
     });
 
-    it("clearing rows reports undefined rather than 0", async () => {
+    it("clearing rows unsets it rather than storing 0", async () => {
       const user = userEvent.setup();
-      const onChange = renderPanel("comments", "misc", { rows: 5 });
+      const entry = renderPanel("comments", { rows: 5 });
       expect(captionedInput("Rows")).toHaveValue(5);
       await user.clear(captionedInput("Rows"));
-      expect(onChange).toHaveBeenLastCalledWith({ rows: undefined });
+      expect(entry().rows).toBeNull();
+      expect(captionedInput("Rows")).toHaveValue(null);
+    });
+
+    it("shows an error for 0 rows once it loses focus", async () => {
+      const user = userEvent.setup();
+      renderPanel("comments");
+      await user.type(captionedInput("Rows"), "0");
+      await user.tab();
+      expect(await screen.findByText("Must be a whole number, 1 or more")).toBeInTheDocument();
     });
 
     it.each(["age", "share", "first"] as const)("non-textarea %s gets no rows control", (name) => {
-      renderPanel(name, name === "first" ? "contact" : "misc");
+      renderPanel(name);
       expect(screen.queryByText("Rows")).not.toBeInTheDocument();
     });
   });
 
   describe("option lists", () => {
     it("radio fields edit their options instead of a placeholder", () => {
-      renderPanel("age", "misc", { options: [{ label: "Adult", value: "adult" }] });
+      renderPanel("age", { options: [{ label: "Adult", value: "adult" }] });
       expect(screen.getByText("Radio options")).toBeInTheDocument();
       expect(screen.queryByLabelText("Placeholder")).not.toBeInTheDocument();
       expect(screen.getByDisplayValue("Adult")).toBeInTheDocument();
@@ -119,27 +187,27 @@ describe("ConfigPanel", () => {
     });
 
     it("checkbox fields explain their comma-separated default", () => {
-      renderPanel("share", "misc");
+      renderPanel("share");
       expect(screen.getByText("Checkbox options")).toBeInTheDocument();
       expect(screen.getByText("Comma-separated option values")).toBeInTheDocument();
     });
 
-    it("add, edit, and remove options as whole-list updates", async () => {
+    it("add, edit, and remove options", async () => {
       const user = userEvent.setup();
       const options = [{ label: "Yes", value: "yes" }, { label: "No", value: "no" }];
-      const onChange = renderPanel("agreement", "misc", { options });
+      const entry = renderPanel("agreement", { options });
 
       await user.click(screen.getByRole("button", { name: /Add option/ }));
-      expect(onChange).toHaveBeenLastCalledWith({ options: [...options, { label: "", value: "" }] });
+      expect(entry().options).toEqual([...options, { label: "", value: "" }]);
 
       await user.type(screen.getByDisplayValue("No"), "!");
-      expect(onChange).toHaveBeenLastCalledWith({ options: [options[0], { label: "No!", value: "no" }] });
+      expect(entry().options).toEqual([options[0], { label: "No!", value: "no" }, { label: "", value: "" }]);
 
       await user.type(screen.getByDisplayValue("yes"), "s");
-      expect(onChange).toHaveBeenLastCalledWith({ options: [{ label: "Yes", value: "yess" }, options[1]] });
+      expect(entry().options).toEqual([{ label: "Yes", value: "yess" }, { label: "No!", value: "no" }, { label: "", value: "" }]);
 
       await user.click(screen.getAllByRole("button", { name: "Remove option" })[0]!);
-      expect(onChange).toHaveBeenLastCalledWith({ options: [options[1]] });
+      expect(entry().options).toEqual([{ label: "No!", value: "no" }, { label: "", value: "" }]);
     });
   });
 });

@@ -84,8 +84,17 @@ export function useAutosaveForm<TInput extends FieldValues, TOutput>({ label, sc
     if (unsavedInvalidRef.current) toast.error(`Your last change on ${label} wasn't saved: a field is invalid.`);
   }, [label]);
 
+  // The form's values as of the last change seen, serialized for comparison. react-hook-form also
+  // notifies watchers when nothing changed -- useFieldArray does when it mounts and after each of
+  // its own operations -- so a notification only counts as an edit if the values differ.
+  const lastValuesRef = useRef(JSON.stringify(defaultValues));
+
   useEffect(() => {
-    const subscription = form.watch(() => {
+    const subscription = form.watch((values) => {
+      const serialized = JSON.stringify(values);
+      if (serialized === lastValuesRef.current) return;
+      lastValuesRef.current = serialized;
+
       if (isTextEntry(document.activeElement)) {
         textEditPendingRef.current = true;
         return;

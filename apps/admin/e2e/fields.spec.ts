@@ -78,6 +78,19 @@ test("editing a field in the config panel saves its config", async ({ page, tena
   await expect(page.locator("#config-label-first")).toHaveValue("Given name");
 });
 
+// Chromium allows "e" in a number input (for exponents); on its own it isn't a number. Firefox
+// allows any text.
+test("text in the width input that isn't a number shows an error and isn't saved", async ({ page, tenantId }) => {
+  await rowButton(page, "first").click();
+  const width = page.getByText("Width", { exact: true }).locator("xpath=following-sibling::input");
+  await width.fill("");
+  await width.pressSequentially("e");
+  await width.press("Tab");
+
+  await expect(page.getByText("Must be a whole number from 1 to 12")).toBeVisible();
+  expect((await fieldsConfig(tenantId)).contact.find((field) => field.name === "first")).toMatchObject({ width: 6 });
+});
+
 test("dragging a row reorders the contact fields", async ({ page, tenantId }) => {
   await dragRowOnto(page, activeRow(page, "email").getByRole("button", { name: "Drag to reorder" }), activeRow(page, "first"));
 

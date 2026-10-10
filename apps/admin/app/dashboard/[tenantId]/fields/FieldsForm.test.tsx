@@ -1,12 +1,13 @@
 // Covers FieldsForm together with FieldRow and its use of ConfigPanel (whose per-type controls
-// are tested directly in ConfigPanel.test.tsx). Drag-reordering active fields is covered by the
+// are tested directly in ConfigPanel.test.tsx): what each gesture saves, and the panel following
+// its field around the lists. Drag-reordering active fields is covered by the
 // Playwright e2e suite -- dnd-kit's pointer/geometry handling doesn't run in jsdom.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FIELD_DEFS } from "@repo/fields";
-import { defaultFieldsConfig } from "@repo/tenant-config";
+import { defaultFieldEntry, defaultFieldsConfig } from "@repo/tenant-config";
 import { makeTenant } from "@/test/fixtures";
 import { expectLastSave, expectNoSave } from "@/test/autosave";
 import type { FieldsConfig } from "@repo/tenant-config";
@@ -137,6 +138,20 @@ describe("FieldsForm", () => {
       });
     });
 
+    // Removing a field deletes its settings, so adding it back starts over from the same entry a
+    // new tenant gets (including being on the nametag, for fields that can be).
+    it("re-activates a removed field with fresh defaults", async () => {
+      const tenant = makeTenant({ fields_config: { contact: [{ name: "last", label: "Surname" }], misc: [] } });
+      const user = userEvent.setup();
+      render(<FieldsForm tenant={tenant} />);
+
+      await user.click(within(activeRow("last")).getByRole("button", { name: "Remove field" }));
+      await user.click(within(availableRow("last")).getByRole("button", { name: "Add" }));
+
+      await expectLastSave(vi.mocked(updateFields), tenant.id, { contact: [defaultFieldEntry("last")], misc: [] });
+      expect(defaultFieldEntry("last")).toMatchObject({ includeOnNametag: true });
+    });
+
     it("deactivates a field, dropping its config and returning it to the available list", async () => {
       const tenant = makeTenant({ fields_config: config });
       const user = userEvent.setup();
@@ -217,6 +232,24 @@ describe("FieldsForm", () => {
       }));
     });
 
+    // The panel is bound to the field's place in its list, which a removal above it changes.
+    it("keeps editing the selected field after a field above it is removed", async () => {
+      const tenant = makeTenant({ fields_config: config });
+      const user = userEvent.setup();
+      render(<FieldsForm tenant={tenant} />);
+
+      await user.click(selectButton("email"));
+      await user.click(within(activeRow("first")).getByRole("button", { name: "Remove field" }));
+      expect(screen.getByLabelText("Label")).toHaveValue("Email");
+
+      await user.type(screen.getByLabelText("Placeholder"), "you@example.com");
+      await user.tab();
+      await expectLastSave(vi.mocked(updateFields), tenant.id, {
+        contact: [{ ...email, placeholder: "you@example.com" }],
+        misc: [carpool],
+      });
+    });
+
     it("shows the required asterisk as soon as the toggle flips", async () => {
       const tenant = makeTenant({ fields_config: config });
       const user = userEvent.setup();
@@ -229,6 +262,61 @@ describe("FieldsForm", () => {
       await expectLastSave(vi.mocked(updateFields), tenant.id, expect.objectContaining({
         contact: [first, { ...email, required: true }],
       }));
+    });
+  });
+
+  describe("invalid settings", () => {
+    const widthInput = () => screen.getByText("Width").nextElementSibling as HTMLInputElement;
+
+    it("shows an error under an out-of-range width, and doesn't save it", async () => {
+      const tenant = makeTenant({ fields_config: config });
+      const user = userEvent.setup();
+      render(<FieldsForm tenant={tenant} />);
+
+      await user.click(selectButton("email"));
+      await user.clear(widthInput());
+      await user.type(widthInput(), "13");
+      await user.tab();
+
+      expect(await screen.findByText("Must be a whole number from 1 to 12")).toBeInTheDocument();
+      await expectNoSave(vi.mocked(updateFields));
+    });
+
+    it("saves a cleared width as no width at all", async () => {
+      const tenant = makeTenant({ fields_config: config });
+      const user = userEvent.setup();
+      render(<FieldsForm tenant={tenant} />);
+
+      await user.click(selectButton("email"));
+      await user.clear(widthInput());
+      await user.tab();
+
+      // Sent as width: undefined, which the JSON column doesn't store.
+      await expectLastSave(vi.mocked(updateFields), tenant.id, { contact: [first, { name: "email", label: "Email" }], misc: [carpool] });
+    });
+
+    // Another field's panel would hide the error while it still blocked every save.
+    it("keeps the invalid field's panel open until it's fixed", async () => {
+      const tenant = makeTenant({ fields_config: config });
+      const user = userEvent.setup();
+      render(<FieldsForm tenant={tenant} />);
+
+      await user.click(selectButton("email"));
+      await user.clear(widthInput());
+      await user.type(widthInput(), "13");
+      await user.click(selectButton("first"));
+
+      // The switch waits on validation, so give it time to (not) happen.
+      await expectNoSave(vi.mocked(updateFields));
+      expect(screen.getByRole("heading", { name: "email" })).toBeInTheDocument();
+      expect(screen.getByText("Must be a whole number from 1 to 12")).toBeInTheDocument();
+
+      await user.clear(widthInput());
+      await user.type(widthInput(), "4");
+      await user.click(selectButton("first"));
+
+      expect(await screen.findByRole("heading", { name: "first" })).toBeInTheDocument();
+      await expectLastSave(vi.mocked(updateFields), tenant.id, { contact: [first, { ...email, width: 4 }], misc: [carpool] });
     });
   });
 

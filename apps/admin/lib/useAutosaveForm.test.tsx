@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { act, render, renderHook, screen } from "@testing-library/react";
-import { useFormState } from "react-hook-form";
+import { useFieldArray, useFormState } from "react-hook-form";
 import { toast } from "sonner";
 import userEvent from "@testing-library/user-event";
 import { z } from "zod";
@@ -45,6 +45,23 @@ function RangeForm({ save }: { save: (data: z.output<typeof rangeSchema>) => Pro
       <label>Low <input type="number" {...form.register("low", { valueAsNumber: true })} /></label>
       <label>High <input type="number" {...form.register("high", { valueAsNumber: true })} /></label>
       {errors.high && <p role="alert">{errors.high.message}</p>}
+    </form>
+  );
+}
+
+// A page with a list edited through useFieldArray, like Admissions' tiered categories and the
+// Fields page's groups.
+const listSchema = z.object({ items: z.array(z.object({ label: z.string() })) });
+
+function ListForm({ save }: { save: (data: z.output<typeof listSchema>) => Promise<string | null> }) {
+  const { form, formProps } = useAutosaveForm({ label: "Test", schema: listSchema, defaultValues: { items: [{ label: "a" }] }, save });
+  const { fields, append, remove } = useFieldArray({ control: form.control, name: "items" });
+  return (
+    <form {...formProps}>
+      {fields.map((field, index) => (
+        <button key={field.id} type="button" onClick={() => remove(index)}>Remove {index}</button>
+      ))}
+      <button type="button" onClick={() => append({ label: "b" })}>Add</button>
     </form>
   );
 }
@@ -185,6 +202,30 @@ describe("useAutosaveForm", () => {
       const { unmount } = renderForm();
       unmount();
       expect(toast.error).not.toHaveBeenCalled();
+    });
+  });
+
+  // useFieldArray notifies the form's watchers when it mounts and after each of its operations,
+  // whether or not anything changed. Only an actual change is an edit to save.
+  describe("a list edited through useFieldArray", () => {
+    it("doesn't save when the page loads", async () => {
+      const save = vi.fn().mockResolvedValue(null);
+      render(<ListForm save={save} />);
+      await expectNoSave(save);
+    });
+
+    it("saves each add or remove once", async () => {
+      const save = vi.fn().mockResolvedValue(null);
+      render(<ListForm save={save} />);
+      const user = userEvent.setup();
+
+      await user.click(screen.getByRole("button", { name: "Add" }));
+      await vi.waitFor(() => expect(save).toHaveBeenCalledExactlyOnceWith({ items: [{ label: "a" }, { label: "b" }] }));
+
+      await user.click(screen.getByRole("button", { name: "Remove 0" }));
+      await vi.waitFor(() => expect(save).toHaveBeenLastCalledWith({ items: [{ label: "b" }] }));
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      expect(save).toHaveBeenCalledTimes(2);
     });
   });
 

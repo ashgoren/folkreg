@@ -8,13 +8,17 @@
 // form is seeded straight from its stored config and saves what it validated. Rules are format-only
 // (email format, hex colors, number ranges): a blank field passes, since organizers fill pages in
 // over several sessions. Numbers are always required -- a cleared number input is NaN, which fails
-// with "Required" rather than being saved.
+// with "Required" rather than being saved. Field settings (fieldConfigSchema) are the exception:
+// not every setting applies to every field, so their keys are optional.
 
 import { z } from "zod";
 import { FIELD_DEFS, FIELD_NAMES } from "@repo/fields";
 
 const requiredNumber = (min: number) => z.number({ error: "Required" }).min(min);
 const optionalEmail = z.union([z.literal(""), z.string().email("Must be a valid email")]);
+// A setting that may be left unset. The Fields page clears one to null, since react-hook-form shows
+// an undefined value as the value the form loaded with; null parses to no setting at all.
+const optionalSetting = <T extends z.ZodType>(schema: T) => schema.nullish().transform((value) => value ?? undefined).optional();
 const hexColor = z.string().regex(/^#[0-9a-f]{6}$/i, "Must be a hex color, e.g. #d97706");
 
 export const ageGroupSchema = z.enum(["0-2", "3-5", "6-12", "13-17", "adult"]);
@@ -45,8 +49,15 @@ export const eventConfigSchema = z.object({
 });
 export type EventConfig = z.infer<typeof eventConfigSchema>;
 
+// A whole number from min (to max, if given), with one message for every way a value can fail it
+// -- not a number, a fraction, out of range -- so fixing one problem never just reveals another.
+const wholeNumber = ({ min, max }: { min: number; max?: number }, error: string) => {
+  const number = z.number({ error }).int({ error }).min(min, { error });
+  return max === undefined ? number : number.max(max, { error });
+};
+
 // A tenant's settings for one active field: copied from the field's catalog defaults in
-// @repo/fields when the organizer activates it (defaultFieldConfig), then the tenant's own -- the
+// @repo/fields when the organizer activates it (defaultFieldEntry), then the tenant's own -- the
 // registration form reads these, never the catalog's defaults. Keys are optional because not every
 // setting applies to every field (rows only to a textarea, options only to radio and checkbox
 // fields, width only to contact fields).
@@ -56,8 +67,9 @@ export const fieldConfigSchema = z.object({
   placeholder: z.string().optional(),
   options: z.array(z.object({ label: z.string(), value: z.string() })).optional(),
   defaultValue: z.string().optional(),
-  rows: z.number().int().min(1).optional(),
-  width: z.number().int().min(1).max(12).optional(),
+  // Rows of a textarea; width in columns of the registration form's 12-column grid.
+  rows: optionalSetting(wholeNumber({ min: 1 }, "Must be a whole number, 1 or more")),
+  width: optionalSetting(wholeNumber({ min: 1, max: 12 }, "Must be a whole number from 1 to 12")),
   required: z.boolean().optional(),
   includeOnNametag: z.boolean().optional(),
 });
@@ -86,6 +98,8 @@ export const fieldsConfigSchema = z.object({
   }
 });
 export type FieldsConfig = z.infer<typeof fieldsConfigSchema>;
+// What the Fields page edits: the stored shape, except that a cleared rows or width is null.
+export type FieldsConfigInput = z.input<typeof fieldsConfigSchema>;
 
 export const tieredCategorySchema = z.object({
   label: z.string(),

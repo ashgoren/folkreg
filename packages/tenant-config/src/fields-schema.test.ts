@@ -46,12 +46,25 @@ describe("fieldsConfigSchema", () => {
       .toEqual({ "contact.1.name": "first is listed more than once" });
   });
 
-  it.each([0, 13, 6.5, "6"])("rejects a width of %j (a whole number of columns, 1 to 12)", (width) => {
-    expect(issues({ contact: [{ name: "first", width }], misc: [] })).toHaveProperty(["contact.0.width"]);
+  // The Fields page shows this under the width input. It's one message whatever the problem, so
+  // fixing one never just reveals another. NaN is text in the input that isn't a number.
+  it.each([0, 13, 6.5, NaN])("rejects a width of %j (a whole number of columns, 1 to 12)", (width) => {
+    expect(issues({ contact: [{ name: "first", width }], misc: [] })).toEqual({ "contact.0.width": "Must be a whole number from 1 to 12" });
   });
 
-  it.each([0, 1.5])("rejects %j rows (a whole number, at least 1)", (rows) => {
-    expect(issues({ contact: [], misc: [{ name: "comments", rows }] })).toHaveProperty(["misc.0.rows"]);
+  it("rejects a width that isn't a number", () => {
+    expect(issues({ contact: [{ name: "first", width: "6" }], misc: [] })).toHaveProperty(["contact.0.width"]);
+  });
+
+  it.each([0, 1.5, NaN])("rejects %j rows (a whole number, at least 1)", (rows) => {
+    expect(issues({ contact: [], misc: [{ name: "comments", rows }] })).toEqual({ "misc.0.rows": "Must be a whole number, 1 or more" });
+  });
+
+  // The Fields page clears these to null. They parse to undefined, which the JSON column doesn't
+  // store, so a cleared setting is saved as no setting at all.
+  it("parses a null width or rows to no setting", () => {
+    const result = fieldsConfigSchema.parse({ contact: [{ name: "first", width: null }], misc: [{ name: "comments", rows: null }] });
+    expect(JSON.parse(JSON.stringify(result))).toStrictEqual({ contact: [{ name: "first" }], misc: [{ name: "comments" }] });
   });
 
   it("rejects malformed options", () => {

@@ -30,12 +30,12 @@ export const defaultEventConfig = (): EventConfig => ({
 
 // A field's starting settings when it's activated: the label, placeholder, width, etc. from its
 // catalog entry in @repo/fields, whose `defaults` use the same keys as FieldConfig. Cloned so the
-// tenant's copy (options arrays included) never shares objects with the catalog. Used both for
-// the default field set below and by the Fields page when an organizer turns a field on.
+// tenant's copy (options arrays included) never shares objects with the catalog.
 export const defaultFieldConfig = (fieldName: FieldName): FieldConfig => structuredClone(FIELD_DEFS[fieldName].defaults ?? {});
 
-// A field as a new tenant has it: its catalog defaults, printed on the nametag if it can be.
-const defaultFieldEntry = (name: FieldName): FieldEntry => ({
+// A field as it starts out, whether in a new tenant's default set or when an organizer turns it on
+// on the Fields page: its catalog defaults, printed on the nametag if it can be.
+export const defaultFieldEntry = (name: FieldName): FieldEntry => ({
   name,
   ...defaultFieldConfig(name),
   ...(FIELD_DEFS[name].canIncludeOnNametag && { includeOnNametag: true }),

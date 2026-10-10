@@ -32,7 +32,9 @@ export function TextField<TFieldValues extends FieldValues>({
         <Field data-invalid={fieldState.invalid}>
           <FormLabel htmlFor={id} required={required}>{label}</FormLabel>
           {description && <FieldDescription>{description}</FieldDescription>}
-          <Input {...field} id={id} type={type} autoComplete={autoComplete} aria-invalid={fieldState.invalid} />
+          {/* An optional setting with no value yet (e.g. a field's placeholder) shows as blank; an
+              undefined value would make React treat the input as uncontrolled. */}
+          <Input {...field} value={field.value ?? ""} id={id} type={type} autoComplete={autoComplete} aria-invalid={fieldState.invalid} />
           {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
         </Field>
       )}

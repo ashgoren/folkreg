@@ -2,12 +2,11 @@
 
 import { useSortable } from "@dnd-kit/react/sortable";
 import { GripVertical, X, TriangleAlert } from "lucide-react";
-import type { FieldConfig } from "@repo/tenant-config";
 import { cn } from "@/lib/utils";
 
 interface FieldRowProps {
   name: string;
-  config: FieldConfig;
+  required: boolean;
   index: number;
   isSelected: boolean;
   hasWarning?: boolean;
@@ -15,7 +14,7 @@ interface FieldRowProps {
   onDeactivate: () => void;
 }
 
-export function FieldRow({ name, config, index, isSelected, hasWarning, onSelect, onDeactivate }: FieldRowProps) {
+export function FieldRow({ name, required, index, isSelected, hasWarning, onSelect, onDeactivate }: FieldRowProps) {
   const { ref, handleRef, isDragging } = useSortable({ id: name, index });
 
   return (
@@ -43,7 +42,7 @@ export function FieldRow({ name, config, index, isSelected, hasWarning, onSelect
         className="flex-1 text-left py-1.5 pr-1 truncate"
       >
         <span className="truncate">{name}</span>
-        {config.required && <span className="text-destructive ml-1 font-medium">*</span>}
+        {required && <span className="text-destructive ml-1 font-medium">*</span>}
         {hasWarning && <TriangleAlert size={12} className="inline ml-1.5 text-amber-500 shrink-0" />}
       </button>
       <button
