@@ -45,15 +45,13 @@ const DEFAULT_CONTACT_FIELDS = [
 const DEFAULT_MISC_FIELDS = [
   "share", "allergies", "carpool", "bedding", "volunteer", "housing", "roommate", "misc", "agreement", "comments",
 ];
-// Fields whose value prints on the attendee's nametag (shown as a toggle on that field's panel).
-const DEFAULT_NAMETAG_FIELDS = ["last", "pronouns"];
 
 export const defaultFieldsConfig = (): FieldsConfig => ({
   contactOrder: [...DEFAULT_CONTACT_FIELDS],
   miscOrder: [...DEFAULT_MISC_FIELDS],
   config: Object.fromEntries([...DEFAULT_CONTACT_FIELDS, ...DEFAULT_MISC_FIELDS].map((name) => [
     name,
-    { ...defaultFieldConfig(name), ...(DEFAULT_NAMETAG_FIELDS.includes(name) && { includeOnNametag: true }) },
+    { ...defaultFieldConfig(name), ...(FIELD_DEFS[name]?.canIncludeOnNametag && { includeOnNametag: true }) },
   ])),
 });
 

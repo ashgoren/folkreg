@@ -21,6 +21,7 @@ export function FieldRow({ name, config, index, isSelected, hasWarning, onSelect
   return (
     <div
       ref={ref}
+      data-active-field={name}
       className={cn(
         "flex items-center gap-1 rounded border text-sm",
         isSelected ? "border-primary bg-primary/5" : "border-border bg-background",

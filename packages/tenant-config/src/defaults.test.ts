@@ -31,6 +31,14 @@ describe("defaultFieldsConfig", () => {
     expect(Object.keys(config).sort()).toEqual([...contactOrder, ...miscOrder].sort());
   });
 
+  it("starts the default set's required fields as required", () => {
+    const { config } = defaultFieldsConfig();
+    const required = Object.entries(config).filter(([, field]) => field.required).map(([name]) => name);
+    expect(required).toEqual([
+      "first", "last", "nametag", "email", "emailConfirmation", "phone", "address", "city", "state", "zip", "agreement",
+    ]);
+  });
+
   it("starts each field from its catalog defaults, with last name and pronouns on the nametag", () => {
     const { config } = defaultFieldsConfig();
     expect(config.email).toEqual(defaultFieldConfig("email"));

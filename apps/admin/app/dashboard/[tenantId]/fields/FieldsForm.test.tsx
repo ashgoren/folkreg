@@ -15,12 +15,23 @@ vi.mock("./actions", () => ({ updateFields: vi.fn() }));
 import { updateFields } from "./actions";
 import { FieldsForm } from "./FieldsForm";
 
-// An active field's row is the one with a "Remove field" button; its select button is named
-// after the field.
-const activeRow = (name: string) => screen.getByRole("button", { name: new RegExp(`^${name}\\b`) }).parentElement as HTMLElement;
+// Rows are found by field key through data attributes, independent of what the row displays. An
+// active row's select button is the one without an aria-label (the other two are "Drag to
+// reorder" and "Remove field").
+const activeRow = (name: string) => {
+  const row = document.querySelector<HTMLElement>(`[data-active-field="${name}"]`);
+  if (!row) throw new Error(`No active row for ${name}`);
+  return row;
+};
+const selectButton = (name: string) =>
+  within(activeRow(name)).getAllByRole("button").find((button) => !button.hasAttribute("aria-label"))!;
 const activeFieldNames = () =>
-  screen.queryAllByRole("button", { name: "Remove field" }).map((remove) => remove.parentElement!.textContent!.replace("*", ""));
-const availableRow = (name: string) => screen.getByText(name, { selector: "span" }).parentElement as HTMLElement;
+  [...document.querySelectorAll("[data-active-field]")].map((row) => row.getAttribute("data-active-field"));
+const availableRow = (name: string) => {
+  const row = document.querySelector<HTMLElement>(`[data-available-field="${name}"]`);
+  if (!row) throw new Error(`No available row for ${name}`);
+  return row;
+};
 
 const config: FieldsConfig = {
   contactOrder: ["first", "email"],
@@ -54,24 +65,20 @@ describe("FieldsForm", () => {
       expect(container.querySelector("form")).toHaveAttribute("autocomplete", "off");
     });
 
-    it("opens the available-fields list when no fields are active", () => {
+    it("offers every field when none are active", () => {
       render(<FieldsForm tenant={makeTenant({ fields_config: noneActive })} />);
       expect(activeFieldNames()).toEqual([]);
       expect(screen.getAllByRole("button", { name: "Add" })).toHaveLength(Object.keys(FIELD_DEFS).length);
       expect(screen.getByText("Select a field to configure it.")).toBeInTheDocument();
     });
 
-    it("lists active contact and misc fields in stored order, and collapses the available list", async () => {
-      const user = userEvent.setup();
+    it("lists active contact and misc fields in stored order, with the available list open", () => {
       render(<FieldsForm tenant={makeTenant({ fields_config: config })} />);
 
       expect(activeFieldNames()).toEqual(["first", "email", "carpool"]);
-      expect(screen.queryByRole("button", { name: "Add" })).not.toBeInTheDocument();
-
-      await user.click(screen.getByRole("button", { name: /Available fields/ }));
       // Every field not already active is offered.
       expect(screen.getAllByRole("button", { name: "Add" })).toHaveLength(Object.keys(FIELD_DEFS).length - 3);
-      expect(screen.queryByText("first", { selector: ".opacity-70 span" })).not.toBeInTheDocument();
+      expect(document.querySelector('[data-available-field="first"]')).toBeNull();
     });
 
     it("marks required fields with an asterisk", () => {
@@ -101,7 +108,7 @@ describe("FieldsForm", () => {
       await expectLastSave(vi.mocked(updateFields), tenant.id, {
         contactOrder: ["first"],
         miscOrder: [],
-        config: { first: { label: "First name", width: 6 } },
+        config: { first: { label: "First name", width: 6, required: true } },
       });
     });
 
@@ -116,7 +123,7 @@ describe("FieldsForm", () => {
       await expectLastSave(vi.mocked(updateFields), tenant.id, {
         contactOrder: [],
         miscOrder: ["age"],
-        config: { age: { label: ageDefaults.label, title: ageDefaults.title, options: ageDefaults.options, defaultValue: "adult" } },
+        config: { age: { label: ageDefaults.label, title: ageDefaults.title, options: ageDefaults.options, defaultValue: "adult", required: true } },
       });
       // age ships with options, so it carries no missing-options warning.
       expect(activeRow("age").querySelector(".text-amber-500")).toBeNull();
@@ -127,7 +134,6 @@ describe("FieldsForm", () => {
       const user = userEvent.setup();
       render(<FieldsForm tenant={tenant} />);
 
-      await user.click(screen.getByRole("button", { name: /Available fields/ }));
       await user.click(within(availableRow("phone")).getByRole("button", { name: "Add" }));
       await user.click(within(availableRow("comments")).getByRole("button", { name: "Add" }));
 
@@ -151,7 +157,6 @@ describe("FieldsForm", () => {
         miscOrder: ["carpool"],
         config: { first: config.config.first, carpool: config.config.carpool },
       });
-      await user.click(screen.getByRole("button", { name: /Available fields/ }));
       expect(within(availableRow("email")).getByRole("button", { name: "Add" })).toBeInTheDocument();
     });
 
@@ -160,7 +165,7 @@ describe("FieldsForm", () => {
       const user = userEvent.setup();
       render(<FieldsForm tenant={tenant} />);
 
-      await user.click(screen.getByRole("button", { name: /^email/ }));
+      await user.click(selectButton("email"));
       expect(screen.getByRole("heading", { name: "email" })).toBeInTheDocument();
 
       await user.click(within(activeRow("email")).getByRole("button", { name: "Remove field" }));
@@ -175,7 +180,7 @@ describe("FieldsForm", () => {
       const user = userEvent.setup();
       render(<FieldsForm tenant={makeTenant({ fields_config: config })} />);
 
-      await user.click(screen.getByRole("button", { name: /^first/ }));
+      await user.click(selectButton("first"));
       expect(screen.getByRole("heading", { name: "first" })).toBeInTheDocument();
       expect(screen.getByLabelText("Label")).toHaveValue("First name");
       expect(screen.getByText("Width")).toBeInTheDocument();
@@ -186,7 +191,7 @@ describe("FieldsForm", () => {
       const user = userEvent.setup();
       render(<FieldsForm tenant={makeTenant({ fields_config: config })} />);
 
-      await user.click(screen.getByRole("button", { name: /^carpool/ }));
+      await user.click(selectButton("carpool"));
       expect(screen.getByLabelText("Heading")).toHaveValue("Transportation");
       expect(screen.queryByText("Width")).not.toBeInTheDocument();
     });
@@ -197,7 +202,7 @@ describe("FieldsForm", () => {
       const user = userEvent.setup();
       render(<FieldsForm tenant={tenant} />);
 
-      await user.click(screen.getByRole("button", { name: /^email/ }));
+      await user.click(selectButton("email"));
       await user.type(screen.getByLabelText("Placeholder"), "you@example.com");
       await expectNoSave(vi.mocked(updateFields));
 
@@ -214,7 +219,7 @@ describe("FieldsForm", () => {
       const user = userEvent.setup();
       render(<FieldsForm tenant={tenant} />);
 
-      await user.click(screen.getByRole("button", { name: /^carpool/ }));
+      await user.click(selectButton("carpool"));
       await user.click(screen.getByRole("button", { name: /Add option/ }));
 
       expect(activeRow("carpool").querySelector(".text-amber-500")).toBeNull();
@@ -228,7 +233,7 @@ describe("FieldsForm", () => {
       const user = userEvent.setup();
       render(<FieldsForm tenant={tenant} />);
 
-      await user.click(screen.getByRole("button", { name: /^email/ }));
+      await user.click(selectButton("email"));
       await user.click(document.getElementById("config-required-email")!);
 
       expect(within(activeRow("email")).getByText("*")).toBeInTheDocument();

@@ -44,6 +44,24 @@ describe("FIELD_DEFS", () => {
     const excluded = Object.entries(FIELD_DEFS).filter(([, def]) => def.excludeFromSpreadsheet).map(([name]) => name);
     expect(excluded).toEqual(["emailConfirmation"]);
   });
+
+  // `required` in the defaults is where a tenant's Required switch starts when the field is
+  // activated: the fields ../template required, which are also the ones whose validation
+  // insists on a value.
+  it("starts exactly ../template's required fields as required", () => {
+    const required = Object.entries(FIELD_DEFS).filter(([, def]) => def.defaults?.required).map(([name]) => name);
+    expect(required).toEqual([
+      "first", "last", "nametag", "email", "emailConfirmation", "phone", "address", "city", "state", "zip",
+      "age", "dietaryPreferences", "photo", "agreement",
+    ]);
+  });
+
+  // A nametag shows the registrant's name, and optionally these; the admin offers the "Include on
+  // nametag?" switch only for fields flagged here.
+  it("offers the nametag option for last name and pronouns only", () => {
+    const nametag = Object.entries(FIELD_DEFS).filter(([, def]) => def.canIncludeOnNametag).map(([name]) => name);
+    expect(nametag).toEqual(["last", "pronouns"]);
+  });
 });
 
 describe("contact field validation", () => {

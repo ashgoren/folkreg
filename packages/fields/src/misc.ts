@@ -6,6 +6,7 @@ export const MISC_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
     type: "radio",
     validation: z.string().min(1, "Please select age range."),
     defaults: {
+      required: true,
       title: "Age",
       label: "Please choose one.",
       options: [
@@ -54,6 +55,7 @@ export const MISC_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
     type: "radio",
     validation: z.string().min(1, "Please select dietary preference."),
     defaults: {
+      required: true,
       title: "Dietary Preferences",
       label: "Please choose one.",
     },
@@ -111,6 +113,7 @@ export const MISC_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
       requiredMessage: "Please provide details for your photo consent preferences.",
     },
     defaults: {
+      required: true,
       title: "Photo Consent",
       label: "Please let us know if you have any concerns about your photo being taken or posted publicly.",
     },
@@ -181,6 +184,7 @@ export const MISC_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
         : "You must agree to the values and expectations.";
     },
     defaults: {
+      required: true,
       title: "Values and Expectations",
       label: "Do you agree that everyone you are registering will follow the event's values and expectations?",
       options: [{ label: "Yes", value: "yes" }],

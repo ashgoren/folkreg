@@ -27,6 +27,8 @@ export interface FieldDefaults {
   width?: number;
   options?: { label: string; value: string }[];
   defaultValue?: string;
+  /** Where the field's Required switch starts when a tenant activates it. */
+  required?: boolean;
 }
 
 export interface FieldDef {
@@ -40,4 +42,9 @@ export interface FieldDef {
   defaults?: FieldDefaults;
   /** Excluded from the Spreadsheet page's available columns (e.g. emailConfirmation, structurally redundant with email) */
   excludeFromSpreadsheet?: boolean;
+  /**
+   * The field can be printed on a registrant's nametag, alongside their name. The admin offers an
+   * "Include on nametag?" switch for it; whether a tenant does is its includeOnNametag setting.
+   */
+  canIncludeOnNametag?: boolean;
 }

@@ -8,15 +8,18 @@ export const CONTACT_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
     autoComplete: "given-name",
     validation: z.string().min(1, "Please enter first name."),
     defaults: {
+      required: true,
       label: "First name",
       width: 6
     },
   },
   last: {
     type: "text",
+    canIncludeOnNametag: true,
     autoComplete: "family-name",
     validation: z.string().min(1, "Please enter last name."),
     defaults: {
+      required: true,
       label: "Last name",
       width: 6
     },
@@ -25,12 +28,14 @@ export const CONTACT_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
     type: "text",
     validation: z.string().min(1, "Please enter name for roster."),
     defaults: {
+      required: true,
       label: "Name for roster",
       width: 12
     },
   },
   pronouns: {
     type: "text",
+    canIncludeOnNametag: true,
     validation: z.string(),
     defaults: { label: "Pronouns", width: 12 },
   },
@@ -39,6 +44,7 @@ export const CONTACT_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
     autoComplete: "email",
     validation: z.email("Please enter a valid email address."),
     defaults: {
+      required: true,
       label: "Email",
       width: 6
     },
@@ -53,6 +59,7 @@ export const CONTACT_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
         : "Email addresses must match.";
     },
     defaults: {
+      required: true,
       label: "Confirm email",
       width: 6
     },
@@ -63,6 +70,7 @@ export const CONTACT_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
     autoComplete: "tel-national",
     validation: z.string().min(1, "Please enter phone number."),
     defaults: {
+      required: true,
       label: "Phone",
       placeholder: "e.g. 555-555-5555",
       width: 12
@@ -73,6 +81,7 @@ export const CONTACT_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
     autoComplete: "street-address",
     validation: z.string().min(1, "Please enter street address."),
     defaults: {
+      required: true,
       label: "Street address",
       width: 9
     },
@@ -91,6 +100,7 @@ export const CONTACT_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
     autoComplete: "address-level2",
     validation: z.string().min(1, "Please enter city."),
     defaults: {
+      required: true,
       label: "City",
       width: 5
     },
@@ -101,6 +111,7 @@ export const CONTACT_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
     suggestions: STATE_OPTIONS,
     validation: z.string().min(1, "Please enter state or province."),
     defaults: {
+      required: true,
       label: "State / Province",
       width: 4
     },
@@ -110,6 +121,7 @@ export const CONTACT_FIELD_DEFS: Record<string, Omit<FieldDef, "group">> = {
     autoComplete: "postal-code",
     validation: z.string().min(1, "Please enter zip/postal code."),
     defaults: {
+      required: true,
       label: "Zip code",
       width: 3
     },

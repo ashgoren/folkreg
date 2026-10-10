@@ -36,9 +36,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
   // UI state
   const [contactOpen, setContactOpen] = useState(true);
   const [miscOpen, setMiscOpen] = useState(true);
-  const [availableOpen, setAvailableOpen] = useState(
-    contactOrder.length === 0 && miscOrder.length === 0,
-  );
+  const [availableOpen, setAvailableOpen] = useState(true);
 
   const { save, isPending, savedRecently } = useAutosave<FieldsState>(
     (data) => updateFields(tenant.id, data),
@@ -281,12 +279,12 @@ function AvailableFieldRow({
   onActivate: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between rounded px-2 py-1.5 text-sm hover:bg-muted/50">
-      <span>{fieldName}</span>
+    <div data-available-field={fieldName} className="flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted/50">
+      <span className="min-w-0 flex-1 truncate">{fieldName}</span>
       <button
         type="button"
         onClick={onActivate}
-        className="text-xs text-primary hover:underline ml-2 shrink-0"
+        className="text-xs text-primary hover:underline shrink-0"
       >
         Add
       </button>

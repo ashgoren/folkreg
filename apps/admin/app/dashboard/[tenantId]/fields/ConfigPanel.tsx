@@ -31,7 +31,7 @@ export function ConfigPanel({
   const showWidth = group === "contact";
   const showRows = def.type === "textarea";
   const showOptions = def.type === "radio" || def.type === "checkbox";
-  const showNametagToggle = fieldName === "last" || fieldName === "pronouns";
+  const showNametagToggle = def.canIncludeOnNametag ?? false;
 
   return (
     <div className="border rounded-lg p-6 space-y-6 w-full max-w-2xl">
@@ -39,7 +39,7 @@ export function ConfigPanel({
         <div className="flex items-center gap-2">
           <h2 className="font-medium">{fieldName}</h2>
           <span className="text-xs bg-muted text-muted-foreground rounded px-1.5 py-0.5">
-            {def.type}
+            {def.type} input
           </span>
         </div>
         <div className="flex flex-col items-end gap-4 shrink-0">

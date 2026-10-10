@@ -27,7 +27,8 @@ describe("ConfigPanel", () => {
   it("shows the field's name and type", () => {
     renderPanel("email", "contact");
     expect(screen.getByRole("heading", { name: "email" })).toBeInTheDocument();
-    expect(screen.getByText("email", { selector: "span" })).toBeInTheDocument();
+    // "email input", not a bare "email", which would read like a field name.
+    expect(screen.getByText("email input", { selector: "span" })).toBeInTheDocument();
   });
 
   describe("contact text fields", () => {
