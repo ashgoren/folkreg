@@ -86,7 +86,7 @@ test("deposit, donation, and check options reveal and save their details", async
     donation: { enabled: true, max: 200 },
     checks: {
       allowed: true,
-      showPostalAddress: true,
+      sendTo: "address",
       payee: "Example Dance Society",
       address: "123 Main St, Portland, OR",
     },

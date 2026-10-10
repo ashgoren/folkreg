@@ -33,6 +33,14 @@ describe("paymentsConfigSchema", () => {
     expect(paymentsConfigSchema.safeParse({ ...blank, donation: { enabled: true, max: -5 } }).success).toBe(false);
   });
 
+  it.each(["address", "email"])("accepts checks sent to %s", (sendTo) => {
+    expect(paymentsConfigSchema.safeParse({ ...blank, checks: { ...blank.checks, sendTo } }).success).toBe(true);
+  });
+
+  it("rejects any other place to send checks", () => {
+    expect(paymentsConfigSchema.safeParse({ ...blank, checks: { ...blank.checks, sendTo: "fax" } }).success).toBe(false);
+  });
+
   it("requires every checks sub-field", () => {
     expect(paymentsConfigSchema.safeParse({ ...blank, checks: { allowed: true } }).success).toBe(false);
   });

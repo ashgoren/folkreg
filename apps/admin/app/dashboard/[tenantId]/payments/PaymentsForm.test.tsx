@@ -40,7 +40,7 @@ const storedConfig = (overrides: Partial<PaymentsConfig> = {}): PaymentsConfig =
   showPaymentSummary: false,
   deposit: { enabled: true, amount: 50 },
   donation: { enabled: true, max: 200 },
-  checks: { allowed: true, showPostalAddress: true, payee: "Example Dance Society", address: "1 Main St" },
+  checks: { allowed: true, sendTo: "address", payee: "Example Dance Society", address: "1 Main St" },
   statementDescriptorSuffix: "SPRING",
   ...overrides,
 });
@@ -269,13 +269,13 @@ describe("PaymentsForm", () => {
       await user.tab();
 
       await expectLastSave(vi.mocked(updatePayments), tenant.id, expect.objectContaining({
-        checks: { allowed: true, showPostalAddress: true, payee: "Example Dance Society", address: "1 Main St" },
+        checks: { allowed: true, sendTo: "address", payee: "Example Dance Society", address: "1 Main St" },
       }));
 
       await user.click(screen.getByRole("radio", { name: "Email" }));
       expect(byId("payments-checks-payee")).toBeNull();
       await expectLastSave(vi.mocked(updatePayments), tenant.id, expect.objectContaining({
-        checks: { allowed: true, showPostalAddress: false, payee: "Example Dance Society", address: "1 Main St" },
+        checks: { allowed: true, sendTo: "email", payee: "Example Dance Society", address: "1 Main St" },
       }));
     });
   });

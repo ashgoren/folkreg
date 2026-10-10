@@ -100,7 +100,7 @@ export const defaultPaymentsConfig = (): PaymentsConfig => ({
   // Off to start, with amounts ready for when they're switched on.
   deposit: { enabled: false, amount: 50 },
   donation: { enabled: false, max: 999 },
-  checks: { allowed: false, showPostalAddress: false, payee: "", address: "" },
+  checks: { allowed: false, sendTo: "email", payee: "", address: "" },
   statementDescriptorSuffix: "",
 });
 

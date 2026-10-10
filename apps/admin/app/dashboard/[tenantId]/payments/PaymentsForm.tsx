@@ -45,7 +45,7 @@ export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: Ten
   const depositEnabled = useWatch({ control: form.control, name: "deposit.enabled" });
   const donationEnabled = useWatch({ control: form.control, name: "donation.enabled" });
   const checksAllowed = useWatch({ control: form.control, name: "checks.allowed" });
-  const showPostalAddress = useWatch({ control: form.control, name: "checks.showPostalAddress" });
+  const checksSendTo = useWatch({ control: form.control, name: "checks.sendTo" });
 
   return (
     <form {...formProps} className="space-y-8">
@@ -165,8 +165,8 @@ export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: Ten
 
         {checksAllowed && (
           <>
-            <Controller name="checks.showPostalAddress" control={form.control} render={({ field }) => (
-              <RadioGroup value={field.value ? "address" : "email"} onValueChange={(value) => field.onChange(value === "address")}>
+            <Controller name="checks.sendTo" control={form.control} render={({ field }) => (
+              <RadioGroup value={field.value} onValueChange={field.onChange}>
                 <Field orientation="horizontal">
                   <RadioGroupItem value="email" id="payments-checks-contact-email" />
                   <FieldContent>
@@ -184,7 +184,7 @@ export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: Ten
               </RadioGroup>
             )} />
 
-            {showPostalAddress && (
+            {checksSendTo === "address" && (
               <>
                 <TextField control={form.control} name="checks.payee" id="payments-checks-payee" label="Payee name" autoComplete="off" />
 

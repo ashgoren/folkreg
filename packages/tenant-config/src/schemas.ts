@@ -279,10 +279,10 @@ export const paymentsConfigSchema = z.object({
   }),
   checks: z.object({
     allowed: z.boolean(),
-    showPostalAddress: z.boolean(),
+    // Where registrants are pointed: the mailing address below, or the event's contact email to ask for instructions.
+    sendTo: z.enum(["address", "email"]),
     payee: z.string(),
-    // Stored exactly as entered (a multi-line string); splitting it into display lines is the
-    // reader's job.
+    // Stored exactly as entered (a multi-line string); splitting it into display lines is the reader's job.
     address: z.string(),
   }),
 });

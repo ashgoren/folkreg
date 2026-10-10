@@ -121,8 +121,8 @@ describe("updatePayments", () => {
     // parsing into display lines is the registration app's job.
     it("saves check settings with the address as entered", async () => {
       const address = "Folk Society\n123 Main St\nSpringfield, OR 97477";
-      await updatePayments(harness.tenantId, values({ checks: { allowed: true, showPostalAddress: true, payee: "Folk Society", address } }));
-      expect(await savedConfig()).toMatchObject({ checks: { allowed: true, showPostalAddress: true, payee: "Folk Society", address } });
+      await updatePayments(harness.tenantId, values({ checks: { allowed: true, sendTo: "address", payee: "Folk Society", address } }));
+      expect(await savedConfig()).toMatchObject({ checks: { allowed: true, sendTo: "address", payee: "Folk Society", address } });
     });
 
     it("stores blank text settings as \"\"", async () => {
