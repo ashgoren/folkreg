@@ -3,47 +3,19 @@
 import { useWatch } from "react-hook-form";
 import { DragDropProvider } from "@dnd-kit/react";
 import { move } from "@dnd-kit/helpers";
-import { FIELD_DEFS } from "@repo/fields";
 import { FieldGroup } from "@/components/ui/field";
 import { AutosaveStatus } from "@/components/autosave-status";
 import { FormLabel } from "@/components/form-label";
 import { TextField } from "@/components/form-text-field";
 import { useAutosaveForm } from "@/lib/useAutosaveForm";
 import type { Tenant } from "@repo/types";
-import { SPREADSHEET_SYSTEM_COLUMNS } from "@repo/types";
-import { spreadsheetConfigSchema } from "@repo/tenant-config";
+import { resolveSpreadsheetColumns, spreadsheetConfigSchema } from "@repo/tenant-config";
 import { updateSpreadsheet } from "./actions";
 import { SpreadsheetFieldRow } from "./SpreadsheetFieldRow";
 
-function isSystemColumnRelevant(column: string, tenant: Tenant): boolean {
-  if (column === "waiver") return tenant.waiver_config.show;
-  if (column === "deposit") return tenant.payments_config.deposit.enabled;
-  if (column === "donation") return tenant.payments_config.donation.enabled;
-  if (column === "fees") return tenant.payments_config.coverFees.enabled;
-  return true;
-}
-
 export function SpreadsheetForm({ tenant }: { tenant: Tenant }) {
-  const activeFieldNames = [...tenant.fields_config.contact, ...tenant.fields_config.misc].map((field) => field.name);
-
-  const availableRegistrantColumns: string[] = [];
-  for (const name of activeFieldNames) {
-    const def = FIELD_DEFS[name];
-    if (def.excludeFromSpreadsheet) continue;
-    availableRegistrantColumns.push(name);
-    if (def.followUp) availableRegistrantColumns.push(def.followUp.storageKey);
-  }
-
-  // The stored list keeps the organizer's order and hidden columns. A column no longer available
-  // drops out, and a newly available one is appended as visible -- opt-out, not opt-in. A new
-  // tenant stores none, so every available column shows.
-  const storedColumns = tenant.spreadsheet_config.columns;
-  const initialColumns = [
-    ...storedColumns.filter((col) => availableRegistrantColumns.includes(col.name)),
-    ...availableRegistrantColumns
-      .filter((name) => !storedColumns.some((col) => col.name === name))
-      .map((name) => ({ name, visible: true })),
-  ];
+  // The same list the Sheets sync writes. Registrant columns are the form's; system ones are fixed.
+  const { registrant: initialColumns, system: systemColumns } = resolveSpreadsheetColumns(tenant);
 
   const { form, formProps, isPending, savedRecently } = useAutosaveForm({
     label: "Spreadsheet",
@@ -56,7 +28,6 @@ export function SpreadsheetForm({ tenant }: { tenant: Tenant }) {
   });
 
   const columns = useWatch({ control: form.control, name: "columns" });
-  const systemColumns = SPREADSHEET_SYSTEM_COLUMNS.filter((column) => isSystemColumnRelevant(column, tenant));
 
   function toggleVisible(name: string) {
     form.setValue(
@@ -104,7 +75,7 @@ export function SpreadsheetForm({ tenant }: { tenant: Tenant }) {
         )}
 
         <div className="flex flex-col gap-1 pt-1">
-          {[...systemColumns, "key"].map((name) => (
+          {systemColumns.map((name) => (
             <div
               key={name}
               className="rounded border border-border bg-muted/30 px-2.5 py-1.5 text-sm text-muted-foreground"

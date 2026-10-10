@@ -52,17 +52,6 @@ export type Order = Omit<Tables<'orders'>, 'people' | 'payments' | 'lottery'> & 
   lottery: LotteryInfo | null;
 }
 
-// Computed order/payment columns the spreadsheet sync writes alongside registrant
-// fields -- not user-entered, so not part of the FieldDef catalog in @repo/fields.
-// `waiver`/`deposit`/`donation`/`fees` are only relevant when the corresponding
-// tenant feature is enabled; the rest always apply. `environment` is derived from
-// `orders.is_live` at sync time.
-export const SPREADSHEET_SYSTEM_COLUMNS = [
-  'admission', 'donation', 'total', 'deposit', 'fees', 'paid', 'charged',
-  'status', 'purchaser', 'completedAt', 'paymentId', 'paymentEmail',
-  'waiver', 'environment',
-] as const;
-
 // A tenants row with its jsonb config columns typed (and, when read through createTenantDb's
 // getTenant(), parsed) by the schemas in @repo/tenant-config.
 export type Tenant = Omit<Tables<'tenants'>, keyof TenantConfig> & TenantConfig
