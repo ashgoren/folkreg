@@ -95,7 +95,8 @@ export const defaultPaymentsConfig = (): PaymentsConfig => ({
   paypalClientIdTest: "",
   paymentDueDate: "",
   directPaymentUrl: "",
-  coverFeesCheckbox: false,
+  // Off to start, with Stripe's standard rate ready for when it's switched on.
+  coverFees: { enabled: false, percent: 2.9, fixed: 0.3 },
   showPaymentSummary: true,
   // Off to start, with amounts ready for when they're switched on.
   deposit: { enabled: false, amount: 50 },

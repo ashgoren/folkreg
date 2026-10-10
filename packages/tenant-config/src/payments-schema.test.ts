@@ -33,6 +33,22 @@ describe("paymentsConfigSchema", () => {
     expect(paymentsConfigSchema.safeParse({ ...blank, donation: { enabled: true, max: -5 } }).success).toBe(false);
   });
 
+  // The tenant's own processing rate: 2.9 means 2.9%.
+  it("accepts a fee rate as a percentage plus a fixed amount", () => {
+    expect(paymentsConfigSchema.safeParse({ ...blank, coverFees: { enabled: true, percent: 1.99, fixed: 0.49 } }).success).toBe(true);
+  });
+
+  it.each([
+    [{ percent: 101 }, "coverFees.percent", "Must be 100 or less"],
+    [{ percent: -1 }, "coverFees.percent", undefined],
+    [{ percent: NaN }, "coverFees.percent", "Required"],
+    [{ fixed: NaN }, "coverFees.fixed", "Required"],
+  ])("rejects a fee of %j", (fee, path, message) => {
+    const result = paymentsConfigSchema.safeParse({ ...blank, coverFees: { ...blank.coverFees, ...fee } });
+    expect(result.error?.issues.map((issue) => issue.path.join("."))).toEqual([path]);
+    if (message) expect(result.error?.issues[0]?.message).toBe(message);
+  });
+
   it.each(["address", "email"])("accepts checks sent to %s", (sendTo) => {
     expect(paymentsConfigSchema.safeParse({ ...blank, checks: { ...blank.checks, sendTo } }).success).toBe(true);
   });

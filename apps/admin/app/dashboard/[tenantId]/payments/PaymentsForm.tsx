@@ -42,6 +42,7 @@ export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: Ten
   // saved) as they were.
   const processor = useWatch({ control: form.control, name: "processor" });
 
+  const coverFeesEnabled = useWatch({ control: form.control, name: "coverFees.enabled" });
   const depositEnabled = useWatch({ control: form.control, name: "deposit.enabled" });
   const donationEnabled = useWatch({ control: form.control, name: "donation.enabled" });
   const checksAllowed = useWatch({ control: form.control, name: "checks.allowed" });
@@ -82,15 +83,6 @@ export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: Ten
       <Separator />
 
       <FieldGroup>
-        <Controller name="coverFeesCheckbox" control={form.control} render={({ field, fieldState }) => (
-          <Field orientation="horizontal" data-invalid={fieldState.invalid}>
-            <FieldContent>
-              <FormLabel htmlFor="payments-cover-fees">Show &ldquo;cover fees&rdquo; option?</FormLabel>
-            </FieldContent>
-            <Switch id="payments-cover-fees" checked={field.value} onCheckedChange={field.onChange} aria-invalid={fieldState.invalid} />
-          </Field>
-        )} />
-
         <Controller name="showPaymentSummary" control={form.control} render={({ field, fieldState }) => (
           <Field orientation="horizontal" data-invalid={fieldState.invalid}>
             <FieldContent>
@@ -104,9 +96,36 @@ export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: Ten
       <Separator />
 
       <FieldGroup>
-        {/* Turning deposits (or donations) off hides the amount field, so the switch waits until that
-            field is valid -- a hidden error would block every later save with nothing on screen to
-            explain it. Same rule as the Admissions mode switch. */}
+        {/* Turning cover fees, deposits, or donations off hides their fields, so the switch waits
+            until those fields are valid -- a hidden error would block every later save with nothing
+            on screen to explain it. Same rule as the Admissions mode switch. */}
+        <Controller name="coverFees.enabled" control={form.control} render={({ field, fieldState }) => (
+          <Field orientation="horizontal" data-invalid={fieldState.invalid}>
+            <FieldContent>
+              <FormLabel htmlFor="payments-cover-fees">Show &ldquo;cover fees&rdquo; option?</FormLabel>
+            </FieldContent>
+            <Switch
+              id="payments-cover-fees"
+              checked={field.value}
+              onCheckedChange={async (checked) => {
+                if (checked || await form.trigger(["coverFees.percent", "coverFees.fixed"])) field.onChange(checked);
+              }}
+              aria-invalid={fieldState.invalid}
+            />
+          </Field>
+        )} />
+
+        {coverFeesEnabled && (
+          <div className="flex flex-wrap gap-4">
+            <NumberField control={form.control} name="coverFees.percent" id="payments-cover-fees-percent" label="Fee rate (%)" />
+            <NumberField control={form.control} name="coverFees.fixed" id="payments-cover-fees-fixed" label="Fee per payment ($)" />
+          </div>
+        )}
+      </FieldGroup>
+
+      <Separator />
+
+      <FieldGroup>
         <Controller name="deposit.enabled" control={form.control} render={({ field, fieldState }) => (
           <Field orientation="horizontal" data-invalid={fieldState.invalid}>
             <FieldContent>

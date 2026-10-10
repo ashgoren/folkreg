@@ -36,7 +36,7 @@ const storedConfig = (overrides: Partial<PaymentsConfig> = {}): PaymentsConfig =
   stripePublishableKeyTest: "pk_test",
   paymentDueDate: "May 1",
   directPaymentUrl: "https://example.com/pay",
-  coverFeesCheckbox: true,
+  coverFees: { enabled: true, percent: 2.9, fixed: 0.3 },
   showPaymentSummary: false,
   deposit: { enabled: true, amount: 50 },
   donation: { enabled: true, max: 200 },
@@ -163,7 +163,7 @@ describe("PaymentsForm", () => {
       expect(screen.getByLabelText("Client ID (Live)")).toHaveValue("");
       expect(screen.getByRole("switch", { name: /cover fees/ })).toBeChecked();
       await expectLastSave(vi.mocked(updatePayments), tenant.id, {
-        ...BLANK, processor: "paypal", stripe_secret_key_live: "sk_live", coverFeesCheckbox: true,
+        ...BLANK, processor: "paypal", stripe_secret_key_live: "sk_live", coverFees: { enabled: true, percent: 2.9, fixed: 0.3 },
       });
     });
 
@@ -183,6 +183,39 @@ describe("PaymentsForm", () => {
   });
 
   describe("optional sections", () => {
+    it("reveals the fee rates only while cover fees are offered, keeping them either way", async () => {
+      const tenant = makeTenant();
+      const user = userEvent.setup();
+      render(<PaymentsForm tenant={tenant} secrets={makeSecrets()} />);
+      expect(byId("payments-cover-fees-percent")).toBeNull();
+
+      await user.click(screen.getByRole("switch", { name: /cover fees/ }));
+      expect(byId("payments-cover-fees-percent")).toHaveValue(2.9);
+      await user.clear(byId("payments-cover-fees-percent"));
+      await user.type(byId("payments-cover-fees-percent"), "1.99");
+      await user.clear(byId("payments-cover-fees-fixed"));
+      await user.type(byId("payments-cover-fees-fixed"), "0.49");
+      await user.tab();
+      await expectLastSave(vi.mocked(updatePayments), tenant.id, { ...BLANK, coverFees: { enabled: true, percent: 1.99, fixed: 0.49 } });
+
+      await user.click(screen.getByRole("switch", { name: /cover fees/ }));
+      expect(byId("payments-cover-fees-percent")).toBeNull();
+      await expectLastSave(vi.mocked(updatePayments), tenant.id, expect.objectContaining({ coverFees: { enabled: false, percent: 1.99, fixed: 0.49 } }));
+    });
+
+    // Turning it off would hide the invalid rate while its error still blocked every save.
+    it("keeps cover fees on while a fee rate has an error", async () => {
+      const user = userEvent.setup();
+      render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={makeSecrets()} />);
+
+      await user.clear(byId("payments-cover-fees-percent"));
+      await user.click(screen.getByRole("switch", { name: /cover fees/ }));
+
+      expect(screen.getByRole("switch", { name: /cover fees/ })).toBeChecked();
+      expect(byId("payments-cover-fees-percent")).toHaveAttribute("aria-invalid", "true");
+      await expectNoSave(vi.mocked(updatePayments));
+    });
+
     it("reveals deposit amount and balance due date only while deposits are allowed", async () => {
       const tenant = makeTenant();
       const user = userEvent.setup();

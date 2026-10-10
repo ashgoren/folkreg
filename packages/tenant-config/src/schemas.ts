@@ -267,7 +267,14 @@ export const paymentsConfigSchema = z.object({
   paymentDueDate: z.string(),
   // Where registrants who paid a deposit (or by check) send the rest electronically.
   directPaymentUrl: optionalUrl,
-  coverFeesCheckbox: z.boolean(),
+  // Whether registrants are offered to cover the processing fee, and the fee to add: `percent` of
+  // the total (2.9 means 2.9%) plus `fixed` dollars. The tenant's own rates, since nonprofit and
+  // negotiated rates vary; kept whether or not it's on.
+  coverFees: z.object({
+    enabled: z.boolean(),
+    percent: requiredNumber(0).max(100, { error: "Must be 100 or less" }),
+    fixed: requiredNumber(0),
+  }),
   showPaymentSummary: z.boolean(),
   deposit: z.object({
     enabled: z.boolean(),

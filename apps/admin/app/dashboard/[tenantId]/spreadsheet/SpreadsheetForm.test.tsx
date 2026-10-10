@@ -83,7 +83,7 @@ describe("SpreadsheetForm", () => {
         <SpreadsheetForm
           tenant={makeTenant({
             waiver_config: { show: true, docusealTemplateId: "" },
-            payments_config: paymentsConfig({ coverFeesCheckbox: true, deposit: { enabled: true, amount: 25 }, donation: { enabled: true, max: 100 } }),
+            payments_config: paymentsConfig({ coverFees: { enabled: true, percent: 2.9, fixed: 0.3 }, deposit: { enabled: true, amount: 25 }, donation: { enabled: true, max: 100 } }),
           })}
         />,
       );

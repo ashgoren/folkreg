@@ -19,7 +19,7 @@ function isSystemColumnRelevant(column: string, tenant: Tenant): boolean {
   if (column === "waiver") return tenant.waiver_config.show;
   if (column === "deposit") return tenant.payments_config.deposit.enabled;
   if (column === "donation") return tenant.payments_config.donation.enabled;
-  if (column === "fees") return tenant.payments_config.coverFeesCheckbox;
+  if (column === "fees") return tenant.payments_config.coverFees.enabled;
   return true;
 }
 
