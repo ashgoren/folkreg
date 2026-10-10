@@ -19,6 +19,8 @@ const optionalEmail = z.union([z.literal(""), z.string().email("Must be a valid 
 // A web link registrants follow: http(s) on a real domain, so a missing "https://" (which would
 // make the link relative to the registration site) or a mailto:/javascript: link is caught.
 // One check, so a value wrong in several ways (e.g. mailto:, with no domain) gets one message.
+// A calendar date (YYYY-MM-DD, what a date input gives), or "" while unset.
+const optionalDate = z.union([z.literal(""), z.iso.date({ error: "Must be a date" })], { error: "Must be a date" });
 const webUrl = z.url({ protocol: /^https?$/, hostname: z.regexes.domain });
 const optionalUrl = z.string().refine((value) => value === "" || webUrl.safeParse(value).success, {
   error: "Must be a web address starting with https://",
@@ -221,7 +223,7 @@ export const slidingScaleSchema = z.object({
 export const tieredSchema = z.object({
   // The last day early-bird prices apply (YYYY-MM-DD), read as a whole day in event_config.timezone.
   // "" means no early-bird period: prices stay as entered and lateIncrease never applies.
-  earlybirdCutoff: z.union([z.literal(""), z.iso.date({ error: "Must be a date" })], { error: "Must be a date" }),
+  earlybirdCutoff: optionalDate,
   lateIncrease: requiredNumber(0),
   // The Admissions page only ever adds an age group's entry once, so a repeat is stored data that's wrong.
   prices: z.array(ageGroupPricesSchema).refine((prices) => new Set(prices.map((entry) => entry.ageGroup)).size === prices.length, {
@@ -264,7 +266,9 @@ export const paymentsConfigSchema = z.object({
   statementDescriptorSuffix: z.string(),
   paypalClientIdLive: z.string(),
   paypalClientIdTest: z.string(),
-  paymentDueDate: z.string(),
+  // When the balance is due after a deposit (YYYY-MM-DD), read as a whole day in
+  // event_config.timezone (see endOfDay).
+  paymentDueDate: optionalDate,
   // Where registrants who paid a deposit (or by check) send the rest electronically.
   directPaymentUrl: optionalUrl,
   // Whether registrants are offered to cover the processing fee, and the fee to add: `percent` of

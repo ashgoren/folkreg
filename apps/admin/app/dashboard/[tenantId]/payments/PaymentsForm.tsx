@@ -6,6 +6,7 @@ import { Field, FieldContent, FieldDescription, FieldGroup } from "@/components/
 import { FormLabel } from "@/components/form-label";
 import { NumberField } from "@/components/form-number-field";
 import { TextField } from "@/components/form-text-field";
+import { DateField } from "@/components/form-date-field";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
@@ -38,8 +39,7 @@ export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: Ten
     save: (data) => updatePayments(tenant.id, data),
   });
 
-  // Only the active processor's credentials are shown; the other's stay in the form (and are
-  // saved) as they were.
+  // Only the active processor's credentials are shown; the other's stay as they were.
   const processor = useWatch({ control: form.control, name: "processor" });
 
   const coverFeesEnabled = useWatch({ control: form.control, name: "coverFees.enabled" });
@@ -97,8 +97,7 @@ export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: Ten
 
       <FieldGroup>
         {/* Turning cover fees, deposits, or donations off hides their fields, so the switch waits
-            until those fields are valid -- a hidden error would block every later save with nothing
-            on screen to explain it. Same rule as the Admissions mode switch. */}
+            until those fields are valid - a hidden error would block every later save. */}
         <Controller name="coverFees.enabled" control={form.control} render={({ field, fieldState }) => (
           <Field orientation="horizontal" data-invalid={fieldState.invalid}>
             <FieldContent>
@@ -143,7 +142,12 @@ export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: Ten
         {depositEnabled && (
           <>
             <NumberField control={form.control} name="deposit.amount" id="payments-deposit-amount" label="Deposit amount" />
-            <TextField control={form.control} name="paymentDueDate" id="payments-due-date" label="Balance due date" autoComplete="off" />
+            <DateField
+              control={form.control}
+              name="paymentDueDate"
+              id="payments-due-date"
+              label="Balance due date"
+            />
           </>
         )}
       </FieldGroup>
@@ -206,7 +210,6 @@ export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: Ten
             {checksSendTo === "address" && (
               <>
                 <TextField control={form.control} name="checks.payee" id="payments-checks-payee" label="Payee name" autoComplete="off" />
-
                 <TextField control={form.control} name="checks.address" id="payments-checks-address" label="Mailing address" autoComplete="off" />
               </>
             )}

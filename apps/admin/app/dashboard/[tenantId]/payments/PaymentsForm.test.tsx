@@ -2,7 +2,7 @@
 // pieces of this form's state.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { makeSecrets, makeTenant } from "@/test/fixtures";
 import { expectLastSave, expectNoSave } from "@/test/autosave";
@@ -34,7 +34,7 @@ const storedConfig = (overrides: Partial<PaymentsConfig> = {}): PaymentsConfig =
   ...defaultPaymentsConfig(),
   stripePublishableKeyLive: "pk_live",
   stripePublishableKeyTest: "pk_test",
-  paymentDueDate: "May 1",
+  paymentDueDate: "2027-05-01",
   directPaymentUrl: "https://example.com/pay",
   coverFees: { enabled: true, percent: 2.9, fixed: 0.3 },
   showPaymentSummary: false,
@@ -78,7 +78,7 @@ describe("PaymentsForm", () => {
       expect(screen.getByLabelText("Publishable key (Live)")).toHaveValue("pk_live");
       expect(screen.getByLabelText("Secret key (Live)")).toHaveValue("sk_live");
       expect(byId("payments-deposit-amount")).toHaveValue(50);
-      expect(byId("payments-due-date")).toHaveValue("May 1");
+      expect(byId("payments-due-date")).toHaveValue("2027-05-01");
       expect(byId("payments-donation-max")).toHaveValue(200);
       expect(screen.getByRole("radio", { name: "Mailing address" })).toBeChecked();
       expect(byId("payments-checks-payee")).toHaveValue("Example Dance Society");
@@ -224,17 +224,32 @@ describe("PaymentsForm", () => {
       await user.click(screen.getByRole("switch", { name: /Allow deposit/ }));
       await user.clear(byId("payments-deposit-amount"));
       await user.type(byId("payments-deposit-amount"), "25");
-      await user.type(byId("payments-due-date"), "June 1");
+      fireEvent.change(byId("payments-due-date"), { target: { value: "2027-06-01" } });
       await user.tab();
 
       await expectLastSave(vi.mocked(updatePayments), tenant.id, {
-        ...BLANK, deposit: { enabled: true, amount: 25 }, paymentDueDate: "June 1",
+        ...BLANK, deposit: { enabled: true, amount: 25 }, paymentDueDate: "2027-06-01",
       });
 
       await user.click(screen.getByRole("switch", { name: /Allow deposit/ }));
       expect(byId("payments-deposit-amount")).toBeNull();
       expect(byId("payments-due-date")).toBeNull();
       await expectLastSave(vi.mocked(updatePayments), tenant.id, expect.objectContaining({ deposit: { enabled: false, amount: 25 } }));
+    });
+
+    // jsdom doesn't model a half-typed date, so this reports it the way a browser does: an empty
+    // value, with validity.badInput set.
+    it("flags a half-typed due date rather than saving it as blank", async () => {
+      render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={makeSecrets()} />);
+      const due = byId("payments-due-date");
+      expect(due).toHaveAttribute("type", "date");
+      Object.defineProperty(due, "validity", { value: { badInput: true } });
+
+      fireEvent.change(due, { target: { value: "" } });
+      fireEvent.blur(due);
+
+      expect(await screen.findByText("Must be a date")).toBeInTheDocument();
+      await expectNoSave(vi.mocked(updatePayments));
     });
 
     it("reveals the donation max only while donations are allowed", async () => {

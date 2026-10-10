@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { defaultEventConfig } from "./defaults";
-import { calendarEntry, earlybirdEndsAt, eventDateText, eventInstant, eventYear, formatEventDates } from "./event-dates";
+import { calendarEntry, endOfDay, eventDateText, eventInstant, eventYear, formatDate, formatEventDates } from "./event-dates";
 import type { EventConfig } from "./schemas";
 
 const event = (overrides: Partial<EventConfig> = {}): EventConfig => ({
@@ -87,14 +87,23 @@ describe("calendarEntry", () => {
   });
 });
 
-describe("earlybirdEndsAt", () => {
-  // The whole cutoff day counts, on the event's clock: 11:59pm Pacific on November 10 is the next
-  // morning in UTC.
-  it("is the last moment of the cutoff day in the event's timezone", () => {
-    expect(earlybirdEndsAt("2026-11-10", "America/Los_Angeles")?.toISOString()).toBe("2026-11-11T07:59:59.999Z");
+describe("formatDate", () => {
+  it("writes a stored date out, or nothing for a blank one", () => {
+    expect(formatDate("2026-09-15")).toBe("September 15, 2026");
+    expect(formatDate("")).toBe("");
+  });
+});
+
+describe("endOfDay", () => {
+  // The whole day counts, on the event's clock: 11:59pm Pacific on November 10 is the next morning
+  // in UTC.
+  it("is the last moment of the day in the event's timezone", () => {
+    expect(endOfDay("2026-11-10", "America/Los_Angeles")?.toISOString()).toBe("2026-11-11T07:59:59.999Z");
+    expect(endOfDay("2026-11-10", "America/New_York")?.toISOString()).toBe("2026-11-11T04:59:59.999Z");
   });
 
-  it("is null when there's no cutoff (no early-bird period)", () => {
-    expect(earlybirdEndsAt("", "America/Los_Angeles")).toBeNull();
+  // E.g. no early-bird period.
+  it("is null for a blank date", () => {
+    expect(endOfDay("", "America/Los_Angeles")).toBeNull();
   });
 });

@@ -71,4 +71,15 @@ describe("paymentsConfigSchema", () => {
     expect(result.error?.issues.map((issue) => [issue.path.join("."), issue.message]))
       .toEqual([["directPaymentUrl", "Must be a web address starting with https://"]]);
   });
+
+  // Blank while no due date is set.
+  it.each(["", "2026-09-15"])("accepts a payment due date of %j", (paymentDueDate) => {
+    expect(paymentsConfigSchema.safeParse({ ...blank, paymentDueDate }).success).toBe(true);
+  });
+
+  // E.g. a date written out in words, an impossible date, or a half-typed one.
+  it.each(["September 1", "2026-02-30", "incomplete"])("rejects a payment due date of %j", (paymentDueDate) => {
+    const result = paymentsConfigSchema.safeParse({ ...blank, paymentDueDate });
+    expect(result.error?.issues.map((issue) => [issue.path.join("."), issue.message])).toEqual([["paymentDueDate", "Must be a date"]]);
+  });
 });

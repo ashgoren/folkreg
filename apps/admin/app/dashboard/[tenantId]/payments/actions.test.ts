@@ -100,7 +100,7 @@ describe("updatePayments", () => {
 
     it("saves deposit, donation, fee, summary, and direct-payment settings", async () => {
       await updatePayments(harness.tenantId, values({
-        paymentDueDate: "May 1",
+        paymentDueDate: "2027-05-01",
         directPaymentUrl: "https://example.org/pay",
         coverFees: { enabled: true, percent: 2.9, fixed: 0.3 },
         showPaymentSummary: false,
@@ -108,7 +108,7 @@ describe("updatePayments", () => {
         donation: { enabled: true, max: 200 },
       }));
       expect(await savedConfig()).toMatchObject({
-        paymentDueDate: "May 1",
+        paymentDueDate: "2027-05-01",
         directPaymentUrl: "https://example.org/pay",
         coverFees: { enabled: true, percent: 2.9, fixed: 0.3 },
         showPaymentSummary: false,
