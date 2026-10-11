@@ -65,6 +65,13 @@ describe("eventConfigSchema", () => {
     it("rejects an end that isn't after the start", () => {
       expect(issues({ start: "2026-04-03T19:00", end: "2026-04-03T19:00" })).toEqual([["end", "Must be after the start"]]);
       expect(issues({ start: "2026-04-03T19:00", end: "2026-04-02T19:00" })).toEqual([["end", "Must be after the start"]]);
+      // The same moment, once without seconds and once with.
+      expect(issues({ start: "2026-04-03T19:00", end: "2026-04-03T19:00:00" })).toEqual([["end", "Must be after the start"]]);
+      expect(issues({ start: "2026-04-03T19:00:00", end: "2026-04-03T19:00" })).toEqual([["end", "Must be after the start"]]);
+    });
+
+    it("accepts an end a second after the start, written with seconds", () => {
+      expect(issues({ start: "2026-04-03T19:00", end: "2026-04-03T19:00:01" })).toEqual([]);
     });
 
     // Either can be filled in before the other.

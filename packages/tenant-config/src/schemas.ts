@@ -16,11 +16,11 @@ import { FIELD_DEFS, FIELD_NAMES } from "@repo/fields";
 
 const requiredNumber = (min: number) => z.number({ error: "Required" }).min(min);
 const optionalEmail = z.union([z.literal(""), z.string().email("Must be a valid email")]);
+// A calendar date (YYYY-MM-DD, what a date input gives), or "" while unset.
+const optionalDate = z.union([z.literal(""), z.iso.date({ error: "Must be a date" })], { error: "Must be a date" });
 // A web link registrants follow: http(s) on a real domain, so a missing "https://" (which would
 // make the link relative to the registration site) or a mailto:/javascript: link is caught.
 // One check, so a value wrong in several ways (e.g. mailto:, with no domain) gets one message.
-// A calendar date (YYYY-MM-DD, what a date input gives), or "" while unset.
-const optionalDate = z.union([z.literal(""), z.iso.date({ error: "Must be a date" })], { error: "Must be a date" });
 const webUrl = z.url({ protocol: /^https?$/, hostname: z.regexes.domain });
 const optionalUrl = z.string().refine((value) => value === "" || webUrl.safeParse(value).success, {
   error: "Must be a web address starting with https://",
@@ -47,6 +47,9 @@ const optionalLocalDateTime = z.string().refine(
   (value) => value === "" || (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(value) && localDateTime.safeParse(value).success),
   { error: "Must be a date and time" },
 );
+// The same moment written with seconds ("…T19:00" as "…T19:00:00"), so two values compare
+// correctly as text whichever form each was saved in.
+const withSeconds = (value: string) => (value.length === "YYYY-MM-DDTHH:MM".length ? `${value}:00` : value);
 
 // The event's facts, each stored once. What's shown elsewhere is derived from them: the year from
 // `start`, the calendar entry's title, times, and (unless overridden) location from the event's own.
@@ -76,7 +79,7 @@ export const eventConfigSchema = z.object({
     safety: optionalUrl,
   }),
 }).superRefine((event, ctx) => {
-  if (event.start !== "" && event.end !== "" && event.end <= event.start) {
+  if (event.start !== "" && event.end !== "" && withSeconds(event.end) <= withSeconds(event.start)) {
     ctx.addIssue({ code: "custom", path: ["end"], message: "Must be after the start" });
   }
   // Calendar links need real times. A deliberate exception to blanks being allowed: with the links

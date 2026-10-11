@@ -116,11 +116,11 @@ export const defaultWaiverConfig = (): WaiverConfig => ({ show: false, docusealT
 // Filled in during SES setup for the tenant's sending domain.
 export const defaultReceiptsConfig = (): ReceiptsConfig => ({ emailFrom: "", emailReplyTo: "" });
 
-// Every config column a new tenant row gets.
 // No sheet yet. No stored columns either: every available column shows, in field order, until
 // the organizer reorders or hides one on the Spreadsheet page.
 export const defaultSpreadsheetConfig = (): SpreadsheetConfig => ({ sheetId: "", columns: [] });
 
+// Every config column a new tenant row gets.
 export const defaultTenantConfig = () => ({
   event_config: defaultEventConfig(),
   fields_config: defaultFieldsConfig(),
