@@ -27,7 +27,7 @@ const getE2eTenantId = async () => {
 };
 
 export type Section =
-  | "general" | "event" | "fields" | "admissions" | "payments"
+  | "general" | "event" | "registration" | "fields" | "admissions" | "payments"
   | "waivers" | "receipts" | "spreadsheet" | "appearance";
 
 type Fixtures = {

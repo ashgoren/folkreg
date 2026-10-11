@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { defaultEventConfig } from "./defaults";
-import { calendarEntry, endOfDay, eventDateText, eventInstant, eventYear, formatDate, formatEventDates } from "./event-dates";
+import { calendarEntry, endOfDay, eventDateText, eventInstant, eventYear, formatDate, formatDateTime, formatEventDates } from "./event-dates";
 import type { EventConfig } from "./schemas";
 
 const event = (overrides: Partial<EventConfig> = {}): EventConfig => ({
@@ -105,5 +105,22 @@ describe("endOfDay", () => {
   // E.g. no early-bird period.
   it("is null for a blank date", () => {
     expect(endOfDay("", "America/Los_Angeles")).toBeNull();
+  });
+});
+
+describe("formatDateTime", () => {
+  it("writes the date and time with the timezone's abbreviation for that date", () => {
+    expect(formatDateTime("2026-11-01T12:00", "America/Los_Angeles")).toBe("November 1, 2026 at 12:00 PM PST");
+    expect(formatDateTime("2026-07-01T09:30", "America/Los_Angeles")).toBe("July 1, 2026 at 9:30 AM PDT");
+    expect(formatDateTime("2026-07-01T09:30", "America/Phoenix")).toBe("July 1, 2026 at 9:30 AM MST");
+  });
+
+  // The stored date is already on the event's clock, so a late-evening time keeps its own date.
+  it("keeps the stored date late in the evening", () => {
+    expect(formatDateTime("2026-11-01T23:30", "America/New_York")).toBe("November 1, 2026 at 11:30 PM EST");
+  });
+
+  it("is blank while unset", () => {
+    expect(formatDateTime("", "America/Los_Angeles")).toBe("");
   });
 });

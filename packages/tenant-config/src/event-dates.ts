@@ -1,8 +1,8 @@
 // What's shown about an event's dates, derived from the facts event_config stores once: `start`
 // and `end` on the event's own clock, and the `timezone` that clock is in. Shared by the admin (the
-// Date field's placeholder) and the registration app (date text, calendar links, payment
-// descriptions, the early-bird cutoff and payment due date), so both read the stored values the
-// same way.
+// Date field's placeholder, the Registration page's opening and closing times) and the registration
+// app (date text, calendar links, payment descriptions, the early-bird cutoff and payment due date),
+// so both read the stored values the same way.
 
 import { fromZonedTime } from "date-fns-tz";
 import type { EventConfig, Timezone } from "./schemas";
@@ -53,6 +53,18 @@ export const eventYear = (event: Pick<EventConfig, "start">): number | null =>
  * America/Los_Angeles is 2026-04-04T02:00Z. Daylight saving comes from the timezone, for that date.
  */
 export const eventInstant = (localDateTime: string, timezone: Timezone): Date => fromZonedTime(localDateTime, timezone);
+
+/**
+ * A stored date and time on the event's clock as registrants read it, e.g. "November 1, 2026 at
+ * 12:00 PM PST"; "" while unset. The abbreviation comes from the timezone for that date, so the
+ * same clock time reads PDT in summer.
+ */
+export const formatDateTime = (localDateTime: string, timezone: Timezone): string => {
+  if (localDateTime === "") return "";
+  const time = new Intl.DateTimeFormat("en-US", { timeZone: timezone, hour: "numeric", minute: "2-digit", timeZoneName: "short" })
+    .format(eventInstant(localDateTime, timezone));
+  return `${formatDate(localDateTime)} at ${time}`;
+};
 
 export type CalendarEntry = { title: string; description: string; location: string; start: Date; end: Date };
 

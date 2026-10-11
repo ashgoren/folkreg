@@ -4,6 +4,7 @@ import { OTHER_TENANT_SLUG, getTenantIdBySlug } from "../test/supabase";
 const SECTIONS: { section: Section; label: string }[] = [
   { section: "general", label: "General" },
   { section: "event", label: "Event" },
+  { section: "registration", label: "Registration" },
   { section: "fields", label: "Fields" },
   { section: "admissions", label: "Admissions" },
   { section: "payments", label: "Payments" },

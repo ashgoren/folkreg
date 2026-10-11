@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, ChevronUp, ClipboardList, CreditCard, FileSignature, LogOut, Mail, Palette, Settings, Sheet, Ticket } from "lucide-react";
+import { CalendarDays, ChevronUp, ClipboardList, CreditCard, DoorOpen, FileSignature, LogOut, Mail, Palette, Settings, Sheet, Ticket } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { logout } from "@/app/auth/logout/actions";
@@ -10,6 +10,7 @@ import { logout } from "@/app/auth/logout/actions";
 const navSections = [
   { path: "general", label: "General", icon: Settings },
   { path: "event", label: "Event", icon: CalendarDays },
+  { path: "registration", label: "Registration", icon: DoorOpen },
   { path: "fields", label: "Fields", icon: ClipboardList },
   { path: "admissions", label: "Admissions", icon: Ticket },
   { path: "payments", label: "Payments", icon: CreditCard },

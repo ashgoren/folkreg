@@ -27,7 +27,7 @@ export type RegistrationStatus =
  * reported is the first of: the switch, the opening time, the closing time, the people limit.
  */
 export const registrationStatus = (
-  registration: RegistrationConfig,
+  registration: Pick<RegistrationConfig, "open" | "opensAt" | "closesAt" | "closeAfter">,
   timezone: Timezone,
   now: Date,
   peopleRegistered: number | null,
@@ -49,7 +49,10 @@ export const registrationStatus = (
  * entry in the lottery, or a place on the waitlist. `peopleNotWaitlisted` counts registered people
  * who aren't on the waitlist (what waitlistAfter limits); it only matters in "pay" mode.
  */
-export const submissionMode = (registration: RegistrationConfig, peopleNotWaitlisted: number): RegistrationConfig["mode"] => {
+export const submissionMode = (
+  registration: Pick<RegistrationConfig, "mode" | "waitlistAfter">,
+  peopleNotWaitlisted: number,
+): RegistrationConfig["mode"] => {
   const { mode, waitlistAfter } = registration;
   if (mode === "pay" && waitlistAfter.enabled && peopleNotWaitlisted >= waitlistAfter.people) return "waitlist";
   return mode;
