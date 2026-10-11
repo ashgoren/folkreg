@@ -2,13 +2,13 @@ import { describe, it, expect } from "vitest";
 import { generalSchema, slugValuesSchema } from "./schema";
 
 describe("generalSchema", () => {
-  it("accepts the two switches", () => {
-    expect(generalSchema.safeParse({ is_live: false, show_preregistration: true }).success).toBe(true);
+  it("accepts the live switch", () => {
+    expect(generalSchema.safeParse({ is_live: false }).success).toBe(true);
   });
 
-  it("requires the booleans to actually be booleans", () => {
-    expect(generalSchema.safeParse({ is_live: "true", show_preregistration: true }).success).toBe(false);
-    expect(generalSchema.safeParse({ is_live: false, show_preregistration: undefined }).success).toBe(false);
+  it("requires it to actually be a boolean", () => {
+    expect(generalSchema.safeParse({ is_live: "true" }).success).toBe(false);
+    expect(generalSchema.safeParse({ is_live: undefined }).success).toBe(false);
   });
 });
 

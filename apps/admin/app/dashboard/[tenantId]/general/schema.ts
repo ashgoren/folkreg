@@ -1,10 +1,9 @@
 import { z } from "zod";
 import { slugSchema } from "@repo/tenant-config";
 
-// The General page's autosaved switches.
+// The General page's autosaved switch.
 export const generalSchema = z.object({
   is_live: z.boolean(),
-  show_preregistration: z.boolean(),
 });
 export type GeneralValues = z.infer<typeof generalSchema>;
 

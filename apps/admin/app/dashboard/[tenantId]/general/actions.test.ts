@@ -13,19 +13,17 @@ import type { GeneralValues } from "./schema";
 
 const values = (overrides: Partial<GeneralValues> = {}): GeneralValues => ({
   is_live: true,
-  show_preregistration: true,
   ...overrides,
 });
 
 describe("updateGeneral", () => {
   const harness = useActionHarness(createClient);
 
-  it("saves is_live and show_preregistration, leaving the slug alone", async () => {
+  it("saves is_live, leaving the slug alone", async () => {
     expect(await updateGeneral(harness.tenantId, values())).toBeNull();
 
     const tenant = await readTenant(harness.service, harness.tenantId);
     expect(tenant.is_live).toBe(true);
-    expect(tenant.show_preregistration).toBe(true);
     expect(tenant.slug).toBe(ADMIN_TENANT_SLUG);
   });
 
@@ -33,6 +31,7 @@ describe("updateGeneral", () => {
     const configColumns = (tenant: Awaited<ReturnType<typeof readTenant>>) => ({
       event_config: tenant.event_config,
       fields_config: tenant.fields_config,
+      registration_config: tenant.registration_config,
       admissions_config: tenant.admissions_config,
       payments_config: tenant.payments_config,
       theme_config: tenant.theme_config,

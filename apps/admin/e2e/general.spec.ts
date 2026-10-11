@@ -5,22 +5,17 @@ test.beforeEach(async ({ page, dashboardUrl }) => {
   await page.goto(dashboardUrl("general"));
 });
 
-test("autosaves the switches, and shows them after a reload", async ({ page, tenantId }) => {
-  await page.getByRole("switch", { name: "Show preregistration?" }).click();
+test("autosaves the live switch, and shows it after a reload", async ({ page, tenantId }) => {
   await page.getByRole("switch", { name: "Live mode?" }).click();
   await page.getByRole("button", { name: "Go live" }).click(); // the confirmation
   // The badge and description follow the is_live toggle immediately, before any save.
   await expect(page.getByText("LIVE", { exact: true })).toBeVisible();
-  await expect(page.getByText("open", { exact: true })).toBeVisible();
+  await expect(page.getByText(/payments use your live keys/)).toBeVisible();
   await waitForSaved(page);
 
-  await expect.poll(async () => {
-    const { is_live, show_preregistration } = await readTenantConfig(tenantId);
-    return { is_live, show_preregistration };
-  }).toEqual({ is_live: true, show_preregistration: true });
+  await expect.poll(async () => (await readTenantConfig(tenantId)).is_live).toBe(true);
 
   await page.reload();
-  await expect(page.getByRole("switch", { name: "Show preregistration?" })).toBeChecked();
   await expect(page.getByRole("switch", { name: "Live mode?" })).toBeChecked();
 });
 

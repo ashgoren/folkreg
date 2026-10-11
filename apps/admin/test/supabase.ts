@@ -69,7 +69,6 @@ export const resetTenant = async (service: DbClient, tenantId: string, slug: str
   const { error: tenantError } = await service.from("tenants").update({
     slug,
     is_live: false,
-    show_preregistration: false,
     ...defaultTenantConfig(),
   } as unknown as TablesUpdate<"tenants">).eq("id", tenantId);
   if (tenantError) throw tenantError;

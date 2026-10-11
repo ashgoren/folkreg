@@ -23,9 +23,9 @@ afterAll(() => resetTenant(service, tenantId, ADMIN_TENANT_SLUG));
 
 describe("an owner's session", () => {
   it("can update the columns the admin edits", async () => {
-    const { error } = await owner.from("tenants").update({ show_preregistration: true }).eq("id", tenantId);
+    const { error } = await owner.from("tenants").update({ is_live: true }).eq("id", tenantId);
     expect(error).toBeNull();
-    expect((await readTenant(service, tenantId)).show_preregistration).toBe(true);
+    expect((await readTenant(service, tenantId)).is_live).toBe(true);
   });
 
   // Granted by its own migration, after tenant_column_grants.

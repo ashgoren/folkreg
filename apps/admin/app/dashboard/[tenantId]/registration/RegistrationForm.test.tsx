@@ -146,6 +146,15 @@ describe("RegistrationForm", () => {
     });
   });
 
+  it("saves the preregistration switch", async () => {
+    const tenant = renderForm();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("switch", { name: "Show preregistration?" }));
+
+    await expectLastSave(vi.mocked(updateRegistration), tenant.id, stored({ showPreregistration: true }));
+  });
+
   // Switching modes only changes which values apply.
   it("switches mode, keeping the other modes' values", async () => {
     const config = stored({ lotteryResultsDate: "2026-11-20", waitlistAfter: { enabled: true, people: 240 } });

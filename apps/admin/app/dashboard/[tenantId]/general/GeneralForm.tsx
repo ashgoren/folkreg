@@ -22,10 +22,7 @@ export function GeneralForm({ tenant }: { tenant: Tenant }) {
   const { form, formProps, isPending, savedRecently } = useAutosaveForm({
     label: "General",
     schema: generalSchema,
-    defaultValues: {
-      is_live: tenant.is_live,
-      show_preregistration: tenant.show_preregistration,
-    },
+    defaultValues: { is_live: tenant.is_live },
     save: (data) => updateGeneral(tenant.id, data),
   });
 
@@ -45,25 +42,6 @@ export function GeneralForm({ tenant }: { tenant: Tenant }) {
         <FieldGroup>
 
           <Controller
-            name="show_preregistration"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field orientation="horizontal" data-invalid={fieldState.invalid}>
-                <FieldContent>
-                  <FormLabel htmlFor="general-preregistration">Show preregistration?</FormLabel>
-                  <FieldDescription>When on, shows policy acknowledgment checkbox before registration</FieldDescription>
-                </FieldContent>
-                <Switch
-                  id="general-preregistration"
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  aria-invalid={fieldState.invalid}
-                />
-              </Field>
-            )}
-          />
-
-          <Controller
             name="is_live"
             control={form.control}
             render={({ field, fieldState }) => (
@@ -75,9 +53,13 @@ export function GeneralForm({ tenant }: { tenant: Tenant }) {
                       {field.value ? "LIVE" : "SANDBOX"}
                     </Badge>
                   </div>
-                  <FieldDescription>Registration is currently <strong>{field.value ? "open" : "closed"}</strong> to the public</FieldDescription>
+                  <FieldDescription>
+                    {field.value
+                      ? "The registration site is public, and payments use your live keys. Opening and closing registration is on the Registration page."
+                      : "Only preview links reach the registration site, and payments use your test keys. The public sees a placeholder."}
+                  </FieldDescription>
                 </FieldContent>
-                {/* Opening or closing registration is immediately public, so the switch asks first. */}
+                {/* Going live or back to sandbox is immediately public, so the switch asks first. */}
                 <Switch
                   id="general-is-live"
                   checked={field.value}
@@ -93,17 +75,17 @@ export function GeneralForm({ tenant }: { tenant: Tenant }) {
         <AlertDialog open={pendingLive !== null} onOpenChange={(open) => { if (!open) setPendingLive(null); }}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>{pendingLive ? "Open registration to the public?" : "Close registration?"}</AlertDialogTitle>
+              <AlertDialogTitle>{pendingLive ? "Go live?" : "Switch to sandbox?"}</AlertDialogTitle>
               <AlertDialogDescription>
                 {pendingLive
-                  ? `${slug}.folkreg.org will take real registrations and payments.`
-                  : "The public will see a placeholder page instead of the registration form."}
+                  ? `${slug}.folkreg.org will be public, and payments will use your live keys and charge real cards.`
+                  : "The public will see a placeholder instead of the registration site, and payment links already sent will stop working until you go live again."}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={() => form.setValue("is_live", pendingLive!)}>
-                {pendingLive ? "Go live" : "Close registration"}
+                {pendingLive ? "Go live" : "Switch to sandbox"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

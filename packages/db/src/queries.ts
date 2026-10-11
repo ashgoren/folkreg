@@ -6,7 +6,7 @@ import { TenantNotFoundError } from "./errors";
 // The editable scalar columns plus the jsonb config columns, typed by their schemas rather than as
 // generic Json. The config types are z.infer'd type aliases, which TypeScript accepts as Json
 // as-is, so these values go to supabase-js without a cast.
-type TenantUpdates = Pick<TablesUpdate<"tenants">, "slug" | "is_live" | "show_preregistration" | "owner_id">
+type TenantUpdates = Pick<TablesUpdate<"tenants">, "slug" | "is_live" | "owner_id">
   & Partial<TenantConfig>;
 
 type TenantSecretsUpdates = Partial<Omit<TenantSecrets, 'tenant_id'>>

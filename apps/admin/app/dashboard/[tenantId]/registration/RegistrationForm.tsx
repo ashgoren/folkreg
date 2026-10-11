@@ -16,8 +16,8 @@ import { PeopleLimit } from "./PeopleLimit";
 import { RegistrationSummary } from "./RegistrationSummary";
 
 /**
- * When the registration form takes submissions, and what a submission becomes. Every setting is
- * always shown, whichever mode is chosen and whether or not a limit is on, so a hidden value can
+ * When the registration form takes submissions, what a submission becomes, and whether registrants
+ * see the preregistration page first. Every setting is always shown, whichever mode is chosen and whether or not a limit is on, so a hidden value can
  * never hold an error that blocks saving.
  */
 export function RegistrationForm({ tenant, now }: { tenant: Tenant; now: number }) {
@@ -133,6 +133,22 @@ export function RegistrationForm({ tenant, now }: { tenant: Tenant; now: number 
           </p>
         )}
       </div>
+
+      <Separator />
+
+      <Controller
+        name="showPreregistration"
+        control={form.control}
+        render={({ field }) => (
+          <Field orientation="horizontal">
+            <FieldContent>
+              <FormLabel htmlFor="registration-preregistration">Show preregistration?</FormLabel>
+              <FieldDescription>When on, registrants check a box acknowledging policies before the form.</FieldDescription>
+            </FieldContent>
+            <Switch id="registration-preregistration" checked={field.value} onCheckedChange={field.onChange} />
+          </Field>
+        )}
+      />
 
       <AutosaveStatus isPending={isPending} savedRecently={savedRecently} />
     </form>

@@ -14,42 +14,32 @@ describe("GeneralForm", () => {
   });
 
   it("populates from the tenant", () => {
-    render(<GeneralForm tenant={makeTenant({ slug: "spring-dance", is_live: true, show_preregistration: true })} />);
+    render(<GeneralForm tenant={makeTenant({ slug: "spring-dance", is_live: true })} />);
     expect(screen.getByText("spring-dance.folkreg.org")).toBeInTheDocument();
     expect(screen.getByRole("switch", { name: /Live mode/ })).toBeChecked();
-    expect(screen.getByRole("switch", { name: /Show preregistration/ })).toBeChecked();
   });
 
-  // The subdomain isn't part of the autosaved values; SlugSetting saves it on its own.
-  it("autosaves the switches, without the subdomain", async () => {
-    const tenant = makeTenant({ slug: "spring-dance" });
-    const user = userEvent.setup();
-    render(<GeneralForm tenant={tenant} />);
-
-    await user.click(screen.getByRole("switch", { name: /Show preregistration/ }));
-    await expectLastSave(vi.mocked(updateGeneral), tenant.id, { is_live: false, show_preregistration: true });
-  });
-
-  // Opening or closing registration is immediately public, so the switch asks first.
+  // Going live or back to sandbox is immediately public, so the switch asks first.
   describe("live mode", () => {
     it("goes live only once confirmed, then labels it live", async () => {
       const tenant = makeTenant({ slug: "spring-dance", is_live: false });
       const user = userEvent.setup();
       render(<GeneralForm tenant={tenant} />);
       expect(screen.getByText("SANDBOX")).toBeInTheDocument();
-      expect(screen.getByText("closed")).toBeInTheDocument();
+      expect(screen.getByText(/payments use your test keys/)).toBeInTheDocument();
 
       await user.click(screen.getByRole("switch", { name: /Live mode/ }));
-      const dialog = screen.getByRole("alertdialog", { name: "Open registration to the public?" });
-      expect(dialog).toHaveTextContent("spring-dance.folkreg.org will take real registrations and payments.");
+      const dialog = screen.getByRole("alertdialog", { name: "Go live?" });
+      expect(dialog).toHaveTextContent("spring-dance.folkreg.org will be public, and payments will use your live keys and charge real cards.");
       // The modal hides the page behind it from assistive tech, so the switch is found as hidden.
       expect(screen.getByRole("switch", { name: /Live mode/, hidden: true })).not.toBeChecked();
 
       await user.click(screen.getByRole("button", { name: "Go live" }));
       expect(screen.getByRole("switch", { name: /Live mode/ })).toBeChecked();
       expect(screen.getByText("LIVE")).toBeInTheDocument();
-      expect(screen.getByText("open")).toBeInTheDocument();
-      await expectLastSave(vi.mocked(updateGeneral), tenant.id, expect.objectContaining({ is_live: true }));
+      expect(screen.getByText(/payments use your live keys/)).toBeInTheDocument();
+      // The subdomain isn't part of the autosaved values; SlugSetting saves it on its own.
+      await expectLastSave(vi.mocked(updateGeneral), tenant.id, { is_live: true });
     });
 
     it("changes nothing when cancelled", async () => {
@@ -64,14 +54,14 @@ describe("GeneralForm", () => {
       await expectNoSave(vi.mocked(updateGeneral));
     });
 
-    it("asks before closing registration too", async () => {
+    it("asks before switching back to sandbox too", async () => {
       const tenant = makeTenant({ is_live: true });
       const user = userEvent.setup();
       render(<GeneralForm tenant={tenant} />);
 
       await user.click(screen.getByRole("switch", { name: /Live mode/ }));
-      expect(screen.getByRole("alertdialog", { name: "Close registration?" })).toBeInTheDocument();
-      await user.click(screen.getByRole("button", { name: "Close registration" }));
+      expect(screen.getByRole("alertdialog", { name: "Switch to sandbox?" })).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Switch to sandbox" }));
       await expectLastSave(vi.mocked(updateGeneral), tenant.id, expect.objectContaining({ is_live: false }));
     });
   });
