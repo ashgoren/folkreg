@@ -24,7 +24,8 @@ export function RegistrationSummary({ control, timezone, now }: { control: Contr
   if (!parsed.success) return <p className="text-sm text-muted-foreground">Fix the settings below to see when registration is open.</p>;
 
   const at = (localDateTime: string) => formatDateTime(localDateTime, timezone);
-  const [headline, ...details] = summary(parsed.data, registrationStatus(parsed.data, timezone, new Date(now), null), at);
+  const status = registrationStatus({ registration: parsed.data, timezone, now: new Date(now), peopleRegistered: null });
+  const [headline, ...details] = summary(parsed.data, status, at);
 
   return (
     <p className="text-sm">
