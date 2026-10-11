@@ -10,7 +10,7 @@
 
 import { FIELD_DEFS, type FieldName } from "@repo/fields";
 import type {
-  AdmissionsConfig, EventConfig, FieldConfig, FieldEntry, FieldsConfig, PaymentsConfig, ReceiptsConfig, SpreadsheetConfig, ThemeConfig, WaiverConfig,
+  AdmissionsConfig, EventConfig, FieldConfig, FieldEntry, FieldsConfig, PaymentsConfig, ReceiptsConfig, RegistrationConfig, SpreadsheetConfig, ThemeConfig, WaiverConfig,
 } from "./schemas";
 
 export const defaultEventConfig = (): EventConfig => ({
@@ -50,6 +50,20 @@ const DEFAULT_MISC_FIELDS: FieldName[] = [
 export const defaultFieldsConfig = (): FieldsConfig => ({
   contact: DEFAULT_CONTACT_FIELDS.map(defaultFieldEntry),
   misc: DEFAULT_MISC_FIELDS.map(defaultFieldEntry),
+});
+
+// Open, paid right away, with no limits: once the tenant goes live, registration works the way it
+// always has until an organizer sets times or limits. The limits' numbers are ready for when
+// they're switched on.
+export const defaultRegistrationConfig = (): RegistrationConfig => ({
+  open: true,
+  opensAt: "",
+  closesAt: "",
+  closeAfter: { enabled: false, people: 100 },
+  mode: "pay",
+  waitlistAfter: { enabled: false, people: 100 },
+  lotteryResultsDate: "",
+  showPreregistration: false,
 });
 
 // Sliding scale is active for a new tenant; the other modes' values are what an organizer sees on
@@ -92,6 +106,8 @@ export const defaultPaymentsConfig = (): PaymentsConfig => ({
   paypalClientIdTest: "",
   paymentDueDate: "",
   directPaymentUrl: "",
+  // A week to pay once a lottery or waitlist spot is offered.
+  paymentLinkDays: 7,
   // Off to start, with Stripe's standard rate ready for when it's switched on.
   coverFees: { enabled: false, percent: 2.9, fixed: 0.3 },
   showPaymentSummary: true,
@@ -124,6 +140,7 @@ export const defaultSpreadsheetConfig = (): SpreadsheetConfig => ({ sheetId: "",
 export const defaultTenantConfig = () => ({
   event_config: defaultEventConfig(),
   fields_config: defaultFieldsConfig(),
+  registration_config: defaultRegistrationConfig(),
   admissions_config: defaultAdmissionsConfig(),
   payments_config: defaultPaymentsConfig(),
   theme_config: defaultThemeConfig(),

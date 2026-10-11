@@ -197,6 +197,50 @@ const checkChoices = ({ name, defaultValue, firstPersonOptions, options = [] }: 
 };
 export type FieldsConfig = z.infer<typeof fieldsConfigSchema>;
 
+// A limit on how many people register, switched on or off. `people` is kept and validated either
+// way, so switching the limit back on restores it and a hidden number is never left invalid.
+const peopleLimitSchema = z.object({
+  enabled: z.boolean(),
+  people: wholeNumber({ min: 1 }, "Must be a whole number, 1 or more"),
+});
+
+// Two separate questions about the registration form, neither of which affects payment: a payment
+// link sent to an order (a lottery winner, a promoted waitlister, a deposit's balance) works
+// whatever these say.
+//
+// When the form takes submissions: while `open` is on, and opensAt (if set) has passed, and
+// closesAt (if set) hasn't, and closeAfter (if on) hasn't been reached. Each limit can only narrow
+// the window, so they combine without any one overriding another; `open` is the manual switch,
+// for closing by hand whatever the times say.
+//
+// What a submission becomes: a registration paid for right away, an entry in a lottery drawn
+// later, or a place on the waitlist. In "pay" mode, waitlistAfter (if on) puts new registrants on
+// the waitlist once that many people are registered.
+//
+// Every mode's and limit's values are kept whichever applies, so switching never discards them.
+export const registrationConfigSchema = z.object({
+  open: z.boolean(),
+  // Local date-times on the event's clock (event_config.timezone), "" for no limit.
+  opensAt: optionalLocalDateTime,
+  closesAt: optionalLocalDateTime,
+  // Counts everyone registered: waitlisted people and lottery entries included.
+  closeAfter: peopleLimitSchema,
+  mode: z.enum(["pay", "lottery", "waitlist"]),
+  // Counts registered people not on the waitlist. Applies only in "pay" mode.
+  waitlistAfter: peopleLimitSchema,
+  // When lottery entrants hear whether they were drawn (YYYY-MM-DD), shown in their receipt; blank
+  // leaves it out. Applies only in "lottery" mode.
+  lotteryResultsDate: optionalDate,
+  // Whether registrants click through a page acknowledging the event's policies before the form.
+  showPreregistration: z.boolean(),
+}).superRefine((registration, ctx) => {
+  const { opensAt, closesAt } = registration;
+  if (opensAt !== "" && closesAt !== "" && withSeconds(closesAt) <= withSeconds(opensAt)) {
+    ctx.addIssue({ code: "custom", path: ["closesAt"], message: "Must be after the opening time" });
+  }
+});
+export type RegistrationConfig = z.infer<typeof registrationConfigSchema>;
+
 // One price a registrant of some age group can choose, e.g. "Sustaining", $280. The label tells
 // apart several prices for the same age group; a lone price can go without one.
 export const tieredPriceSchema = z.object({
@@ -279,6 +323,10 @@ export const paymentsConfigSchema = z.object({
   paymentDueDate: optionalDate,
   // Where registrants who paid a deposit (or by check) send the rest electronically.
   directPaymentUrl: optionalUrl,
+  // How many days a payment link sent to an order stays valid (a lottery winner's, or a promoted
+  // waitlister's). Each link's expiry is fixed when it's sent, so a change applies only to links
+  // sent afterward.
+  paymentLinkDays: wholeNumber({ min: 1 }, "Must be a whole number, 1 or more"),
   // Whether registrants are offered to cover the processing fee, and the fee to add: `percent` of
   // the total (2.9 means 2.9%) plus `fixed` dollars. The tenant's own rates, since nonprofit and
   // negotiated rates vary; kept whether or not it's on.
@@ -345,6 +393,7 @@ export type SpreadsheetConfig = z.infer<typeof spreadsheetConfigSchema>;
 export const tenantConfigSchema = z.object({
   event_config: eventConfigSchema,
   fields_config: fieldsConfigSchema,
+  registration_config: registrationConfigSchema,
   admissions_config: admissionsConfigSchema,
   payments_config: paymentsConfigSchema,
   theme_config: themeConfigSchema,

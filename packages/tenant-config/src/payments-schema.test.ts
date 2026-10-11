@@ -33,6 +33,13 @@ describe("paymentsConfigSchema", () => {
     expect(paymentsConfigSchema.safeParse({ ...blank, donation: { enabled: true, max: -5 } }).success).toBe(false);
   });
 
+  it.each([NaN, 0, 1.5])("rejects %s days for a payment link", (paymentLinkDays) => {
+    const result = paymentsConfigSchema.safeParse({ ...blank, paymentLinkDays });
+    expect(result.error?.issues.map((issue) => [issue.path.join("."), issue.message])).toEqual([
+      ["paymentLinkDays", "Must be a whole number, 1 or more"],
+    ]);
+  });
+
   // The tenant's own processing rate: 2.9 means 2.9%.
   it("accepts a fee rate as a percentage plus a fixed amount", () => {
     expect(paymentsConfigSchema.safeParse({ ...blank, coverFees: { enabled: true, percent: 1.99, fixed: 0.49 } }).success).toBe(true);

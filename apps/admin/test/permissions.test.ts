@@ -6,6 +6,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
   ADMIN_OWNER_EMAIL, ADMIN_TENANT_SLUG, createAnonClient, createServiceClient, getTenantIdBySlug, readTenant, resetTenant, signInAs,
 } from "@/test/supabase";
+import { defaultRegistrationConfig } from "@repo/tenant-config";
 import type { DbClient } from "@repo/types";
 
 const PERMISSION_DENIED = "42501";
@@ -25,6 +26,14 @@ describe("an owner's session", () => {
     const { error } = await owner.from("tenants").update({ show_preregistration: true }).eq("id", tenantId);
     expect(error).toBeNull();
     expect((await readTenant(service, tenantId)).show_preregistration).toBe(true);
+  });
+
+  // Granted by its own migration, after tenant_column_grants.
+  it("can update registration_config", async () => {
+    const registration = { ...defaultRegistrationConfig(), open: false };
+    const { error } = await owner.from("tenants").update({ registration_config: registration }).eq("id", tenantId);
+    expect(error).toBeNull();
+    expect((await readTenant(service, tenantId)).registration_config).toEqual(registration);
   });
 
   // E.g. handing the tenant to another account, or rewriting its history.

@@ -139,6 +139,7 @@ export type Database = {
           owner_id: string | null
           payments_config: Json
           receipts_config: Json
+          registration_config: Json
           show_preregistration: boolean
           slug: string
           spreadsheet_config: Json
@@ -156,6 +157,7 @@ export type Database = {
           owner_id?: string | null
           payments_config: Json
           receipts_config: Json
+          registration_config: Json
           show_preregistration?: boolean
           slug: string
           spreadsheet_config: Json
@@ -173,6 +175,7 @@ export type Database = {
           owner_id?: string | null
           payments_config?: Json
           receipts_config?: Json
+          registration_config?: Json
           show_preregistration?: boolean
           slug?: string
           spreadsheet_config?: Json
