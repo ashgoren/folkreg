@@ -52,11 +52,11 @@ export const defaultFieldsConfig = (): FieldsConfig => ({
   misc: DEFAULT_MISC_FIELDS.map(defaultFieldEntry),
 });
 
-// Open, paid right away, with no limits: once the tenant goes live, registration works the way it
-// always has until an organizer sets times or limits. The limits' numbers are ready for when
-// they're switched on.
+// Closed: a new tenant's site takes no registrations until an organizer turns on the Open switch
+// on the Registration page, which is also when payments start using the live keys. Paid right
+// away, with no times or limits; the limits' numbers are ready for when they're switched on.
 export const defaultRegistrationConfig = (): RegistrationConfig => ({
-  open: true,
+  open: false,
   opensAt: "",
   closesAt: "",
   closeAfter: { enabled: false, people: 100 },

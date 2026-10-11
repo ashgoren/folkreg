@@ -5,7 +5,8 @@ test.beforeEach(async ({ page, dashboardUrl }) => {
   await page.goto(dashboardUrl("registration"));
 });
 
-test("autosaves a lottery's times and the preregistration switch, and keeps them across a reload", async ({ page, tenantId }) => {
+test("autosaves a lottery's times and the open and preregistration switches, and keeps them across a reload", async ({ page, tenantId }) => {
+  await page.getByRole("switch", { name: "Open" }).click();
   // A date-time input takes its value as YYYY-MM-DDTHH:mm.
   await page.locator("#registration-opens-at").fill("2027-11-01T12:00");
   await page.locator("#registration-closes-at").fill("2027-11-15T12:00");
@@ -17,6 +18,7 @@ test("autosaves a lottery's times and the preregistration switch, and keeps them
 
   await expect.poll(async () => (await readTenantConfig(tenantId)).registration_config).toEqual({
     ...defaultRegistrationConfig(),
+    open: true,
     opensAt: "2027-11-01T12:00",
     closesAt: "2027-11-15T12:00",
     mode: "lottery",
@@ -25,6 +27,7 @@ test("autosaves a lottery's times and the preregistration switch, and keeps them
   });
 
   await page.reload();
+  await expect(page.getByRole("switch", { name: "Open" })).toBeChecked();
   await expect(page.locator("#registration-opens-at")).toHaveValue("2027-11-01T12:00");
   await expect(page.getByRole("radio", { name: "Enter the lottery" })).toBeChecked();
   await expect(page.getByRole("switch", { name: "Show preregistration?" })).toBeChecked();

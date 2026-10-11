@@ -30,7 +30,7 @@ describe("an owner's session", () => {
 
   // Granted by its own migration, after tenant_column_grants.
   it("can update registration_config", async () => {
-    const registration = { ...defaultRegistrationConfig(), open: false };
+    const registration = { ...defaultRegistrationConfig(), open: true };
     const { error } = await owner.from("tenants").update({ registration_config: registration }).eq("id", tenantId);
     expect(error).toBeNull();
     expect((await readTenant(service, tenantId)).registration_config).toEqual(registration);

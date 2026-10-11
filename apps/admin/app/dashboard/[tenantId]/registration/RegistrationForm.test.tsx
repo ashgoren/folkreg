@@ -12,7 +12,8 @@ import { RegistrationForm } from "./RegistrationForm";
 
 const byId = (id: string) => document.getElementById(id) as HTMLInputElement;
 
-const stored = (overrides: Partial<RegistrationConfig> = {}): RegistrationConfig => ({ ...defaultRegistrationConfig(), ...overrides });
+// Open by default, so the summary reflects each test's times and limits rather than the switch.
+const stored = (overrides: Partial<RegistrationConfig> = {}): RegistrationConfig => ({ ...defaultRegistrationConfig(), open: true, ...overrides });
 
 // The page is rendered at noon Pacific on October 20, 2026; a new tenant's event is on Pacific time.
 const NOW = Date.parse("2026-10-20T19:00Z");
@@ -35,15 +36,15 @@ describe("RegistrationForm", () => {
     vi.mocked(updateRegistration).mockReset().mockResolvedValue(null);
   });
 
-  it("starts a new tenant open, paying right away, with no times or limits", () => {
-    renderForm();
-    expect(screen.getByRole("switch", { name: "Open" })).toBeChecked();
+  it("starts a new tenant closed, paying right away, with no times or limits", () => {
+    renderForm(defaultRegistrationConfig());
+    expect(screen.getByRole("switch", { name: "Open" })).not.toBeChecked();
     expect(byId("registration-opens-at")).toHaveValue("");
     expect(byId("registration-closes-at")).toHaveValue("");
     expect(screen.getByRole("checkbox", { name: "Close after" })).not.toBeChecked();
     expect(byId("registration-close-after-people")).toHaveValue(100);
     expect(screen.getByRole("radio", { name: "Pay right away" })).toBeChecked();
-    expect(summary()).toHaveTextContent("Open now · registrants pay right away");
+    expect(summary()).toHaveTextContent("Closed (turned off)");
   });
 
   it("populates a stored lottery config and summarizes it on the event's clock", () => {

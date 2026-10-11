@@ -3,8 +3,10 @@ import { defaultRegistrationConfig } from "./defaults";
 import { registrationStatus, submissionMode } from "./registration-status";
 import type { RegistrationConfig } from "./schemas";
 
+// Open by default, so each test's times and limits are what decide the status.
 const registration = (overrides: Partial<RegistrationConfig> = {}): RegistrationConfig => ({
   ...defaultRegistrationConfig(),
+  open: true,
   ...overrides,
 });
 
@@ -15,7 +17,11 @@ const status = (overrides: Partial<RegistrationConfig>, now: string, peopleRegis
   registrationStatus(registration(overrides), TIMEZONE, at(now), peopleRegistered);
 
 describe("registrationStatus", () => {
-  it("is open with the default settings", () => {
+  it("is closed for a new tenant", () => {
+    expect(registrationStatus(defaultRegistrationConfig(), TIMEZONE, at("2026-11-01T20:00Z"), 0)).toEqual({ state: "closed" });
+  });
+
+  it("is open with the switch on and no times or limits", () => {
     expect(status({}, "2026-11-01T20:00Z")).toEqual({ state: "open", closesAt: "" });
   });
 

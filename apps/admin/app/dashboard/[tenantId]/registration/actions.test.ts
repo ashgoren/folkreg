@@ -36,7 +36,7 @@ describe("updateRegistration", () => {
 
   itGuardsTheAction({
     harness, createClient, run: updateRegistration,
-    validValues: () => values({ open: false }),
+    validValues: () => values({ open: true }),
     invalidValues: () => values({ opensAt: "2026-11-15T12:00", closesAt: "2026-11-01T12:00" }),
   });
 });
