@@ -40,6 +40,7 @@ const storedConfig = (overrides: Partial<PaymentsConfig> = {}): PaymentsConfig =
   stripePublishableKeyTest: "pk_test",
   paymentDueDate: "2027-05-01",
   directPaymentUrl: "https://example.com/pay",
+  paymentLinkDays: 10,
   coverFees: { enabled: true, percent: 2.9, fixed: 0.3 },
   showPaymentSummary: false,
   deposit: { enabled: true, amount: 50 },
@@ -309,6 +310,30 @@ describe("PaymentsForm", () => {
       await user.tab();
 
       expect(await screen.findByText("Must be a web address starting with https://")).toBeInTheDocument();
+      await expectNoSave(vi.mocked(updatePayments));
+    });
+
+    it("saves the days to pay after a link is sent", async () => {
+      const tenant = makeTenant({ payments_config: storedConfig() });
+      const user = userEvent.setup();
+      render(<PaymentsForm tenant={tenant} secrets={paymentSecrets()} />);
+      expect(byId("payments-link-days")).toHaveValue(10);
+
+      await user.clear(byId("payments-link-days"));
+      await user.type(byId("payments-link-days"), "14");
+      await user.tab();
+      await expectLastSave(vi.mocked(updatePayments), tenant.id, expect.objectContaining({ paymentLinkDays: 14 }));
+    });
+
+    // Every payment link needs an expiry, so unlike most fields it can't be left blank.
+    it("flags a cleared number of days and doesn't save it", async () => {
+      const user = userEvent.setup();
+      render(<PaymentsForm tenant={makeTenant({ payments_config: storedConfig() })} secrets={paymentSecrets()} />);
+
+      await user.clear(byId("payments-link-days"));
+      await user.tab();
+
+      expect(await screen.findByText("Must be a whole number, 1 or more")).toBeInTheDocument();
       await expectNoSave(vi.mocked(updatePayments));
     });
 

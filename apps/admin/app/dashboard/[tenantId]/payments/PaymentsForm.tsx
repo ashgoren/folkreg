@@ -77,6 +77,15 @@ export function PaymentsForm({ tenant, secrets }: { tenant: Tenant; secrets: Pay
 
       <FieldGroup>
         <TextField control={form.control} name="directPaymentUrl" id="payments-direct-url" label="Direct payment URL" type="url" autoComplete="off" />
+
+        <NumberField
+          control={form.control}
+          name="paymentLinkDays"
+          id="payments-link-days"
+          label="Days to pay after a link is sent"
+          description="How long a lottery winner or someone moved off the waitlist has to pay once they're sent a payment link. Changing it doesn't affect links already sent."
+          required
+        />
       </FieldGroup>
 
       <Separator />
