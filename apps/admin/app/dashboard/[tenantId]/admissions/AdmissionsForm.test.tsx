@@ -345,6 +345,28 @@ describe("AdmissionsForm", () => {
         expect(await screen.findByText("Must be a date")).toBeInTheDocument();
         await expectNoSave(vi.mocked(updateAdmissions));
       });
+
+      // Not every browser's date input can be emptied by hand, and a half-typed one is "" to React
+      // already, so Clear blanks the input itself.
+      it("clears with its Clear button, even from a half-typed date", async () => {
+        const tenant = makeTenant({ admissions_config: tiered({ earlybirdCutoff: "2027-09-01" }), ...withAge() });
+        const user = userEvent.setup();
+        render(<AdmissionsForm tenant={tenant} />);
+        const cutoff = byId("admissions-earlybird-cutoff");
+        const validity = { badInput: true };
+        Object.defineProperty(cutoff, "validity", { value: validity });
+        fireEvent.change(cutoff, { target: { value: "" } });
+        fireEvent.blur(cutoff);
+        expect(await screen.findByText("Must be a date")).toBeInTheDocument();
+
+        // The browser's half-typed text is gone once Clear empties the input.
+        validity.badInput = false;
+        await user.click(screen.getByRole("button", { name: "Clear Early-bird cutoff" }));
+
+        expect(screen.queryByText("Must be a date")).not.toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: "Clear Early-bird cutoff" })).not.toBeInTheDocument();
+        await expectLastSave(vi.mocked(updateAdmissions), tenant.id, savedTiered({ earlybirdCutoff: "" }));
+      });
     });
 
     it("says to add the age field when it isn't active", () => {

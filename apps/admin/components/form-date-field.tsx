@@ -6,8 +6,8 @@
 // date schema accepts, and the field shows its error instead. The input is then given "", which
 // leaves the browser's half-typed text on screen rather than wiping it.
 //
-// With `clearable`, a Clear button blanks it: not every browser's date input has its own way to,
-// and for an optional date blank is a setting of its own (e.g. no closing time).
+// A Clear button blanks it while it holds a value: not every browser's date input has its own way
+// to, and for an optional date blank is a setting of its own (e.g. no closing time).
 
 import { useRef } from "react";
 import { Controller, type Control, type FieldPath, type FieldValues } from "react-hook-form";
@@ -28,7 +28,6 @@ export function DateField<TFieldValues extends FieldValues>({
   label,
   description,
   withTime = false,
-  clearable = false,
 }: {
   control: Control<TFieldValues>;
   name: FieldPath<TFieldValues>;
@@ -37,8 +36,6 @@ export function DateField<TFieldValues extends FieldValues>({
   description?: string;
   /** A date and time (datetime-local) rather than a date alone. */
   withTime?: boolean;
-  /** Show a Clear button while it holds a value. */
-  clearable?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -67,7 +64,7 @@ export function DateField<TFieldValues extends FieldValues>({
                 field.onBlur();
               }}
             />
-            {clearable && field.value !== "" && (
+            {field.value !== "" && (
               <Button
                 type="button"
                 variant="ghost"

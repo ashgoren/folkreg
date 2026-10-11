@@ -62,7 +62,7 @@ test("tiered mode saves prices by age group, with the late increase", async ({ p
   await page.reload();
 
   await page.getByRole("radio", { name: "Tiered" }).click();
-  await page.getByLabel("Early-bird cutoff").fill("2027-09-01");
+  await page.getByLabel("Early-bird cutoff", { exact: true }).fill("2027-09-01");
   await page.getByLabel("Increase after the cutoff").fill("20");
   await page.getByRole("button", { name: "Add a price for Adult" }).click();
   await page.getByRole("textbox", { name: "Adult price 1 label" }).fill("Basic");
@@ -95,7 +95,7 @@ test("a half-typed early-bird cutoff shows an error and isn't saved", async ({ p
   if (error) throw error;
   await page.reload();
 
-  const cutoff = page.getByLabel("Early-bird cutoff");
+  const cutoff = page.getByLabel("Early-bird cutoff", { exact: true });
   await cutoff.fill("");
   await cutoff.click();
   await page.keyboard.type("09"); // the month only

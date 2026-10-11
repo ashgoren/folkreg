@@ -66,7 +66,7 @@ test("deposit, donation, and check options reveal and save their details", async
   await expect(page.getByLabel("Deposit amount")).toBeHidden();
   await page.getByRole("switch", { name: "Allow deposit?" }).click();
   await page.getByLabel("Deposit amount").fill("50");
-  await page.getByLabel("Balance due date").fill("2026-09-01"); // a date input takes YYYY-MM-DD
+  await page.getByLabel("Balance due date", { exact: true }).fill("2026-09-01"); // a date input takes YYYY-MM-DD
 
   await page.getByRole("switch", { name: "Allow donation?" }).click();
   await page.getByLabel("Maximum donation").fill("200");

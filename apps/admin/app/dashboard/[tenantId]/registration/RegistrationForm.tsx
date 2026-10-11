@@ -64,7 +64,6 @@ export function RegistrationForm({ tenant, now }: { tenant: Tenant; now: number 
               label="Opens"
               description="Blank: as soon as it's turned on."
               withTime
-              clearable
             />
             <DateField
               control={form.control}
@@ -73,7 +72,6 @@ export function RegistrationForm({ tenant, now }: { tenant: Tenant; now: number 
               label="Closes"
               description="Blank: until it's turned off."
               withTime
-              clearable
             />
           </div>
 
@@ -115,7 +113,6 @@ export function RegistrationForm({ tenant, now }: { tenant: Tenant; now: number 
                     id="registration-lottery-results"
                     label="Results by"
                     description="Shown in the lottery receipt; blank leaves it out."
-                    clearable
                   />
                 </div>
               </div>

@@ -89,6 +89,18 @@ describe("EventForm", () => {
   });
 
   describe("start and end", () => {
+    it("clear with their Clear buttons, which only show while there's a time", async () => {
+      const tenant = makeTenant({ event_config: blankValues({ start: "2027-10-01T19:00" }) });
+      const user = userEvent.setup();
+      render(<EventForm tenant={tenant} />);
+      expect(screen.queryByRole("button", { name: "Clear Ends" })).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Clear Starts" }));
+
+      expect(byId("event-start")).toHaveValue("");
+      await expectLastSave(vi.mocked(updateEvent), tenant.id, blankValues());
+    });
+
     it("save as the event's own clock time", async () => {
       const tenant = makeTenant();
       render(<EventForm tenant={tenant} />);
