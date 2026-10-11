@@ -17,8 +17,9 @@ describe("updateRegistration", () => {
 
   it("saves the config as-is", async () => {
     const config = values({
+      opening: "scheduled",
       opensAt: "2026-11-01T12:00",
-      closesAt: "2026-11-15T12:00",
+      closeAt: { enabled: true, at: "2026-11-15T12:00" },
       closeAfter: { enabled: true, people: 400 },
       mode: "lottery",
       lotteryResultsDate: "2026-11-20",
@@ -36,7 +37,7 @@ describe("updateRegistration", () => {
 
   itGuardsTheAction({
     harness, createClient, run: updateRegistration,
-    validValues: () => values({ open: true }),
-    invalidValues: () => values({ opensAt: "2026-11-15T12:00", closesAt: "2026-11-01T12:00" }),
+    validValues: () => values({ opening: "now" }),
+    invalidValues: () => values({ opening: "scheduled", opensAt: "" }),
   });
 });

@@ -1,19 +1,32 @@
 "use client";
 
+import { useState } from "react";
 import { Controller, useWatch } from "react-hook-form";
-import { Field, FieldContent, FieldDescription, FieldGroup } from "@/components/ui/field";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Field, FieldContent, FieldDescription, FieldError, FieldLegend, FieldSet } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
-import { DateField } from "@/components/form-date-field";
+import { DateField, DateInput } from "@/components/form-date-field";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { AutosaveStatus } from "@/components/autosave-status";
 import { useAutosaveForm } from "@/lib/useAutosaveForm";
 import type { Tenant } from "@repo/types";
-import { registrationConfigSchema, type RegistrationConfig } from "@repo/tenant-config";
+import { formatDateTime, registrationConfigSchema, type RegistrationConfig } from "@repo/tenant-config";
 import { updateRegistration } from "./actions";
+import { ClosingTime } from "./ClosingTime";
 import { PeopleLimit } from "./PeopleLimit";
 import { RegistrationSummary } from "./RegistrationSummary";
+
+type Opening = RegistrationConfig["opening"];
+
+// Whether choosing `to` over `from` could make the site public sooner, which is what asks first:
+// opening now from anything else, or scheduling from closed. Scheduling from open now, or closing,
+// only narrows when registrations are taken.
+const opensSooner = (from: Opening, to: Opening) => (to === "now" ? from !== "now" : to === "scheduled" && from === "closed");
 
 /**
  * When the registration form takes submissions, what a submission becomes, and whether registrants
@@ -28,11 +41,19 @@ export function RegistrationForm({ tenant, now }: { tenant: Tenant; now: number 
     save: (data) => updateRegistration(tenant.id, data),
   });
   const { timezone } = tenant.event_config;
+  // The opening choice waiting on the confirmation, while it's showing.
+  const [pendingOpening, setPendingOpening] = useState<Opening | null>(null);
 
   // With both limits on, a waitlist limit at or above the closing one is never reached. Allowed,
   // since it isn't contradictory data, but almost certainly not what was meant.
-  const [mode, closeAfter, waitlistAfter] = useWatch({ control: form.control, name: ["mode", "closeAfter", "waitlistAfter"] });
+  const [mode, closeAfter, waitlistAfter, opensAt] = useWatch({ control: form.control, name: ["mode", "closeAfter", "waitlistAfter", "opensAt"] });
   const waitlistUnreachable = mode === "pay" && closeAfter.enabled && waitlistAfter.enabled && waitlistAfter.people >= closeAfter.people;
+
+  // A scheduled opening's confirmation names its time, once there's a valid one to name.
+  const opensAtValid = opensAt !== "" && registrationConfigSchema.shape.opensAt.safeParse(opensAt).success;
+  const startingAt = pendingOpening !== "scheduled" ? ""
+    : opensAtValid ? ` starting ${formatDateTime(opensAt, timezone)}`
+    : " starting at the opening time you set";
 
   return (
     <form {...formProps} className="space-y-8">
@@ -40,46 +61,57 @@ export function RegistrationForm({ tenant, now }: { tenant: Tenant; now: number 
 
       <div className="space-y-4">
         <h2 className="text-base font-medium">When registration is open</h2>
-        <FieldGroup>
-          <Controller
-            name="open"
-            control={form.control}
-            render={({ field }) => (
-              <Field orientation="horizontal">
-                <FieldContent>
-                  <FormLabel htmlFor="registration-open">Open</FormLabel>
-                  <FieldDescription>Turn off to close registration, whatever the times and limit below say.</FieldDescription>
-                </FieldContent>
-                <Switch id="registration-open" checked={field.value} onCheckedChange={field.onChange} />
-              </Field>
-            )}
-          />
+        <Controller
+          name="opening"
+          control={form.control}
+          render={({ field }) => (
+            <FieldSet>
+              <FieldLegend variant="label">Opens</FieldLegend>
+              <RadioGroup
+                value={field.value}
+                onValueChange={(value) => {
+                  const choice = value as Opening;
+                  if (opensSooner(field.value, choice)) setPendingOpening(choice);
+                  else field.onChange(choice);
+                }}
+                className="gap-3"
+              >
+                <Field orientation="horizontal">
+                  <RadioGroupItem value="closed" id="registration-opening-closed" />
+                  <FormLabel htmlFor="registration-opening-closed">Closed</FormLabel>
+                </Field>
+                <Field orientation="horizontal">
+                  <RadioGroupItem value="now" id="registration-opening-now" />
+                  <FormLabel htmlFor="registration-opening-now">Open now</FormLabel>
+                </Field>
+                {/* Times on the event's clock (Event page's timezone). */}
+                <Controller
+                  name="opensAt"
+                  control={form.control}
+                  render={({ field: opensAtField, fieldState }) => (
+                    <div className="flex flex-col gap-1">
+                      <Field orientation="horizontal">
+                        <RadioGroupItem value="scheduled" id="registration-opening-scheduled" />
+                        <FormLabel htmlFor="registration-opening-scheduled">Opens on</FormLabel>
+                        <DateInput field={opensAtField} id="registration-opens-at" aria-label="Opening time" invalid={fieldState.invalid} withTime />
+                      </Field>
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                    </div>
+                  )}
+                />
+              </RadioGroup>
+            </FieldSet>
+          )}
+        />
 
-          {/* Times on the event's clock (Event page's timezone). */}
-          <div className="flex flex-wrap gap-4">
-            <DateField
-              control={form.control}
-              name="opensAt"
-              id="registration-opens-at"
-              label="Opens"
-              description="Blank: as soon as it's turned on."
-              withTime
-            />
-            <DateField
-              control={form.control}
-              name="closesAt"
-              id="registration-closes-at"
-              label="Closes"
-              description="Blank: until it's turned off."
-              withTime
-            />
-          </div>
-
+        <FieldSet>
+          <FieldLegend variant="label">Closes</FieldLegend>
+          <ClosingTime form={form} />
           <Field>
             <PeopleLimit form={form} name="closeAfter" id="registration-close-after" label="Close after" />
             <FieldDescription>Counts everyone registered, including the waitlist and lottery entries.</FieldDescription>
           </Field>
-        </FieldGroup>
+        </FieldSet>
       </div>
 
       <Separator />
@@ -146,6 +178,19 @@ export function RegistrationForm({ tenant, now }: { tenant: Tenant; now: number 
           </Field>
         )}
       />
+
+      <AlertDialog open={pendingOpening !== null} onOpenChange={(open) => { if (!open) setPendingOpening(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Open registration?</AlertDialogTitle>
+            <AlertDialogDescription>{tenant.slug}.folkreg.org will take registrations from the public{startingAt}.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => pendingOpening && form.setValue("opening", pendingOpening)}>Open registration</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AutosaveStatus isPending={isPending} savedRecently={savedRecently} />
     </form>

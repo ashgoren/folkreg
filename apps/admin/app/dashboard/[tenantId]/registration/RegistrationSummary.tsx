@@ -38,7 +38,7 @@ export function RegistrationSummary({ control, timezone, now }: { control: Contr
 const summary = (config: RegistrationConfig, status: RegistrationStatus, at: (localDateTime: string) => string): string[] => {
   switch (status.state) {
     case "closed":
-      return ["Closed (turned off)"];
+      return ["Closed"];
     case "past-closing-time":
       return [`Closed since ${at(status.closesAt)}`];
     // Not reached here: without a count, the people limit is described under "open" instead.
@@ -53,7 +53,7 @@ const summary = (config: RegistrationConfig, status: RegistrationStatus, at: (lo
 
 // When registration closes, and what a submission becomes.
 const upcoming = (config: RegistrationConfig, at: (localDateTime: string) => string) => [
-  ...(config.closesAt !== "" ? [`closes ${at(config.closesAt)}`] : []),
+  ...(config.closeAt.enabled ? [`closes ${at(config.closeAt.at)}`] : []),
   ...(config.closeAfter.enabled ? [`closes after ${config.closeAfter.people} people`] : []),
   MODE_TEXT[config.mode],
   ...(config.mode === "pay" && config.waitlistAfter.enabled ? [`waitlisted after ${config.waitlistAfter.people} people`] : []),

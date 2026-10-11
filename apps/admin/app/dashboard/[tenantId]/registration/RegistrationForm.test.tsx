@@ -12,8 +12,8 @@ import { RegistrationForm } from "./RegistrationForm";
 
 const byId = (id: string) => document.getElementById(id) as HTMLInputElement;
 
-// Open by default, so the summary reflects each test's times and limits rather than the switch.
-const stored = (overrides: Partial<RegistrationConfig> = {}): RegistrationConfig => ({ ...defaultRegistrationConfig(), open: true, ...overrides });
+// Open now by default, so the summary reflects each test's times and limits rather than the opening.
+const stored = (overrides: Partial<RegistrationConfig> = {}): RegistrationConfig => ({ ...defaultRegistrationConfig(), opening: "now", ...overrides });
 
 // The page is rendered at noon Pacific on October 20, 2026; a new tenant's event is on Pacific time.
 const NOW = Date.parse("2026-10-20T19:00Z");
@@ -36,25 +36,30 @@ describe("RegistrationForm", () => {
     vi.mocked(updateRegistration).mockReset().mockResolvedValue(null);
   });
 
-  it("starts a new tenant closed, paying right away, with no times or limits", () => {
+  it("starts a new tenant closed, paying right away, with no closing time or limits", () => {
     renderForm(defaultRegistrationConfig());
-    expect(screen.getByRole("switch", { name: "Open" })).not.toBeChecked();
+    expect(screen.getByRole("radio", { name: "Closed" })).toBeChecked();
     expect(byId("registration-opens-at")).toHaveValue("");
-    expect(byId("registration-closes-at")).toHaveValue("");
+    expect(screen.getByRole("checkbox", { name: "Close at" })).not.toBeChecked();
+    expect(byId("registration-close-at-time")).toHaveValue("");
     expect(screen.getByRole("checkbox", { name: "Close after" })).not.toBeChecked();
     expect(byId("registration-close-after-people")).toHaveValue(100);
     expect(screen.getByRole("radio", { name: "Pay right away" })).toBeChecked();
-    expect(summary()).toHaveTextContent("Closed (turned off)");
+    expect(summary()).toHaveTextContent("Closed");
   });
 
   it("populates a stored lottery config and summarizes it on the event's clock", () => {
     renderForm(stored({
+      opening: "scheduled",
       opensAt: "2026-11-01T12:00",
-      closesAt: "2026-11-15T12:00",
+      closeAt: { enabled: true, at: "2026-11-15T12:00" },
       mode: "lottery",
       lotteryResultsDate: "2026-11-20",
     }));
+    expect(screen.getByRole("radio", { name: "Opens on" })).toBeChecked();
     expect(byId("registration-opens-at")).toHaveValue("2026-11-01T12:00");
+    expect(screen.getByRole("checkbox", { name: "Close at" })).toBeChecked();
+    expect(byId("registration-close-at-time")).toHaveValue("2026-11-15T12:00");
     expect(byId("registration-lottery-results")).toHaveValue("2026-11-20");
     expect(screen.getByRole("radio", { name: "Enter the lottery" })).toBeChecked();
     expect(summary()).toHaveTextContent(
@@ -63,7 +68,7 @@ describe("RegistrationForm", () => {
   });
 
   it("summarizes a closing time that has passed", () => {
-    renderForm(stored({ closesAt: "2026-10-15T12:00" }));
+    renderForm(stored({ closeAt: { enabled: true, at: "2026-10-15T12:00" } }));
     expect(summary()).toHaveTextContent("Closed since October 15, 2026 at 12:00 PM PDT");
   });
 
@@ -73,44 +78,123 @@ describe("RegistrationForm", () => {
     expect(summary()).toHaveTextContent("Open now · closes after 400 people · registrants pay right away · waitlisted after 240 people");
   });
 
-  it("closes registration with the switch, saving and summarizing it", async () => {
-    const tenant = renderForm();
-    const user = userEvent.setup();
+  describe("opening", () => {
+    const SCHEDULED = { opening: "scheduled", opensAt: "2026-11-01T12:00" } as const;
 
-    await user.click(screen.getByRole("switch", { name: "Open" }));
+    // Any choice that could make the site public sooner asks first, saying when.
+    it.each([
+      ["closed", "Open now", { opening: "closed" }, ""],
+      ["closed", "Opens on", { ...SCHEDULED, opening: "closed" }, " starting November 1, 2026 at 12:00 PM PST"],
+      ["scheduled", "Open now", SCHEDULED, ""],
+      ["closed without a time", "Opens on", { opening: "closed", opensAt: "" }, " starting at the opening time you set"],
+    ] as const)("asks before going from %s to %s, saving nothing until confirmed", async (_, choice, config, startingAt) => {
+      const tenant = renderForm(stored(config));
+      const user = userEvent.setup();
 
-    expect(summary()).toHaveTextContent("Closed (turned off)");
-    await expectLastSave(vi.mocked(updateRegistration), tenant.id, stored({ open: false }));
-  });
+      await user.click(screen.getByRole("radio", { name: choice }));
 
-  describe("opening and closing times", () => {
-    it("save as the event's own clock time", async () => {
-      const tenant = renderForm();
-      setDate("registration-opens-at", "2026-11-01T12:00");
-      setDate("registration-closes-at", "2026-11-15T12:00");
-      await expectLastSave(vi.mocked(updateRegistration), tenant.id, stored({ opensAt: "2026-11-01T12:00", closesAt: "2026-11-15T12:00" }));
+      expect(screen.getByRole("alertdialog", { name: "Open registration?" }))
+        .toHaveTextContent(`${tenant.slug}.folkreg.org will take registrations from the public${startingAt}.`);
+      // The modal dialog hides the page behind it from the accessibility tree, hence `hidden`.
+      expect(screen.getByRole("radio", { name: choice, hidden: true })).not.toBeChecked();
+      await expectNoSave(vi.mocked(updateRegistration));
     });
 
-    // Blank is a setting of its own: no opening or closing time.
-    it("clear with their Clear buttons, which only show while there's a time", async () => {
-      const tenant = renderForm(stored({ opensAt: "2026-11-01T12:00" }));
+    // Closing, or scheduling while open now, only narrows when registrations are taken.
+    it.each([
+      ["now", "Closed", stored(), "closed"],
+      ["now", "Opens on", stored({ opensAt: "2026-11-01T12:00" }), "scheduled"],
+      ["scheduled", "Closed", stored(SCHEDULED), "closed"],
+    ] as const)("goes from %s to %s without asking", async (_, choice, config, opening) => {
+      const tenant = renderForm(config);
       const user = userEvent.setup();
-      expect(screen.queryByRole("button", { name: "Clear Closes" })).not.toBeInTheDocument();
 
-      await user.click(screen.getByRole("button", { name: "Clear Opens" }));
+      await user.click(screen.getByRole("radio", { name: choice }));
 
-      expect(byId("registration-opens-at")).toHaveValue("");
-      expect(screen.queryByRole("button", { name: "Clear Opens" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+      await expectLastSave(vi.mocked(updateRegistration), tenant.id, { ...config, opening });
+    });
+
+    it("stays closed when cancelled", async () => {
+      renderForm(defaultRegistrationConfig());
+      const user = userEvent.setup();
+
+      await user.click(screen.getByRole("radio", { name: "Open now" }));
+      await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+      expect(screen.getByRole("radio", { name: "Closed" })).toBeChecked();
+      await expectNoSave(vi.mocked(updateRegistration));
+    });
+
+    it("opens once confirmed, saving and summarizing it", async () => {
+      const tenant = renderForm(defaultRegistrationConfig());
+      const user = userEvent.setup();
+
+      await user.click(screen.getByRole("radio", { name: "Open now" }));
+      await user.click(screen.getByRole("button", { name: "Open registration" }));
+
+      expect(screen.getByRole("radio", { name: "Open now" })).toBeChecked();
+      expect(summary()).toHaveTextContent("Open now · registrants pay right away");
       await expectLastSave(vi.mocked(updateRegistration), tenant.id, stored());
     });
 
-    it("flags a closing time before the opening time, without saving or summarizing it", async () => {
-      renderForm(stored({ opensAt: "2026-11-15T12:00" }));
-      setDate("registration-closes-at", "2026-11-01T12:00");
+    // Its time shows beside it, so the error is where it's fixed.
+    it("requires a time once scheduled, without saving until there is one", async () => {
+      const tenant = renderForm(stored());
+      const user = userEvent.setup();
+
+      await user.click(screen.getByRole("radio", { name: "Opens on" }));
+      expect(await screen.findByText("Required")).toBeInTheDocument();
+      await expectNoSave(vi.mocked(updateRegistration));
+
+      setDate("registration-opens-at", "2026-11-01T12:00");
+      await expectLastSave(vi.mocked(updateRegistration), tenant.id, stored(SCHEDULED));
+    });
+  });
+
+  describe("closing time", () => {
+    it("turns on with its checkbox, requiring a time, and saves as the event's own clock time", async () => {
+      const tenant = renderForm();
+      const user = userEvent.setup();
+
+      await user.click(screen.getByRole("checkbox", { name: "Close at" }));
+      expect(await screen.findByText("Required")).toBeInTheDocument();
+      await expectNoSave(vi.mocked(updateRegistration));
+
+      setDate("registration-close-at-time", "2026-11-15T12:00");
+      await expectLastSave(vi.mocked(updateRegistration), tenant.id, stored({ closeAt: { enabled: true, at: "2026-11-15T12:00" } }));
+    });
+
+    it("keeps its time when turned off", async () => {
+      const tenant = renderForm(stored({ closeAt: { enabled: true, at: "2026-11-15T12:00" } }));
+      const user = userEvent.setup();
+
+      await user.click(screen.getByRole("checkbox", { name: "Close at" }));
+
+      expect(byId("registration-close-at-time")).toHaveValue("2026-11-15T12:00");
+      expect(summary()).not.toHaveTextContent("closes");
+      await expectLastSave(vi.mocked(updateRegistration), tenant.id, stored({ closeAt: { enabled: false, at: "2026-11-15T12:00" } }));
+    });
+
+    it("flags a time before a scheduled opening, without saving or summarizing it", async () => {
+      renderForm(stored({ opening: "scheduled", opensAt: "2026-11-15T12:00", closeAt: { enabled: true, at: "2026-11-20T12:00" } }));
+      setDate("registration-close-at-time", "2026-11-01T12:00");
 
       expect(await screen.findByText("Must be after the opening time")).toBeInTheDocument();
       expect(summary()).toHaveTextContent("Fix the settings below to see when registration is open.");
       await expectNoSave(vi.mocked(updateRegistration));
+    });
+
+    // Only times that both apply are compared, so a kept one can't block saving anything else.
+    it("doesn't block saving while it's off, whatever its time", async () => {
+      const config = stored({ opening: "scheduled", opensAt: "2026-11-15T12:00", closeAt: { enabled: false, at: "2026-11-01T12:00" } });
+      const tenant = renderForm(config);
+      const user = userEvent.setup();
+
+      await user.click(screen.getByRole("switch", { name: "Show preregistration?" }));
+
+      await expectLastSave(vi.mocked(updateRegistration), tenant.id, { ...config, showPreregistration: true });
     });
   });
 
