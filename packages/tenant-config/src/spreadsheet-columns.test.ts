@@ -45,7 +45,7 @@ describe("resolveSpreadsheetColumns", () => {
   });
 
   describe("system columns", () => {
-    const ALWAYS = ["admission", "total", "paid", "charged", "status", "purchaser", "completedAt", "paymentId", "paymentEmail", "isLive", "orderId"];
+    const ALWAYS = ["admission", "paid", "charged", "status", "purchaser", "completedAt", "paymentId", "paymentEmail", "isLive", "orderId"];
 
     it("are the always-relevant ones when no optional feature is on, ending with orderId", () => {
       expect(resolveSpreadsheetColumns(config()).system).toEqual(ALWAYS);
@@ -63,7 +63,7 @@ describe("resolveSpreadsheetColumns", () => {
         },
       }));
       expect(system).toEqual([
-        "admission", "donation", "total", "deposit", "fees", "paid", "charged",
+        "admission", "donation", "deposit", "fees", "paid", "charged",
         "status", "purchaser", "completedAt", "paymentId", "paymentEmail", "waiver", "isLive", "orderId",
       ]);
     });

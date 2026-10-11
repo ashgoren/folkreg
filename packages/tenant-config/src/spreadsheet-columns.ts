@@ -12,7 +12,7 @@ import type { SpreadsheetConfig, TenantConfig } from "./schemas";
 // do. `isLive` is the order's `orders.is_live`. `orderId` comes last, the same id on every row of
 // an order, so all of its rows can be found to update them in place (e.g. once it's paid).
 export const SPREADSHEET_SYSTEM_COLUMNS = [
-  "admission", "donation", "total", "deposit", "fees", "paid", "charged",
+  "admission", "donation", "deposit", "fees", "paid", "charged",
   "status", "purchaser", "completedAt", "paymentId", "paymentEmail",
   "waiver", "isLive", "orderId",
 ] as const;

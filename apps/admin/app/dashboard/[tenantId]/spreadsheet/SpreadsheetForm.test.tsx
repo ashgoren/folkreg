@@ -29,7 +29,7 @@ const systemColumns = () => Array.from(screen.getByText("orderId", { exact: true
 
 const paymentsConfig = (overrides: Partial<PaymentsConfig>): PaymentsConfig => ({ ...defaultPaymentsConfig(), ...overrides });
 
-const ALWAYS_SYSTEM_COLUMNS = ["admission", "total", "paid", "charged", "status", "purchaser", "completedAt", "paymentId", "paymentEmail", "isLive", "orderId"];
+const ALWAYS_SYSTEM_COLUMNS = ["admission", "paid", "charged", "status", "purchaser", "completedAt", "paymentId", "paymentEmail", "isLive", "orderId"];
 
 describe("SpreadsheetForm", () => {
   beforeEach(() => {
@@ -88,7 +88,7 @@ describe("SpreadsheetForm", () => {
         />,
       );
       expect(systemColumns()).toEqual([
-        "admission", "donation", "total", "deposit", "fees", "paid", "charged",
+        "admission", "donation", "deposit", "fees", "paid", "charged",
         "status", "purchaser", "completedAt", "paymentId", "paymentEmail",
         "waiver", "isLive", "orderId",
       ]);
