@@ -3,10 +3,10 @@ import { defaultRegistrationConfig } from "./defaults";
 import { registrationStatus, submissionMode } from "./registration-status";
 import type { RegistrationConfig } from "./schemas";
 
-// Open by default, so each test's times and limits are what decide the status.
+// Open now by default, so each test's times and limits are what decide the status.
 const registration = (overrides: Partial<RegistrationConfig> = {}): RegistrationConfig => ({
   ...defaultRegistrationConfig(),
-  open: true,
+  opening: "now",
   ...overrides,
 });
 
@@ -21,40 +21,53 @@ describe("registrationStatus", () => {
     expect(registrationStatus(defaultRegistrationConfig(), TIMEZONE, at("2026-11-01T20:00Z"), 0)).toEqual({ state: "closed" });
   });
 
-  it("is open with the switch on and no times or limits", () => {
+  it("is open now with no closing time or limits", () => {
     expect(status({}, "2026-11-01T20:00Z")).toEqual({ state: "open", closesAt: "" });
   });
 
-  it("is closed while the switch is off, whatever the times say", () => {
-    expect(status({ open: false, opensAt: "2026-11-01T12:00" }, "2026-11-02T20:00Z")).toEqual({ state: "closed" });
+  // Each value is kept while it doesn't apply, and ignored.
+  it("is closed while not opened, whatever the stored times say", () => {
+    expect(status({ opening: "closed", opensAt: "2026-11-01T12:00" }, "2026-11-02T20:00Z")).toEqual({ state: "closed" });
   });
 
-  describe("opening time", () => {
+  describe("scheduled opening", () => {
+    const scheduled = (opensAt: string) => ({ opening: "scheduled" as const, opensAt });
+
     it("isn't open yet just before it, on the event's clock", () => {
-      expect(status({ opensAt: "2026-11-01T12:00" }, "2026-11-01T19:59:59Z")).toEqual({ state: "not-yet-open", opensAt: "2026-11-01T12:00" });
+      expect(status(scheduled("2026-11-01T12:00"), "2026-11-01T19:59:59Z")).toEqual({ state: "not-yet-open", opensAt: "2026-11-01T12:00" });
     });
 
     it("is open from that moment", () => {
-      expect(status({ opensAt: "2026-11-01T12:00" }, "2026-11-01T20:00Z")).toEqual({ state: "open", closesAt: "" });
+      expect(status(scheduled("2026-11-01T12:00"), "2026-11-01T20:00Z")).toEqual({ state: "open", closesAt: "" });
     });
 
     // Daylight saving comes from the date: noon Pacific in July is 19:00Z, not 20:00Z.
     it("follows daylight saving", () => {
-      expect(status({ opensAt: "2026-07-01T12:00" }, "2026-07-01T19:00Z").state).toBe("open");
+      expect(status(scheduled("2026-07-01T12:00"), "2026-07-01T19:00Z").state).toBe("open");
+    });
+
+    it("doesn't apply while open now", () => {
+      expect(status({ opening: "now", opensAt: "2026-11-01T12:00" }, "2026-10-01T20:00Z").state).toBe("open");
     });
   });
 
   describe("closing time", () => {
+    const closeAt = { enabled: true, at: "2026-11-15T12:00" };
+
     it("is open until it, reporting it", () => {
-      expect(status({ closesAt: "2026-11-15T12:00" }, "2026-11-15T19:59:59Z")).toEqual({ state: "open", closesAt: "2026-11-15T12:00" });
+      expect(status({ closeAt }, "2026-11-15T19:59:59Z")).toEqual({ state: "open", closesAt: "2026-11-15T12:00" });
     });
 
     it("is closed from that moment", () => {
-      expect(status({ closesAt: "2026-11-15T12:00" }, "2026-11-15T20:00Z")).toEqual({ state: "past-closing-time", closesAt: "2026-11-15T12:00" });
+      expect(status({ closeAt }, "2026-11-15T20:00Z")).toEqual({ state: "past-closing-time", closesAt: "2026-11-15T12:00" });
     });
 
-    it("is open only between the two times when both are set", () => {
-      const window = { opensAt: "2026-11-01T12:00", closesAt: "2026-11-15T12:00" };
+    it("doesn't apply while it's off, and isn't reported", () => {
+      expect(status({ closeAt: { ...closeAt, enabled: false } }, "2026-11-16T20:00Z")).toEqual({ state: "open", closesAt: "" });
+    });
+
+    it("is open only between the two times with a scheduled opening", () => {
+      const window = { opening: "scheduled" as const, opensAt: "2026-11-01T12:00", closeAt };
       expect(status(window, "2026-10-31T20:00Z").state).toBe("not-yet-open");
       expect(status(window, "2026-11-08T20:00Z").state).toBe("open");
       expect(status(window, "2026-11-16T20:00Z").state).toBe("past-closing-time");
@@ -79,10 +92,15 @@ describe("registrationStatus", () => {
     });
   });
 
-  // Several limits at once report the first of: switch, opening time, closing time, people limit.
+  // Several limits at once report the first of: opening, closing time, people limit.
   it("reports the first reason that applies", () => {
-    const all = { opensAt: "2026-11-01T12:00", closesAt: "2026-11-15T12:00", closeAfter: { enabled: true, people: 1 } };
-    expect(status({ ...all, open: false }, "2026-11-16T20:00Z", 5).state).toBe("closed");
+    const all = {
+      opening: "scheduled" as const,
+      opensAt: "2026-11-01T12:00",
+      closeAt: { enabled: true, at: "2026-11-15T12:00" },
+      closeAfter: { enabled: true, people: 1 },
+    };
+    expect(status({ ...all, opening: "closed" }, "2026-11-16T20:00Z", 5).state).toBe("closed");
     expect(status(all, "2026-10-31T20:00Z", 5).state).toBe("not-yet-open");
     expect(status(all, "2026-11-16T20:00Z", 5).state).toBe("past-closing-time");
     expect(status(all, "2026-11-08T20:00Z", 5).state).toBe("full");

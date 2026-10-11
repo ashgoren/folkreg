@@ -52,13 +52,13 @@ export const defaultFieldsConfig = (): FieldsConfig => ({
   misc: DEFAULT_MISC_FIELDS.map(defaultFieldEntry),
 });
 
-// Closed: a new tenant's site takes no registrations until an organizer turns on the Open switch
-// on the Registration page, which is also when payments start using the live keys. Paid right
-// away, with no times or limits; the limits' numbers are ready for when they're switched on.
+// Closed: a new tenant's site takes no registrations until an organizer opens it on the
+// Registration page. Paid right away, with no closing time or limits; the limits' numbers are
+// ready for when they're switched on.
 export const defaultRegistrationConfig = (): RegistrationConfig => ({
-  open: false,
+  opening: "closed",
   opensAt: "",
-  closesAt: "",
+  closeAt: { enabled: false, at: "" },
   closeAfter: { enabled: false, people: 100 },
   mode: "pay",
   waitlistAfter: { enabled: false, people: 100 },

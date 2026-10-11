@@ -21,30 +21,52 @@ describe("registrationConfigSchema", () => {
     expect(registrationConfigSchema.safeParse({ ...base, mode: "raffle" }).success).toBe(false);
   });
 
+  it.each(["closed", "now", "scheduled"] as const)("accepts opening %s", (opening) => {
+    expect(issues({ opening, opensAt: "2026-11-01T12:00" })).toEqual([]);
+  });
+
   describe("opening and closing times", () => {
-    // Either, both, or neither: each is its own optional limit.
+    const closeAt = (at: string, enabled = true) => ({ enabled, at });
+
+    // A time that doesn't apply may be blank; one that does is required.
     it.each([
-      ["neither", "", ""],
-      ["only an opening time", "2026-11-01T12:00", ""],
-      ["only a closing time", "", "2026-11-15T12:00"],
-      ["both", "2026-11-01T12:00", "2026-11-15T12:00"],
-    ])("accepts %s", (_, opensAt, closesAt) => {
-      expect(issues({ opensAt, closesAt })).toEqual([]);
+      ["a blank opening time while not scheduled", { opening: "now" as const, opensAt: "" }, []],
+      ["a blank closing time while it's off", { closeAt: closeAt("", false) }, []],
+      ["a blank opening time while scheduled", { opening: "scheduled" as const, opensAt: "" }, [["opensAt", "Required"]]],
+      ["a blank closing time while it's on", { closeAt: closeAt("") }, [["closeAt.at", "Required"]]],
+    ])("checks %s", (_, values, expected) => {
+      expect(issues(values)).toEqual(expected);
     });
 
-    it.each(["Nov 1 at noon", "2026-11-01", "2026-11-01T25:00"])("rejects an opening time of %j", (opensAt) => {
-      expect(issues({ opensAt })).toEqual([["opensAt", "Must be a date and time"]]);
+    // A kept value is still checked for format, so switching back to it can't reveal a hidden error.
+    it.each(["Nov 1 at noon", "2026-11-01", "2026-11-01T25:00"])("rejects an opening time of %j, scheduled or not", (opensAt) => {
+      expect(issues({ opening: "now", opensAt })).toEqual([["opensAt", "Must be a date and time"]]);
+      expect(issues({ opening: "scheduled", opensAt })).toEqual([["opensAt", "Must be a date and time"]]);
     });
 
-    it("rejects a closing time that isn't after the opening time, attached to the closing time", () => {
-      expect(issues({ opensAt: "2026-11-01T12:00", closesAt: "2026-11-01T12:00" })).toEqual([["closesAt", "Must be after the opening time"]]);
-      expect(issues({ opensAt: "2026-11-01T12:00", closesAt: "2026-10-31T12:00" })).toEqual([["closesAt", "Must be after the opening time"]]);
+    it("rejects a closing time that isn't a date and time, on or off", () => {
+      expect(issues({ closeAt: closeAt("Nov 15", false) })).toEqual([["closeAt.at", "Must be a date and time"]]);
     });
 
-    // A date-time input may give seconds or not; the same moment written both ways is equal.
-    it("compares times written with and without seconds", () => {
-      expect(issues({ opensAt: "2026-11-01T12:00:00", closesAt: "2026-11-01T12:00" })).toEqual([["closesAt", "Must be after the opening time"]]);
-      expect(issues({ opensAt: "2026-11-01T12:00", closesAt: "2026-11-01T12:00:30" })).toEqual([]);
+    describe("with a scheduled opening and a closing time", () => {
+      const window = (opensAt: string, at: string, enabled = true) => ({ opening: "scheduled" as const, opensAt, closeAt: closeAt(at, enabled) });
+
+      it("rejects a closing time that isn't after the opening time, attached to the closing time", () => {
+        expect(issues(window("2026-11-01T12:00", "2026-11-01T12:00"))).toEqual([["closeAt.at", "Must be after the opening time"]]);
+        expect(issues(window("2026-11-01T12:00", "2026-10-31T12:00"))).toEqual([["closeAt.at", "Must be after the opening time"]]);
+      });
+
+      // A date-time input may give seconds or not; the same moment written both ways is equal.
+      it("compares times written with and without seconds", () => {
+        expect(issues(window("2026-11-01T12:00:00", "2026-11-01T12:00"))).toEqual([["closeAt.at", "Must be after the opening time"]]);
+        expect(issues(window("2026-11-01T12:00", "2026-11-01T12:00:30"))).toEqual([]);
+      });
+
+      // Only times that both apply are compared, so a kept value can't block a save.
+      it("doesn't compare them when either doesn't apply", () => {
+        expect(issues(window("2026-11-01T12:00", "2026-10-31T12:00", false))).toEqual([]);
+        expect(issues({ ...window("2026-11-01T12:00", "2026-10-31T12:00"), opening: "now" })).toEqual([]);
+      });
     });
   });
 

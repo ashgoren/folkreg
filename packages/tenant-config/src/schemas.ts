@@ -204,25 +204,32 @@ const peopleLimitSchema = z.object({
   people: wholeNumber({ min: 1 }, "Must be a whole number, 1 or more"),
 });
 
+// A closing time, switched on or off. `at` is kept and validated either way, like a people limit.
+const closingTimeSchema = z.object({
+  enabled: z.boolean(),
+  at: optionalLocalDateTime,
+});
+
 // Two separate questions about the registration form, neither of which affects payment: a payment
 // link sent to an order (a lottery winner, a promoted waitlister, a deposit's balance) works
 // whatever these say.
 //
-// When the form takes submissions: while `open` is on, and opensAt (if set) has passed, and
-// closesAt (if set) hasn't, and closeAfter (if on) hasn't been reached. Each limit can only narrow
-// the window, so they combine without any one overriding another; `open` is the manual switch,
-// for closing by hand whatever the times say.
+// When the form takes submissions: `opening` says when it opens (not at all, now, or at opensAt),
+// and then it stays open until closeAt (if on) passes or closeAfter (if on) is reached. The closing
+// conditions can only narrow the window, so they combine without any one overriding another.
 //
 // What a submission becomes: a registration paid for right away, an entry in a lottery drawn
 // later, or a place on the waitlist. In "pay" mode, waitlistAfter (if on) puts new registrants on
 // the waitlist once that many people are registered.
 //
-// Every mode's and limit's values are kept whichever applies, so switching never discards them.
+// Every option's and limit's values are kept whichever applies, so switching never discards them.
 export const registrationConfigSchema = z.object({
-  open: z.boolean(),
-  // Local date-times on the event's clock (event_config.timezone), "" for no limit.
+  opening: z.enum(["closed", "now", "scheduled"]),
+  // A local date-time on the event's clock (event_config.timezone). Applies only when opening is
+  // "scheduled", and is required then.
   opensAt: optionalLocalDateTime,
-  closesAt: optionalLocalDateTime,
+  // Required while it's on.
+  closeAt: closingTimeSchema,
   // Counts everyone registered: waitlisted people and lottery entries included.
   closeAfter: peopleLimitSchema,
   mode: z.enum(["pay", "lottery", "waitlist"]),
@@ -234,9 +241,20 @@ export const registrationConfigSchema = z.object({
   // Whether registrants click through a page acknowledging the event's policies before the form.
   showPreregistration: z.boolean(),
 }).superRefine((registration, ctx) => {
-  const { opensAt, closesAt } = registration;
-  if (opensAt !== "" && closesAt !== "" && withSeconds(closesAt) <= withSeconds(opensAt)) {
-    ctx.addIssue({ code: "custom", path: ["closesAt"], message: "Must be after the opening time" });
+  // A time is required only while it applies: a scheduled opening or a closing time that's off can
+  // be left blank. Unlike the admin's other format-only checks, these are presence checks, since a
+  // scheduled opening (or closing time) with no time has no meaning to fall back on.
+  const scheduled = registration.opening === "scheduled";
+  const { opensAt, closeAt } = registration;
+  if (scheduled && opensAt === "") {
+    ctx.addIssue({ code: "custom", path: ["opensAt"], message: "Required" });
+  }
+  if (closeAt.enabled && closeAt.at === "") {
+    ctx.addIssue({ code: "custom", path: ["closeAt", "at"], message: "Required" });
+  }
+  // Compared only when both apply, so a stored value that doesn't apply can't block a save.
+  if (scheduled && closeAt.enabled && opensAt !== "" && closeAt.at !== "" && withSeconds(closeAt.at) <= withSeconds(opensAt)) {
+    ctx.addIssue({ code: "custom", path: ["closeAt", "at"], message: "Must be after the opening time" });
   }
 });
 export type RegistrationConfig = z.infer<typeof registrationConfigSchema>;
