@@ -6,7 +6,7 @@ import { z } from "zod";
 
 export const RESERVED_SLUGS = [
   "www", "admin", "api", "app", "mail", "smtp", "status", "docs", "help", "support", "blog",
-  "staging", "preview", "assets", "static", "cdn",
+  "staging", "preview", "assets", "static", "cdn", "folkreg"
 ] as const;
 
 // A DNS label: lowercase letters, digits, and hyphens, 1-63 long, not starting or ending with a hyphen.

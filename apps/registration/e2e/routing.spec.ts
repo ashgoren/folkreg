@@ -9,3 +9,8 @@ test("a subdomain with no tenant 404s", async ({ page }) => {
   const response = await page.goto("http://no-such-tenant.localhost:3000/");
   expect(response?.status()).toBe(404);
 });
+
+test("a reserved subdomain 404s", async ({ page }) => {
+  const response = await page.goto("http://www.localhost:3000/");
+  expect(response?.status()).toBe(404);
+});

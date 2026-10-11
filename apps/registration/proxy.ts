@@ -3,6 +3,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServiceRoleClient } from "@repo/db/server";
 import { getTenantBySlug } from "@repo/db/queries";
+import { slugFromHost } from "@/lib/slug-from-host";
 
 async function resolveTenant(request: NextRequest) {
   const supabase = createServiceRoleClient();
@@ -12,8 +13,12 @@ async function resolveTenant(request: NextRequest) {
     return new NextResponse('Host header is required', { status: 400 });
   }
 
+  const slug = slugFromHost(host);
+  if (!slug) {
+    return new NextResponse('Tenant not found', { status: 404 });
+  }
+
   try {
-    const slug = host.split('.')[0]!;
     const tenant = await getTenantBySlug(supabase, slug);
 
     if (!tenant) {
