@@ -27,17 +27,22 @@ describe("order methods (via createTenantDb)", () => {
   });
 
   it("creates an order with sensible defaults", async () => {
-    const { id, updatedAt } = await orders.createOrder([testPerson()], true);
+    const { id, updatedAt } = await orders.createOrder([testPerson()], false);
     expect(id).toBeTruthy();
     expect(updatedAt).toBeTruthy();
 
     const order = await orders.getOrder(id);
     expect(order).not.toBeNull();
     expect(order!.people).toEqual([testPerson()]);
-    expect(order!.is_live).toBe(true);
+    expect(order!.is_test).toBe(false);
     expect(order!.registered_at).toBeNull();
     expect(order!.payments).toEqual([]);
     expect(order!.lottery).toBeNull();
+  });
+
+  it("records a test order as one", async () => {
+    const { id } = await orders.createOrder([testPerson()], true);
+    expect((await orders.getOrder(id))!.is_test).toBe(true);
   });
 
   // Tried on insert: on update, the set_updated_at trigger would replace a null updated_at with
@@ -55,7 +60,7 @@ describe("order methods (via createTenantDb)", () => {
   });
 
   it("updates people and advances updated_at", async () => {
-    const created = await orders.createOrder([testPerson()], true);
+    const created = await orders.createOrder([testPerson()], false);
     const updatedPeople = [testPerson({ first: "Updated" })];
 
     const result = await orders.updateOrderPeople(created.id, updatedPeople, created.updatedAt);
@@ -67,7 +72,7 @@ describe("order methods (via createTenantDb)", () => {
   });
 
   it("refuses to apply an update based on a stale updated_at", async () => {
-    const created = await orders.createOrder([testPerson()], true);
+    const created = await orders.createOrder([testPerson()], false);
 
     // Simulate another writer (e.g. a second tab sharing the same draft) updating first.
     const firstWrite = await orders.updateOrderPeople(created.id, [testPerson({ first: "FirstWriter" })], created.updatedAt);
@@ -82,7 +87,7 @@ describe("order methods (via createTenantDb)", () => {
   });
 
   it("sets registered_at on confirmation, and leaves it untouched on a repeat confirmation", async () => {
-    const created = await orders.createOrder([testPerson()], true);
+    const created = await orders.createOrder([testPerson()], false);
     await orders.confirmRegistration(created.id);
 
     const confirmed = await orders.getOrder(created.id);

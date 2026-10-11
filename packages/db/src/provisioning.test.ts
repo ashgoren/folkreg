@@ -32,7 +32,7 @@ describe("createTenant", () => {
     created.tenantIds.push(tenantId);
 
     const { data: tenant } = await supabase.from("tenants").select("*").eq("id", tenantId).single();
-    expect(tenant).toMatchObject({ slug, owner_id: null, is_live: false, ...defaultTenantConfig() });
+    expect(tenant).toMatchObject({ slug, owner_id: null, ...defaultTenantConfig() });
 
     const { data: secrets } = await supabase.from("tenant_secrets").select("tenant_id").eq("tenant_id", tenantId);
     expect(secrets).toHaveLength(1);

@@ -6,26 +6,31 @@ import { TenantNotFoundError } from "./errors";
 // The editable scalar columns plus the jsonb config columns, typed by their schemas rather than as
 // generic Json. The config types are z.infer'd type aliases, which TypeScript accepts as Json
 // as-is, so these values go to supabase-js without a cast.
-type TenantUpdates = Pick<TablesUpdate<"tenants">, "slug" | "is_live" | "owner_id">
+type TenantUpdates = Pick<TablesUpdate<"tenants">, "slug" | "owner_id">
   & Partial<TenantConfig>;
 
 type TenantSecretsUpdates = Partial<Omit<TenantSecrets, 'tenant_id'>>
+
+// Which of a tenant's two credential sets applies, matching the _live/_test column suffixes. It
+// follows the order rather than the tenant: the public's orders use the live keys, and a preview
+// session's test orders the test keys.
+export type PaymentMode = 'live' | 'test'
 
 export type PaymentProcessorCredentials =
   | { processor: 'stripe'; secretKey: string; webhookSecret: string; publishableKey: string }
   | { processor: 'paypal'; clientId: string; secret: string; webhookId: string }
 
-// tenant/secrets are already-fetched rows; is_live picks which live/test variant is "active"
-const resolvePaymentProcessorCredentials = (tenant: Tenant, secrets: TenantSecrets): PaymentProcessorCredentials => {
+// tenant/secrets are already-fetched rows; mode picks which of their live/test variants applies
+const resolvePaymentProcessorCredentials = (tenant: Tenant, secrets: TenantSecrets, mode: PaymentMode): PaymentProcessorCredentials => {
   const paymentsConfig = tenant.payments_config;
 
   const { processor } = paymentsConfig;
-  const mode = tenant.is_live ? 'live' : 'test';
+  const live = mode === 'live';
 
   if (processor === 'stripe') {
-    const secretKey = tenant.is_live ? secrets.stripe_secret_key_live : secrets.stripe_secret_key_test;
-    const webhookSecret = tenant.is_live ? secrets.stripe_webhook_secret_live : secrets.stripe_webhook_secret_test;
-    const publishableKey = tenant.is_live ? paymentsConfig.stripePublishableKeyLive : paymentsConfig.stripePublishableKeyTest;
+    const secretKey = live ? secrets.stripe_secret_key_live : secrets.stripe_secret_key_test;
+    const webhookSecret = live ? secrets.stripe_webhook_secret_live : secrets.stripe_webhook_secret_test;
+    const publishableKey = live ? paymentsConfig.stripePublishableKeyLive : paymentsConfig.stripePublishableKeyTest;
     if (!secretKey || !webhookSecret || !publishableKey) {
       throw new Error(`Tenant ${tenant.id} is missing Stripe ${mode} credentials`);
     }
@@ -33,9 +38,9 @@ const resolvePaymentProcessorCredentials = (tenant: Tenant, secrets: TenantSecre
   }
 
   // processor is "stripe" | "paypal" (getTenant() parsed it), so anything else is PayPal.
-  const secret = tenant.is_live ? secrets.paypal_secret_live : secrets.paypal_secret_test;
-  const webhookId = tenant.is_live ? secrets.paypal_webhook_id_live : secrets.paypal_webhook_id_test;
-  const clientId = tenant.is_live ? paymentsConfig.paypalClientIdLive : paymentsConfig.paypalClientIdTest;
+  const secret = live ? secrets.paypal_secret_live : secrets.paypal_secret_test;
+  const webhookId = live ? secrets.paypal_webhook_id_live : secrets.paypal_webhook_id_test;
+  const clientId = live ? paymentsConfig.paypalClientIdLive : paymentsConfig.paypalClientIdTest;
   if (!secret || !webhookId || !clientId) {
     throw new Error(`Tenant ${tenant.id} is missing PayPal ${mode} credentials`);
   }
@@ -81,10 +86,12 @@ export const createTenantDb = (supabase: DbClient, tenantId: string) => {
     return data as TenantSecrets;
   };
 
-  const getPaymentProcessorCredentials = async () => {
+  // The caller supplies the mode: an order's (is_test), or a webhook endpoint's, since each mode
+  // has its own webhook secret and the signature must be checked against the right one.
+  const getPaymentProcessorCredentials = async (mode: PaymentMode) => {
     const [tenant, secrets] = await Promise.all([getTenant(), getSecrets()]);
     if (!tenant) throw new Error(`Tenant ${tenantId} not found`);
-    return resolvePaymentProcessorCredentials(tenant, secrets);
+    return resolvePaymentProcessorCredentials(tenant, secrets, mode);
   };
 
   const updateTenant = async (updates: TenantUpdates) => {

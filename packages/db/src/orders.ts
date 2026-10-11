@@ -1,13 +1,15 @@
 import type { DbClient, Json, Order, Person } from "@repo/types";
 
 export const createOrderMethods = (supabase: DbClient, tenantId: string) => {
-  const createOrder = async (people: Person[], isLive: boolean): Promise<{ id: string; updatedAt: string }> => {
+  // isTest is required rather than defaulted, so every caller decides it on purpose: a test order
+  // pays with the test keys, so it must come from a server-verified preview session.
+  const createOrder = async (people: Person[], isTest: boolean): Promise<{ id: string; updatedAt: string }> => {
     const { data, error } = await supabase
       .from("orders")
       .insert({
         tenant_id: tenantId,
         people: people as unknown as Json,
-        is_live: isLive,
+        is_test: isTest,
       })
       .select("id, updated_at")
       .single();
