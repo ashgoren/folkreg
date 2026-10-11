@@ -38,7 +38,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          is_live: boolean
+          is_test: boolean
           is_waitlist: boolean
           lottery: Json | null
           payments: Json
@@ -50,7 +50,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          is_live?: boolean
+          is_test?: boolean
           is_waitlist?: boolean
           lottery?: Json | null
           payments?: Json
@@ -62,7 +62,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          is_live?: boolean
+          is_test?: boolean
           is_waitlist?: boolean
           lottery?: Json | null
           payments?: Json
@@ -135,7 +135,6 @@ export type Database = {
           event_config: Json
           fields_config: Json
           id: string
-          is_live: boolean
           owner_id: string | null
           payments_config: Json
           receipts_config: Json
@@ -152,7 +151,6 @@ export type Database = {
           event_config: Json
           fields_config: Json
           id?: string
-          is_live?: boolean
           owner_id?: string | null
           payments_config: Json
           receipts_config: Json
@@ -169,7 +167,6 @@ export type Database = {
           event_config?: Json
           fields_config?: Json
           id?: string
-          is_live?: boolean
           owner_id?: string | null
           payments_config?: Json
           receipts_config?: Json
