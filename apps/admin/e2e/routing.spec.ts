@@ -45,17 +45,24 @@ test("another owner's tenant 404s", async ({ page }) => {
 });
 
 // Firefox (and sometimes Safari) restores typed values on reload without a change event, so a
-// page would show values its form state doesn't know about. Every config page's form turns that off
-// (autocomplete="off"), and no field may override it -- except SecretInput's "new-password", which
-// keeps password managers from filling API key fields (browsers never restore password fields).
+// page would show values its form state doesn't know about. Every field on a config page belongs to
+// a form that turns that off (autocomplete="off"), and no field may override it -- except
+// SecretInput's "new-password", which keeps password managers from filling API key fields
+// (browsers never restore password fields). Checked per field, since a page may have no form until
+// it's edited (General's subdomain, which shows an input only after Change).
 test("every config page turns off the browser's restoring of field values", async ({ page, dashboardUrl }) => {
   for (const { section } of SECTIONS) {
     await page.goto(dashboardUrl(section));
-    const form = page.locator("main form");
-    await expect(form).toHaveAttribute("autocomplete", "off");
-    const overrides = await form.locator("input[autocomplete], textarea[autocomplete]").evaluateAll((fields) =>
-      fields.map((field) => field.getAttribute("autocomplete")).filter((value) => value !== "off" && value !== "new-password"));
-    expect(overrides, section).toEqual([]);
+    if (section === "general") await page.getByRole("button", { name: "Change" }).click();
+    const problems = await page.locator("main input, main textarea").evaluateAll((fields) =>
+      fields.flatMap((field) => {
+        const own = field.getAttribute("autocomplete");
+        // `form` is the form that owns the field, null for one outside any form.
+        if ((field as HTMLInputElement).form?.getAttribute("autocomplete") !== "off") return [`${field.id}: its form doesn't turn restoring off`];
+        if (own !== null && own !== "off" && own !== "new-password") return [`${field.id}: autocomplete="${own}"`];
+        return [];
+      }));
+    expect(problems, section).toEqual([]);
   }
 });
 

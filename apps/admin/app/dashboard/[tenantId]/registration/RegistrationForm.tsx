@@ -66,7 +66,7 @@ export function RegistrationForm({ tenant, now }: { tenant: Tenant; now: number 
           control={form.control}
           render={({ field }) => (
             <FieldSet>
-              <FieldLegend variant="label">Opens</FieldLegend>
+              <FieldLegend variant="label">Opens:</FieldLegend>
               <RadioGroup
                 value={field.value}
                 onValueChange={(value) => {
@@ -90,11 +90,11 @@ export function RegistrationForm({ tenant, now }: { tenant: Tenant; now: number 
                   control={form.control}
                   render={({ field: opensAtField, fieldState }) => (
                     <div className="flex flex-col gap-1">
-                      <Field orientation="horizontal">
+                      <div className="flex items-center gap-2">
                         <RadioGroupItem value="scheduled" id="registration-opening-scheduled" />
                         <FormLabel htmlFor="registration-opening-scheduled">Opens on</FormLabel>
                         <DateInput field={opensAtField} id="registration-opens-at" aria-label="Opening time" invalid={fieldState.invalid} withTime />
-                      </Field>
+                      </div>
                       {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                     </div>
                   )}
@@ -105,11 +105,10 @@ export function RegistrationForm({ tenant, now }: { tenant: Tenant; now: number 
         />
 
         <FieldSet>
-          <FieldLegend variant="label">Closes</FieldLegend>
+          <FieldLegend variant="label">Closes:</FieldLegend>
           <ClosingTime form={form} />
           <Field>
             <PeopleLimit form={form} name="closeAfter" id="registration-close-after" label="Close after" />
-            <FieldDescription>Counts everyone registered, including the waitlist and lottery entries.</FieldDescription>
           </Field>
         </FieldSet>
       </div>
