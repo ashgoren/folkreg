@@ -58,18 +58,15 @@ describe("AdmissionsForm", () => {
       expect(byId("admissions-sliding-max")).toHaveValue(500);
       expect(byId("admissions-sliding-default")).toHaveValue(350);
       expect(byId("admissions-quantity-max")).toHaveValue(4);
-      expect(screen.getByRole("radio", { name: "Never" })).toBeChecked();
-      expect(byId("admissions-waitlist-capacity")).toHaveValue(100);
     });
 
     it("populates a stored fixed config", () => {
-      const config = stored({ mode: "fixed", fixed: { price: 45 }, admissionQuantityMax: 2, waitlist: { when: "now", capacity: 150 } });
+      const config = stored({ mode: "fixed", fixed: { price: 45 }, admissionQuantityMax: 2 });
       render(<AdmissionsForm tenant={makeTenant({ admissions_config: config })} />);
       expect(screen.getByRole("radio", { name: "Fixed" })).toBeChecked();
       expect(byId("admissions-fixed-price")).toHaveValue(45);
       expect(byId("admissions-sliding-min")).toBeNull();
       expect(byId("admissions-quantity-max")).toHaveValue(2);
-      expect(screen.getByRole("radio", { name: "Now" })).toBeChecked();
     });
 
     it("populates a stored tiered config, a section per age group", () => {
@@ -154,46 +151,6 @@ describe("AdmissionsForm", () => {
 
   });
 
-  describe("waitlist", () => {
-    const afterPeople = () => screen.getByRole("radio", { name: "After a number of people" });
-
-    it("saves each choice", async () => {
-      const tenant = makeTenant();
-      const user = userEvent.setup();
-      render(<AdmissionsForm tenant={tenant} />);
-
-      await user.click(afterPeople());
-      await expectLastSave(vi.mocked(updateAdmissions), tenant.id, expect.objectContaining({ waitlist: { when: "when-full", capacity: 100 } }));
-
-      await user.click(screen.getByRole("radio", { name: "Now" }));
-      await expectLastSave(vi.mocked(updateAdmissions), tenant.id, expect.objectContaining({ waitlist: { when: "now", capacity: 100 } }));
-    });
-
-    // The number is part of its option's label, and kept whichever option is chosen.
-    it("saves the number of people, whichever option is chosen", async () => {
-      const tenant = makeTenant();
-      const user = userEvent.setup();
-      render(<AdmissionsForm tenant={tenant} />);
-
-      await replace(user, "admissions-waitlist-capacity", "80");
-      await user.tab();
-      await expectLastSave(vi.mocked(updateAdmissions), tenant.id, expect.objectContaining({ waitlist: { when: "never", capacity: 80 } }));
-    });
-
-    // The number stays on screen whichever option is chosen, so its error can't be hidden.
-    it("keeps showing an invalid number's error, and saves nothing, after switching options", async () => {
-      const tenant = makeTenant({ admissions_config: stored({ waitlist: { when: "when-full", capacity: 100 } }) });
-      const user = userEvent.setup();
-      render(<AdmissionsForm tenant={tenant} />);
-
-      await user.clear(byId("admissions-waitlist-capacity"));
-      await user.click(screen.getByRole("radio", { name: "Never" }));
-
-      expect(await screen.findByText("Must be a whole number, 1 or more")).toBeInTheDocument();
-      await expectNoSave(vi.mocked(updateAdmissions));
-    });
-  });
-
   describe("switching modes", () => {
     // Only `mode` changes: each mode's values stay in the form and in the save, so an accidental
     // switch loses nothing.
@@ -203,14 +160,13 @@ describe("AdmissionsForm", () => {
       render(<AdmissionsForm tenant={tenant} />);
 
       await replace(user, "admissions-quantity-max", "6");
-      await user.click(screen.getByRole("radio", { name: "Now" }));
       await user.click(screen.getByRole("radio", { name: "Fixed" }));
 
       expect(byId("admissions-fixed-price")).toHaveValue(200);
       expect(byId("admissions-sliding-min")).toBeNull();
       expect(byId("admissions-quantity-max")).toHaveValue(6);
       await expectLastSave(vi.mocked(updateAdmissions), tenant.id, {
-        ...DEFAULTS, mode: "fixed", admissionQuantityMax: 6, waitlist: { when: "now", capacity: 100 },
+        ...DEFAULTS, mode: "fixed", admissionQuantityMax: 6,
       });
     });
 

@@ -9,7 +9,6 @@ const base: AdmissionsConfig = {
   slidingScale: { min: 20, max: 100, default: 60 },
   fixed: { price: 60 },
   tiered: { earlybirdCutoff: "2026-03-01", lateIncrease: 15, prices: [{ ageGroup: "adult", options: [{ label: "Basic", price: 80 }] }] },
-  waitlist: { when: "when-full", capacity: 200 },
 };
 // A config with some of one mode's values changed.
 const withSlidingScale = (values: object) => ({ ...base, mode: "sliding-scale" as const, slidingScale: { ...base.slidingScale, ...values } });
@@ -130,22 +129,5 @@ describe("admissionsConfigSchema", () => {
       expect(result.error?.issues[0]?.message).toBe("Required");
     });
 
-  });
-
-  describe("waitlist", () => {
-    it.each(["never", "when-full", "now"] as const)("accepts %s", (when) => {
-      expect(issuePaths({ ...fixed, waitlist: { when, capacity: 50 } })).toEqual([]);
-    });
-
-    it("rejects any other choice", () => {
-      expect(issuePaths({ ...fixed, waitlist: { when: "sometimes", capacity: 50 } })).toEqual(["waitlist.when"]);
-    });
-
-    // Kept whichever is chosen, so it's always checked.
-    it.each([0, 2.5, NaN])("rejects a capacity of %s, whichever is chosen", (capacity) => {
-      const result = admissionsConfigSchema.safeParse({ ...fixed, waitlist: { when: "never", capacity } });
-      expect(result.error?.issues.map((issue) => [issue.path.join("."), issue.message]))
-        .toEqual([["waitlist.capacity", "Must be a whole number, 1 or more"]]);
-    });
   });
 });

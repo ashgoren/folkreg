@@ -9,7 +9,7 @@ import { updateAdmissions } from "./actions";
 import { defaultAdmissionsConfig } from "@repo/tenant-config";
 import type { AdmissionsConfig } from "@repo/tenant-config";
 
-const values = (overrides: Partial<AdmissionsConfig> = {}): AdmissionsConfig => ({ ...defaultAdmissionsConfig(), waitlist: { when: "when-full", capacity: 200 }, ...overrides });
+const values = (overrides: Partial<AdmissionsConfig> = {}): AdmissionsConfig => ({ ...defaultAdmissionsConfig(), ...overrides });
 
 describe("updateAdmissions", () => {
   const harness = useActionHarness(createClient);
@@ -17,7 +17,7 @@ describe("updateAdmissions", () => {
 
   it.each<[string, AdmissionsConfig]>([
     ["sliding-scale", values({ slidingScale: { min: 20, max: 100, default: 60 } })],
-    ["fixed", values({ mode: "fixed", fixed: { price: 75 }, waitlist: { when: "now", capacity: 200 } })],
+    ["fixed", values({ mode: "fixed", fixed: { price: 75 } })],
     ["tiered", values({
       mode: "tiered",
       tiered: {

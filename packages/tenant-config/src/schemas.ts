@@ -294,12 +294,6 @@ export const admissionsConfigSchema = z.object({
   tiered: tieredSchema,
   // The most tickets one checkout can buy.
   admissionQuantityMax: requiredNumber(1).int(),
-  // When new registrants join the waitlist instead of paying: never, once `capacity` people have
-  // registered, or now. Capacity is kept whichever is chosen, so switching back restores it.
-  waitlist: z.object({
-    when: z.enum(["never", "when-full", "now"]),
-    capacity: wholeNumber({ min: 1 }, "Must be a whole number, 1 or more"),
-  }),
 });
 
 /** A tiered price after the early-bird cutoff: higher by lateIncrease, except that free stays free. */

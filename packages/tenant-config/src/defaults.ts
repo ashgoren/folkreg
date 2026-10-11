@@ -90,8 +90,6 @@ export const defaultAdmissionsConfig = (): AdmissionsConfig => ({
     ],
   },
   admissionQuantityMax: 4,
-  // No waitlist to start, with a capacity ready for when one is wanted.
-  waitlist: { when: "never", capacity: 100 },
 });
 
 // processor has no "not chosen" value, so Stripe stands in until the organizer picks. Every key

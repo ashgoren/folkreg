@@ -67,14 +67,12 @@ test("tiered mode saves prices by age group, with the late increase", async ({ p
   await page.getByRole("button", { name: "Add a price for Adult" }).click();
   await page.getByRole("textbox", { name: "Adult price 1 label" }).fill("Basic");
   await page.getByRole("spinbutton", { name: "Adult price 1 amount" }).fill("80");
-  await page.getByRole("radio", { name: "Now" }).click();
   await waitForSaved(page);
 
   await expect.poll(() => admissionsConfig(tenantId)).toEqual({
     ...defaultAdmissionsConfig(),
     mode: "tiered",
     tiered: { earlybirdCutoff: "2027-09-01", lateIncrease: 20, prices: [{ ageGroup: "adult", options: [{ label: "Basic", price: 80 }] }] },
-    waitlist: { when: "now", capacity: 100 },
   });
 
   await page.reload();

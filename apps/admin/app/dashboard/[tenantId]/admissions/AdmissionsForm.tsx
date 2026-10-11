@@ -14,7 +14,6 @@ import { updateAdmissions } from "./actions";
 import { SlidingScaleFields } from "./SlidingScaleFields";
 import { FixedFields } from "./FixedFields";
 import { TieredFields } from "./TieredFields";
-import { WaitlistFields } from "./WaitlistFields";
 
 export function AdmissionsForm({ tenant }: { tenant: Tenant }) {
   // The tenant's age brackets: its age field's options, edited on the Fields page (an option still
@@ -83,8 +82,6 @@ export function AdmissionsForm({ tenant }: { tenant: Tenant }) {
           description="Registrants can purchase up to this many tickets in a single checkout"
           required
         />
-
-        <WaitlistFields form={form} />
       </FieldGroup>
 
       <AutosaveStatus isPending={isPending} savedRecently={savedRecently} />
