@@ -23,9 +23,9 @@ afterAll(() => resetTenant(service, tenantId, ADMIN_TENANT_SLUG));
 
 describe("an owner's session", () => {
   it("can update the columns the admin edits", async () => {
-    const { error } = await owner.from("tenants").update({ is_live: true }).eq("id", tenantId);
+    const { error } = await owner.from("tenants").update({ slug: "permissions-renamed" }).eq("id", tenantId);
     expect(error).toBeNull();
-    expect((await readTenant(service, tenantId)).is_live).toBe(true);
+    expect((await readTenant(service, tenantId)).slug).toBe("permissions-renamed");
   });
 
   // Granted by its own migration, after tenant_column_grants.
@@ -60,7 +60,7 @@ describe("an owner's session", () => {
 
 describe("a signed-out session", () => {
   it("can't write tenants at all", async () => {
-    const { error } = await createAnonClient().from("tenants").update({ is_live: true }).eq("id", tenantId);
+    const { error } = await createAnonClient().from("tenants").update({ slug: "anon-renamed" }).eq("id", tenantId);
     expect(error?.code).toBe(PERMISSION_DENIED);
   });
 });

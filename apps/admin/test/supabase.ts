@@ -68,7 +68,6 @@ export const resetTenant = async (service: DbClient, tenantId: string, slug: str
   // Cast for the same reason as createTenant's insert (packages/db/src/provisioning.ts).
   const { error: tenantError } = await service.from("tenants").update({
     slug,
-    is_live: false,
     ...defaultTenantConfig(),
   } as unknown as TablesUpdate<"tenants">).eq("id", tenantId);
   if (tenantError) throw tenantError;

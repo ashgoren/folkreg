@@ -11,9 +11,8 @@ import { SlugSetting } from "./SlugSetting";
 const TENANT_ID = "11111111-1111-4111-8111-111111111111";
 
 const renderSetting = (slug = "spring-dance") => {
-  const onSaved = vi.fn();
-  render(<SlugSetting tenantId={TENANT_ID} slug={slug} onSaved={onSaved} />);
-  return { onSaved, user: userEvent.setup() };
+  render(<SlugSetting tenantId={TENANT_ID} initialSlug={slug} />);
+  return { user: userEvent.setup() };
 };
 
 // Opens editing and replaces the subdomain with `slug`.
@@ -35,7 +34,7 @@ describe("SlugSetting", () => {
   });
 
   it("moves the site only once the move is confirmed", async () => {
-    const { onSaved, user } = renderSetting();
+    const { user } = renderSetting();
     await typeSlug(user, "spring-weekend");
     await user.click(screen.getByRole("button", { name: "Save" }));
 
@@ -45,7 +44,7 @@ describe("SlugSetting", () => {
 
     await user.click(screen.getByRole("button", { name: "Move it" }));
     expect(updateSlug).toHaveBeenCalledExactlyOnceWith(TENANT_ID, "spring-weekend");
-    await vi.waitFor(() => expect(onSaved).toHaveBeenCalledWith("spring-weekend"));
+    expect(await screen.findByText("spring-weekend.folkreg.org")).toBeInTheDocument();
     expect(screen.queryByLabelText("Subdomain")).not.toBeInTheDocument();
   });
 
@@ -57,13 +56,12 @@ describe("SlugSetting", () => {
   });
 
   it("changes nothing when the move is cancelled", async () => {
-    const { onSaved, user } = renderSetting();
+    const { user } = renderSetting();
     await typeSlug(user, "spring-weekend");
     await user.click(screen.getByRole("button", { name: "Save" }));
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(updateSlug).not.toHaveBeenCalled();
-    expect(onSaved).not.toHaveBeenCalled();
     expect(screen.getByLabelText("Subdomain")).toHaveValue("spring-weekend"); // still editing
   });
 
@@ -98,13 +96,12 @@ describe("SlugSetting", () => {
   // E.g. another tenant took it; the error shows where it can be fixed.
   it("shows a save error under the field and stays editing", async () => {
     vi.mocked(updateSlug).mockResolvedValue("That subdomain is already taken");
-    const { onSaved, user } = renderSetting();
+    const { user } = renderSetting();
     await typeSlug(user, "other-tenant");
     await user.click(screen.getByRole("button", { name: "Save" }));
     await user.click(screen.getByRole("button", { name: "Move it" }));
 
     expect(await screen.findByText("That subdomain is already taken")).toBeInTheDocument();
     expect(screen.getByLabelText("Subdomain")).toHaveValue("other-tenant");
-    expect(onSaved).not.toHaveBeenCalled();
   });
 });

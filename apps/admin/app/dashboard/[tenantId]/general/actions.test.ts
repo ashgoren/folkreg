@@ -8,48 +8,7 @@ import { itGuardsTheAction, useActionHarness } from "@/test/action-harness";
 // in @repo/db.
 vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
 import { createClient } from "@/lib/supabase/server";
-import { updateGeneral, updateSlug } from "./actions";
-import type { GeneralValues } from "./schema";
-
-const values = (overrides: Partial<GeneralValues> = {}): GeneralValues => ({
-  is_live: true,
-  ...overrides,
-});
-
-describe("updateGeneral", () => {
-  const harness = useActionHarness(createClient);
-
-  it("saves is_live, leaving the slug alone", async () => {
-    expect(await updateGeneral(harness.tenantId, values())).toBeNull();
-
-    const tenant = await readTenant(harness.service, harness.tenantId);
-    expect(tenant.is_live).toBe(true);
-    expect(tenant.slug).toBe(ADMIN_TENANT_SLUG);
-  });
-
-  it("leaves every config column alone", async () => {
-    const configColumns = (tenant: Awaited<ReturnType<typeof readTenant>>) => ({
-      event_config: tenant.event_config,
-      fields_config: tenant.fields_config,
-      registration_config: tenant.registration_config,
-      admissions_config: tenant.admissions_config,
-      payments_config: tenant.payments_config,
-      theme_config: tenant.theme_config,
-      waiver_config: tenant.waiver_config,
-      receipts_config: tenant.receipts_config,
-      spreadsheet_config: tenant.spreadsheet_config,
-    });
-    const before = configColumns(await readTenant(harness.service, harness.tenantId));
-    await updateGeneral(harness.tenantId, values());
-    expect(configColumns(await readTenant(harness.service, harness.tenantId))).toEqual(before);
-  });
-
-  itGuardsTheAction({
-    harness, createClient, run: updateGeneral,
-    validValues: () => values(),
-    invalidValues: () => ({ is_live: "yes" }),
-  });
-});
+import { updateSlug } from "./actions";
 
 describe("updateSlug", () => {
   const harness = useActionHarness(createClient);
@@ -59,7 +18,7 @@ describe("updateSlug", () => {
     expect(await updateSlug(harness.tenantId, "renamed-tenant")).toBeNull();
     const tenant = await readTenant(harness.service, harness.tenantId);
     expect(tenant.slug).toBe("renamed-tenant");
-    expect(tenant.is_live).toBe(before.is_live);
+    expect({ ...tenant, slug: before.slug, updated_at: before.updated_at }).toEqual(before);
   });
 
   // PostgREST names the violated constraint only in `message` -- `details` is null for this

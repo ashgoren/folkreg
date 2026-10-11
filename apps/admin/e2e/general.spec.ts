@@ -1,22 +1,8 @@
-import { test, expect, readTenantConfig, waitForSaved } from "./fixtures";
+import { test, expect, readTenantConfig } from "./fixtures";
 import { E2E_TENANT_SLUG, OTHER_TENANT_SLUG } from "../test/supabase";
 
 test.beforeEach(async ({ page, dashboardUrl }) => {
   await page.goto(dashboardUrl("general"));
-});
-
-test("autosaves the live switch, and shows it after a reload", async ({ page, tenantId }) => {
-  await page.getByRole("switch", { name: "Live mode?" }).click();
-  await page.getByRole("button", { name: "Go live" }).click(); // the confirmation
-  // The badge and description follow the is_live toggle immediately, before any save.
-  await expect(page.getByText("LIVE", { exact: true })).toBeVisible();
-  await expect(page.getByText(/payments use your live keys/)).toBeVisible();
-  await waitForSaved(page);
-
-  await expect.poll(async () => (await readTenantConfig(tenantId)).is_live).toBe(true);
-
-  await page.reload();
-  await expect(page.getByRole("switch", { name: "Live mode?" })).toBeChecked();
 });
 
 // The subdomain moves the registration site, so it saves only through Change, Save, and a confirmation.

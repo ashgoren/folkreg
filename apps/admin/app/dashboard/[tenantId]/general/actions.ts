@@ -2,11 +2,7 @@
 
 import { isPostgresError } from "@repo/db/errors";
 import { saveTenantConfig } from "@/lib/save-tenant-config";
-import { generalSchema, slugValuesSchema, type GeneralValues } from "./schema";
-
-export async function updateGeneral(tenantId: string, values: GeneralValues): Promise<string | null> {
-  return saveTenantConfig(tenantId, generalSchema, values, (db, data) => db.updateTenant(data));
-}
+import { slugValuesSchema } from "./schema";
 
 export async function updateSlug(tenantId: string, slug: string): Promise<string | null> {
   return saveTenantConfig(tenantId, slugValuesSchema, { slug }, async (db, data) => {

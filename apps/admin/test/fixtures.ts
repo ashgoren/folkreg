@@ -12,7 +12,6 @@ export const makeTenant = (overrides: Partial<Tenant> = {}): Tenant => ({
   id: TEST_TENANT_ID,
   slug: "example",
   owner_id: null,
-  is_live: false,
   ...defaultTenantConfig(),
   created_at: "2026-01-01T00:00:00.000Z",
   updated_at: "2026-01-01T00:00:00.000Z",

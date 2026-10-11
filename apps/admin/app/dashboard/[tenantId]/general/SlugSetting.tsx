@@ -20,12 +20,9 @@ const slugProblem = (slug: string) => slugSchema.safeParse(slug).error?.issues[0
  * doesn't autosave: changing it moves the site and the old address stops working, so it's an
  * explicit Change, Save, and confirmation. Its own <form>, so Enter saves the subdomain alone.
  */
-export function SlugSetting({ tenantId, slug, onSaved }: {
-  tenantId: string;
-  /** The saved subdomain. */
-  slug: string;
-  onSaved: (slug: string) => void;
-}) {
+export function SlugSetting({ tenantId, initialSlug }: { tenantId: string; initialSlug: string }) {
+  // The saved subdomain: as loaded, then whatever a confirmed move saved.
+  const [slug, setSlug] = useState(initialSlug);
   // The subdomain being typed; null while not editing.
   const [draft, setDraft] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -46,12 +43,12 @@ export function SlugSetting({ tenantId, slug, onSaved }: {
     setConfirming(true);
   }
 
-  function move(next: string) {
+  function move(newSlug: string) {
     startSaving(async () => {
       // E.g. taken by another tenant since the check above; shown under the field to fix.
-      const result = await updateSlug(tenantId, next);
+      const result = await updateSlug(tenantId, newSlug);
       if (result) return setError(result);
-      onSaved(next);
+      setSlug(newSlug);
       stopEditing();
     });
   }

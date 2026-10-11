@@ -1,16 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { generalSchema, slugValuesSchema } from "./schema";
-
-describe("generalSchema", () => {
-  it("accepts the live switch", () => {
-    expect(generalSchema.safeParse({ is_live: false }).success).toBe(true);
-  });
-
-  it("requires it to actually be a boolean", () => {
-    expect(generalSchema.safeParse({ is_live: "true" }).success).toBe(false);
-    expect(generalSchema.safeParse({ is_live: undefined }).success).toBe(false);
-  });
-});
+import { slugValuesSchema } from "./schema";
 
 // The subdomain's full rules are tested with slugSchema in @repo/tenant-config; these are the
 // mistakes an organizer is likeliest to make typing one.
