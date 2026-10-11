@@ -4,6 +4,7 @@
 import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
+import { isLocalUrl } from "@repo/db/local-url";
 import { defaultTenantConfig } from "@repo/tenant-config";
 import type { Database, DbClient, TablesUpdate } from "@repo/types";
 
@@ -16,7 +17,7 @@ const url = process.env.SUPABASE_URL!;
 
 // These helpers overwrite tenant config and secrets wholesale. Refusing anything but a local
 // Supabase keeps a misconfigured .env.test.local from ever pointing them at real data.
-if (!/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/.test(url ?? "")) {
+if (!isLocalUrl(url ?? "")) {
   throw new Error(`Refusing to run tests against non-local SUPABASE_URL: ${url}`);
 }
 
