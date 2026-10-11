@@ -8,12 +8,14 @@
 //   admin-test-tenant  apps/admin server action tests (owned by admin-owner@test.local)
 //   e2e-tenant         apps/admin Playwright tests (owned by e2e-owner@test.local)
 //   other-tenant       a tenant owned by someone else, for cross-tenant RLS checks
+//   registration-test-tenant  apps/registration tests (service role, so no owner)
 //   dev                for manual use in the local apps; no test touches it. Its registration is
 //                      open now, so the local registration app shows the form after every reset
 // Owners are distinct users since getTenantByOwner (apps/admin/lib/tenant.ts) assumes one
 // tenant per owner. Tests look tenants up by slug and users by email, never by id.
 //
-// The test-side copies of these names live in apps/admin/test/supabase.ts -- keep in sync.
+// The test-side copies of these names live in apps/admin/test/supabase.ts and
+// apps/registration/test/supabase.ts -- keep in sync.
 
 import { defaultRegistrationConfig } from "@repo/tenant-config";
 import { createTenant, createTenantWithOwner } from "../src/provisioning";
@@ -39,7 +41,11 @@ const OWNED_TENANTS = [
   { slug: "dev", email: DEV_EMAIL, password: DEV_PASSWORD },
 ];
 
-await createTenant(service, { slug: "test-tenant", ownerId: null });
+const UNOWNED_TENANTS = ["test-tenant", "registration-test-tenant"];
+
+for (const slug of UNOWNED_TENANTS) {
+  await createTenant(service, { slug, ownerId: null });
+}
 for (const { slug, email, password } of OWNED_TENANTS) {
   const { tenantId } = await createTenantWithOwner(service, { slug, email, password });
   // The test tenants keep the closed default; their tests open registration when they need it.
@@ -50,4 +56,4 @@ for (const { slug, email, password } of OWNED_TENANTS) {
 
 // The password is printed only while it's the default; a custom one is left out of the terminal.
 const devLogin = DEV_PASSWORD === PASSWORD ? `${DEV_EMAIL} / ${PASSWORD}` : DEV_EMAIL;
-console.log(`Seeded ${OWNED_TENANTS.length + 1} tenants. Log in to the dev tenant as ${devLogin}.`);
+console.log(`Seeded ${OWNED_TENANTS.length + UNOWNED_TENANTS.length} tenants. Log in to the dev tenant as ${devLogin}.`);
