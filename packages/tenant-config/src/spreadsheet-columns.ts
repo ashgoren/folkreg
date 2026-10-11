@@ -9,12 +9,12 @@ import type { SpreadsheetConfig, TenantConfig } from "./schemas";
 // Computed order and payment columns the sync writes after the registrant columns -- not entered
 // by registrants, so not fields in the @repo/fields catalog, and not reorderable or hideable.
 // `waiver`, `deposit`, `donation`, and `fees` only apply while that feature is on; the rest always
-// do. `isLive` is the order's `orders.is_live`. `orderId` comes last, the same id on every row of
+// do. `isTest` is the order's `orders.is_test`. `orderId` comes last, the same id on every row of
 // an order, so all of its rows can be found to update them in place (e.g. once it's paid).
 export const SPREADSHEET_SYSTEM_COLUMNS = [
   "admission", "donation", "deposit", "fees", "paid", "charged",
   "status", "purchaser", "completedAt", "paymentId", "paymentEmail",
-  "waiver", "isLive", "orderId",
+  "waiver", "isTest", "orderId",
 ] as const;
 export type SpreadsheetSystemColumn = (typeof SPREADSHEET_SYSTEM_COLUMNS)[number];
 
