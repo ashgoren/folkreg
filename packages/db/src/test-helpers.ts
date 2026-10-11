@@ -8,8 +8,9 @@ import { getTenantBySlug } from "./queries";
 // Loaded here rather than via a Vitest setupFiles entry, so every test file that imports this
 // module is guaranteed the env is populated before it reads process.env -- no separate config
 // wiring for test files to remember. Resolved from this file's location (src/, hence the `../`)
-// rather than the working directory.
-config({ path: fileURLToPath(new URL("../.env.test.local", import.meta.url)) });
+// rather than the working directory, and overriding the shell's values, so the tests always use
+// the database this file describes.
+config({ path: fileURLToPath(new URL("../.env.test.local", import.meta.url)), override: true, quiet: true });
 
 // These tests overwrite test-tenant's config and secrets wholesale. Refusing anything but a local
 // Supabase keeps a misconfigured .env.test.local from ever pointing them at real data (same guard

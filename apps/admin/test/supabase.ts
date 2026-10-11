@@ -10,8 +10,8 @@ import type { Database, DbClient, TablesUpdate } from "@repo/types";
 
 // Loaded here (rather than via Vitest/Playwright config) so every test that imports these
 // helpers is guaranteed a populated env, whichever runner it's under -- same reasoning as
-// packages/db/src/test-helpers.ts.
-config({ path: fileURLToPath(new URL("../.env.test.local", import.meta.url)), quiet: true });
+// packages/db/src/test-helpers.ts, including overriding the shell's values.
+config({ path: fileURLToPath(new URL("../.env.test.local", import.meta.url)), override: true, quiet: true });
 
 const url = process.env.SUPABASE_URL!;
 
