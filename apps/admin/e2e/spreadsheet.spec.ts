@@ -28,7 +28,7 @@ test("lists active fields (plus follow-ups) as columns, then the fixed system co
   await expect(page.getByText("emailConfirmation", { exact: true })).toHaveCount(0);
   // System columns are shown, but feature-gated ones are absent while their feature is off.
   await expect(page.getByText("total", { exact: true })).toBeVisible();
-  await expect(page.getByText("key", { exact: true })).toBeVisible();
+  await expect(page.getByText("orderId", { exact: true })).toBeVisible();
   await expect(page.getByText("waiver", { exact: true })).toHaveCount(0);
   await expect(page.getByText("deposit", { exact: true })).toHaveCount(0);
 });

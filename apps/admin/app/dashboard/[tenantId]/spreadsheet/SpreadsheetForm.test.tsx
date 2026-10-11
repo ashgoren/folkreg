@@ -24,12 +24,12 @@ const fields = (contact: FieldName[], misc: FieldName[] = []): FieldsConfig => (
 const registrantColumns = () =>
   screen.getAllByRole("button", { name: "Drag to reorder" }).map((handle) => handle.parentElement!.textContent);
 
-// System columns render after the registrant rows as fixed, non-interactive rows ending in "key".
-const systemColumns = () => Array.from(screen.getByText("key", { exact: true }).parentElement!.children).map((el) => el.textContent);
+// System columns render after the registrant rows as fixed, non-interactive rows ending in "orderId".
+const systemColumns = () => Array.from(screen.getByText("orderId", { exact: true }).parentElement!.children).map((el) => el.textContent);
 
 const paymentsConfig = (overrides: Partial<PaymentsConfig>): PaymentsConfig => ({ ...defaultPaymentsConfig(), ...overrides });
 
-const ALWAYS_SYSTEM_COLUMNS = ["admission", "total", "paid", "charged", "status", "purchaser", "completedAt", "paymentId", "paymentEmail", "isLive", "key"];
+const ALWAYS_SYSTEM_COLUMNS = ["admission", "total", "paid", "charged", "status", "purchaser", "completedAt", "paymentId", "paymentEmail", "isLive", "orderId"];
 
 describe("SpreadsheetForm", () => {
   beforeEach(() => {
@@ -90,7 +90,7 @@ describe("SpreadsheetForm", () => {
       expect(systemColumns()).toEqual([
         "admission", "donation", "total", "deposit", "fees", "paid", "charged",
         "status", "purchaser", "completedAt", "paymentId", "paymentEmail",
-        "waiver", "isLive", "key",
+        "waiver", "isLive", "orderId",
       ]);
     });
 
