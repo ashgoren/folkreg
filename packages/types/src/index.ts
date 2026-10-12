@@ -1,6 +1,6 @@
 import { Tables, Database } from "./database.types"
 import { type SupabaseClient } from "@supabase/supabase-js"
-import type { TenantConfig } from "@repo/tenant-config"
+import type { TenantConfig, RegistrationConfig } from "@repo/tenant-config"
 
 export * from "./database.types"
 
@@ -39,17 +39,13 @@ export interface Payment {
   paidAt: string;
 }
 
-export interface LotteryInfo {
-  status: 'registered' | 'selected' | 'invited' | 'waitlisted';
-  tokenHash: string | null;
-  invitedAt: string | null;
-  expiresAt: string | null;
-}
-
-export type Order = Omit<Tables<'orders'>, 'people' | 'payments' | 'lottery'> & {
+export type Order = Omit<Tables<'orders'>, 'people' | 'payments' | 'submission_mode'> & {
   people: Person[];
   payments: Payment[];
-  lottery: LotteryInfo | null;
+  // null until confirmRegistration sets it; the resolved outcome of submissionMode(), not a copy of
+  // the tenant's configured registration_config.mode -- a pay-configured tenant can still resolve to
+  // 'waitlist' once waitlistAfter trips.
+  submission_mode: RegistrationConfig['mode'] | null;
 }
 
 // A tenants row with its jsonb config columns typed (and, when read through createTenantDb's

@@ -40,7 +40,7 @@ describe("order methods (via createTenantDb)", () => {
     expect(order!.event_year).toBe(EVENT_YEAR);
     expect(order!.registered_at).toBeNull();
     expect(order!.payments).toEqual([]);
-    expect(order!.lottery).toBeNull();
+    expect(order!.submission_mode).toBeNull();
   });
 
   it("records a test order as one", async () => {
@@ -89,15 +89,26 @@ describe("order methods (via createTenantDb)", () => {
     expect(order!.people[0]?.first).toBe("FirstWriter"); // the stale write never applied
   });
 
-  it("sets registered_at on confirmation, and leaves it untouched on a repeat confirmation", async () => {
+  it.each(["pay", "waitlist", "lottery"] as const)("records submission_mode as '%s' on confirmation", async (mode) => {
     const created = await orders.createOrder([testPerson()], false, EVENT_YEAR);
-    await orders.confirmRegistration(created.id);
+    await orders.confirmRegistration(created.id, mode);
+
+    const order = await orders.getOrder(created.id);
+    expect(order!.submission_mode).toBe(mode);
+  });
+
+  it("sets registered_at on confirmation, and leaves it and submission_mode untouched on a repeat confirmation", async () => {
+    const created = await orders.createOrder([testPerson()], false, EVENT_YEAR);
+    await orders.confirmRegistration(created.id, "pay");
 
     const confirmed = await orders.getOrder(created.id);
     expect(confirmed!.registered_at).not.toBeNull();
+    expect(confirmed!.submission_mode).toBe("pay");
 
-    await orders.confirmRegistration(created.id); // resubmitting shouldn't move the timestamp
+    // Resubmitting shouldn't move the timestamp or let a different mode overwrite the original one.
+    await orders.confirmRegistration(created.id, "lottery");
     const confirmedAgain = await orders.getOrder(created.id);
     expect(confirmedAgain!.registered_at).toBe(confirmed!.registered_at);
+    expect(confirmedAgain!.submission_mode).toBe("pay");
   });
 });

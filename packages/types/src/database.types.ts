@@ -40,11 +40,10 @@ export type Database = {
           event_year: number
           id: string
           is_test: boolean
-          is_waitlist: boolean
-          lottery: Json | null
           payments: Json
           people: Json | null
           registered_at: string | null
+          submission_mode: string | null
           tenant_id: string
           updated_at: string
         }
@@ -53,11 +52,10 @@ export type Database = {
           event_year: number
           id?: string
           is_test?: boolean
-          is_waitlist?: boolean
-          lottery?: Json | null
           payments?: Json
           people?: Json | null
           registered_at?: string | null
+          submission_mode?: string | null
           tenant_id: string
           updated_at?: string
         }
@@ -66,11 +64,10 @@ export type Database = {
           event_year?: number
           id?: string
           is_test?: boolean
-          is_waitlist?: boolean
-          lottery?: Json | null
           payments?: Json
           people?: Json | null
           registered_at?: string | null
+          submission_mode?: string | null
           tenant_id?: string
           updated_at?: string
         }

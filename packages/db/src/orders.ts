@@ -1,4 +1,5 @@
 import type { DbClient, Json, Order, Person } from "@repo/types";
+import type { RegistrationConfig } from "@repo/tenant-config";
 
 export const createOrderMethods = (supabase: DbClient, tenantId: string) => {
   // isTest is required rather than defaulted, so every caller decides it on purpose: a test order
@@ -60,12 +61,12 @@ export const createOrderMethods = (supabase: DbClient, tenantId: string) => {
     return { updatedAt: data.updated_at };
   };
 
-  // Only sets registered_at if it isn't already set, so resubmitting a confirmed
-  // registration doesn't overwrite the original confirmation timestamp.
-  const confirmRegistration = async (orderId: string): Promise<void> => {
+  // Only sets registered_at/submission_mode if registered_at isn't already set, so resubmitting a
+  // confirmed registration doesn't overwrite the original confirmation timestamp or mode.
+  const confirmRegistration = async (orderId: string, mode: RegistrationConfig["mode"]): Promise<void> => {
     const { error } = await supabase
       .from("orders")
-      .update({ registered_at: new Date().toISOString() })
+      .update({ registered_at: new Date().toISOString(), submission_mode: mode })
       .eq("id", orderId)
       .eq("tenant_id", tenantId)
       .is("registered_at", null);
