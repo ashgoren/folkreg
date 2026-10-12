@@ -162,6 +162,9 @@ importers:
       '@repo/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@repo/fields':
+        specifier: workspace:*
+        version: link:../../packages/fields
       '@repo/tenant-config':
         specifier: workspace:*
         version: link:../../packages/tenant-config

@@ -16,6 +16,7 @@
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@repo/db": "workspace:*",
+    "@repo/fields": "workspace:*",
     "@repo/tenant-config": "workspace:*",
     "@repo/types": "workspace:*",
     "class-variance-authority": "^0.7.1",

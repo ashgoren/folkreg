@@ -24,7 +24,9 @@ export interface Person {
   age?: string; // one of the tenant's age field options
   share?: string[];
   misc?: string[];
-  admission: number;
+  // Omitted until Payment computes a real value -- a stamped 0 placeholder would be indistinguishable
+  // from a genuine free registration (e.g. a free age-tier).
+  admission?: number;
   [key: string]: unknown;
 }
 
