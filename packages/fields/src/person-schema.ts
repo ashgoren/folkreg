@@ -26,7 +26,9 @@ const FALLBACK_REQUIRED_MESSAGES: Record<FieldType, string> = {
 const isBlank = (value: unknown) => (Array.isArray(value) ? value.length === 0 : typeof value !== "string" || value.trim() === "");
 
 // A checkbox field's value is the list of checked options; any other field's is a single value.
-const hasValue = (value: unknown, option: string) => (Array.isArray(value) ? value.includes(option) : value === option);
+// Exported for the registration form's own use: it needs the identical check to decide whether to
+// show a followUp field live, not just at validation time.
+export const hasValue = (value: unknown, option: string) => (Array.isArray(value) ? value.includes(option) : value === option);
 
 /**
  * The zod schema for one person, given the tenant's active fields (as stored in fields_config:
