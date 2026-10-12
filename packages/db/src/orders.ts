@@ -2,14 +2,17 @@ import type { DbClient, Json, Order, Person } from "@repo/types";
 
 export const createOrderMethods = (supabase: DbClient, tenantId: string) => {
   // isTest is required rather than defaulted, so every caller decides it on purpose: a test order
-  // pays with the test keys, so it must come from a server-verified preview session.
-  const createOrder = async (people: Person[], isTest: boolean): Promise<{ id: string; updatedAt: string }> => {
+  // pays with the test keys, so it must come from a server-verified preview session. eventYear is
+  // required too -- which year's event this order belongs to, since a tenant reuses the same row
+  // across years and counts (closeAfter, waitlistAfter) must count only the current one.
+  const createOrder = async (people: Person[], isTest: boolean, eventYear: number): Promise<{ id: string; updatedAt: string }> => {
     const { data, error } = await supabase
       .from("orders")
       .insert({
         tenant_id: tenantId,
         people: people as unknown as Json,
         is_test: isTest,
+        event_year: eventYear,
       })
       .select("id, updated_at")
       .single();

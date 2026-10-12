@@ -37,6 +37,7 @@ export type Database = {
       orders: {
         Row: {
           created_at: string
+          event_year: number
           id: string
           is_test: boolean
           is_waitlist: boolean
@@ -49,6 +50,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          event_year: number
           id?: string
           is_test?: boolean
           is_waitlist?: boolean
@@ -61,6 +63,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          event_year?: number
           id?: string
           is_test?: boolean
           is_waitlist?: boolean
