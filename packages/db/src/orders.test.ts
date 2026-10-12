@@ -111,4 +111,33 @@ describe("order methods (via createTenantDb)", () => {
     expect(confirmedAgain!.registered_at).toBe(confirmed!.registered_at);
     expect(confirmedAgain!.submission_mode).toBe("pay");
   });
+
+  // Its own event year, not EVENT_YEAR -- other tests in this file confirm orders under EVENT_YEAR
+  // too, which would make an aggregate count order-dependent on what else has run.
+  describe("countRegisteredPeople", () => {
+    const COUNT_EVENT_YEAR = 2099;
+
+    it("counts people on confirmed, live orders for the given event year", async () => {
+      await orders.createOrder([testPerson(), testPerson({ last: "Two" })], false, COUNT_EVENT_YEAR); // draft, never confirmed
+
+      const pay = await orders.createOrder([testPerson()], false, COUNT_EVENT_YEAR);
+      await orders.confirmRegistration(pay.id, "pay");
+
+      const waitlist = await orders.createOrder([testPerson(), testPerson({ last: "Two" }), testPerson({ last: "Three" })], false, COUNT_EVENT_YEAR);
+      await orders.confirmRegistration(waitlist.id, "waitlist");
+
+      const lottery = await orders.createOrder([testPerson(), testPerson({ last: "Two" })], false, COUNT_EVENT_YEAR);
+      await orders.confirmRegistration(lottery.id, "lottery");
+
+      const test = await orders.createOrder([testPerson({ last: "Test1" }), testPerson({ last: "Test2" })], true, COUNT_EVENT_YEAR);
+      await orders.confirmRegistration(test.id, "pay");
+
+      const otherYear = await orders.createOrder([testPerson()], false, COUNT_EVENT_YEAR + 1);
+      await orders.confirmRegistration(otherYear.id, "pay");
+
+      // draft (never confirmed), the test order, and the other year's order are all excluded;
+      // every mode counts: pay (1) + waitlist (3) + lottery (2) = 6.
+      expect(await orders.countRegisteredPeople(COUNT_EVENT_YEAR)).toBe(6);
+    });
+  });
 });

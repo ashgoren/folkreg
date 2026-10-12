@@ -48,14 +48,14 @@ export const registrationStatus = ({ registration, timezone, now, peopleRegister
 
 /**
  * What a submission to an open registration form becomes: a registration paid for right away, an
- * entry in the lottery, or a place on the waitlist. `peopleNotWaitlisted` counts registered people
- * who aren't on the waitlist (what waitlistAfter limits); it only matters in "pay" mode.
+ * entry in the lottery, or a place on the waitlist. `peopleRegistered` is the same count
+ * registrationStatus uses (everyone registered, waitlisted and lottery people included).
  */
-export const submissionMode = ({ registration, peopleNotWaitlisted }: {
+export const submissionMode = ({ registration, peopleRegistered }: {
   registration: Pick<RegistrationConfig, "mode" | "waitlistAfter">;
-  peopleNotWaitlisted: number;
+  peopleRegistered: number;
 }): RegistrationConfig["mode"] => {
   const { mode, waitlistAfter } = registration;
-  if (mode === "pay" && waitlistAfter.enabled && peopleNotWaitlisted >= waitlistAfter.people) return "waitlist";
+  if (mode === "pay" && waitlistAfter.enabled && peopleRegistered >= waitlistAfter.people) return "waitlist";
   return mode;
 };

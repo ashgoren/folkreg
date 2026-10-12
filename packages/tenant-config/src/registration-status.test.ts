@@ -111,21 +111,21 @@ describe("registrationStatus", () => {
 
 describe("submissionMode", () => {
   it.each(["pay", "lottery", "waitlist"] as const)("is %s in that mode with no limit", (mode) => {
-    expect(submissionMode({ registration: registration({ mode }), peopleNotWaitlisted: 1000 })).toBe(mode);
+    expect(submissionMode({ registration: registration({ mode }), peopleRegistered: 1000 })).toBe(mode);
   });
 
   it("waitlists paid registrations once waitlistAfter people are registered", () => {
     const config = registration({ waitlistAfter: { enabled: true, people: 240 } });
-    expect(submissionMode({ registration: config, peopleNotWaitlisted: 239 })).toBe("pay");
-    expect(submissionMode({ registration: config, peopleNotWaitlisted: 240 })).toBe("waitlist");
+    expect(submissionMode({ registration: config, peopleRegistered: 239 })).toBe("pay");
+    expect(submissionMode({ registration: config, peopleRegistered: 240 })).toBe("waitlist");
   });
 
   it("ignores waitlistAfter while it's off", () => {
-    expect(submissionMode({ registration: registration({ waitlistAfter: { enabled: false, people: 240 } }), peopleNotWaitlisted: 500 })).toBe("pay");
+    expect(submissionMode({ registration: registration({ waitlistAfter: { enabled: false, people: 240 } }), peopleRegistered: 500 })).toBe("pay");
   });
 
   // Lottery entries and waitlist places are decided later, not by a count.
   it("ignores waitlistAfter outside pay mode", () => {
-    expect(submissionMode({ registration: registration({ mode: "lottery", waitlistAfter: { enabled: true, people: 1 } }), peopleNotWaitlisted: 500 })).toBe("lottery");
+    expect(submissionMode({ registration: registration({ mode: "lottery", waitlistAfter: { enabled: true, people: 1 } }), peopleRegistered: 500 })).toBe("lottery");
   });
 });

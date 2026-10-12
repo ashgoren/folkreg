@@ -73,5 +73,20 @@ export const createOrderMethods = (supabase: DbClient, tenantId: string) => {
     if (error) throw error;
   };
 
-  return { createOrder, getOrder, updateOrderPeople, confirmRegistration };
+  // Counts people on confirmed, live orders for one event year -- what registrationStatus and
+  // submissionMode both need as peopleRegistered (everyone, including waitlisted/lottery people).
+  const countRegisteredPeople = async (eventYear: number): Promise<number> => {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("people")
+      .eq("tenant_id", tenantId)
+      .eq("event_year", eventYear)
+      .eq("is_test", false)
+      .not("registered_at", "is", null);
+    if (error) throw error;
+
+    return data.reduce((total, order) => total + (order.people as unknown as Person[]).length, 0);
+  };
+
+  return { createOrder, getOrder, updateOrderPeople, confirmRegistration, countRegisteredPeople };
 };
