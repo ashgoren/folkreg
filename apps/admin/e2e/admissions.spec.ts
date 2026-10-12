@@ -1,4 +1,4 @@
-import { defaultAdmissionsConfig, defaultFieldEntry, defaultFieldsConfig } from "@repo/tenant-config";
+import { defaultAdmissionsConfig, defaultActiveField, defaultFieldsConfig } from "@repo/tenant-config";
 import { test, expect, service, readTenantConfig, waitForSaved, dragRowOnto } from "./fixtures";
 
 const admissionsConfig = async (tenantId: string) => (await readTenantConfig(tenantId)).admissions_config;
@@ -54,7 +54,7 @@ test("tiered mode saves prices by age group, with the late increase", async ({ p
   // Age groups are the age field's options, which a new tenant doesn't have active. Starts from no
   // prices, rather than the defaults, to build them from scratch.
   const fields = defaultFieldsConfig();
-  fields.misc.push(defaultFieldEntry("age"));
+  fields.misc.push(defaultActiveField("age"));
   const { error } = await service.from("tenants")
     .update({ fields_config: fields, admissions_config: { ...defaultAdmissionsConfig(), tiered: { ...defaultAdmissionsConfig().tiered, prices: [] } } })
     .eq("id", tenantId);
@@ -114,7 +114,7 @@ test("a half-typed early-bird cutoff shows an error and isn't saved", async ({ p
 // uses the same dragRowOnto helper and passes; what differs here is unknown.
 test.skip("dragging a price reorders it within its age group", async ({ page, tenantId }) => {
   const fields = defaultFieldsConfig();
-  fields.misc.push(defaultFieldEntry("age"));
+  fields.misc.push(defaultActiveField("age"));
   const { error } = await service.from("tenants")
     .update({ fields_config: fields, admissions_config: { ...defaultAdmissionsConfig(), mode: "tiered" } })
     .eq("id", tenantId);

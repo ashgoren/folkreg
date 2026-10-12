@@ -5,12 +5,12 @@ import { useFieldArray, useWatch } from "react-hook-form";
 import { DragDropProvider } from "@dnd-kit/react";
 import { isSortable } from "@dnd-kit/react/sortable";
 import { FIELD_DEFS, FIELD_NAMES, type FieldName } from "@repo/fields";
-import { defaultFieldEntry, fieldsConfigSchema, type FieldEntry } from "@repo/tenant-config";
+import { defaultActiveField, fieldsConfigSchema, type ActiveField } from "@repo/tenant-config";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useAutosaveForm } from "@/lib/useAutosaveForm";
 import { AutosaveStatus } from "@/components/autosave-status";
 import { FieldRow } from "./FieldRow";
-import { ConfigPanel, type FieldEntryPath } from "./ConfigPanel";
+import { ConfigPanel, type ActiveFieldPath } from "./ConfigPanel";
 import { updateFields } from "./actions";
 import type { Tenant } from "@repo/types";
 
@@ -23,9 +23,9 @@ type Group = (typeof GROUPS)[number]["group"];
 
 // A radio or checkbox field with nothing to choose from: allowed (an organizer may add the field
 // before writing its options), but flagged in the list.
-const missingOptions = (entry: FieldEntry) => {
-  const type = FIELD_DEFS[entry.name].type;
-  return (type === "radio" || type === "checkbox") && !entry.options?.length;
+const missingOptions = (field: ActiveField) => {
+  const type = FIELD_DEFS[field.name].type;
+  return (type === "radio" || type === "checkbox") && !field.options?.length;
 };
 
 export function FieldsForm({ tenant }: { tenant: Tenant }) {
@@ -43,14 +43,14 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
     misc: useFieldArray({ control: form.control, name: "misc" }),
   };
   const [contact, misc] = useWatch({ control: form.control, name: ["contact", "misc"] });
-  const entries: Record<Group, FieldEntry[]> = { contact, misc };
+  const fields: Record<Group, ActiveField[]> = { contact, misc };
 
   // Which field the config panel shows. UI state, not form data, so it's kept by name, and its
   // place in the form's values worked out on each render: a drag or a removal above it moves it.
   const [selectedField, setSelectedField] = useState<FieldName | null>(null);
-  const pathOf = (name: FieldName): FieldEntryPath | null => {
+  const pathOf = (name: FieldName): ActiveFieldPath | null => {
     const group = FIELD_DEFS[name].group;
-    const index = entries[group].findIndex((entry) => entry.name === name);
+    const index = fields[group].findIndex((field) => field.name === name);
     return index === -1 ? null : `${group}.${index}`;
   };
   const selectedPath = selectedField && pathOf(selectedField);
@@ -76,18 +76,18 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
     form.reset(form.getValues(), { keepErrors: true, keepDirty: true, keepTouched: true, keepIsSubmitted: true, keepSubmitCount: true });
 
   function activateField(name: FieldName) {
-    fieldArrays[FIELD_DEFS[name].group].append(defaultFieldEntry(name));
+    fieldArrays[FIELD_DEFS[name].group].append(defaultActiveField(name));
     rebaseLoadedValues();
   }
 
   function deactivateField(name: FieldName) {
     if (selectedField === name) setSelectedField(null);
     const group = FIELD_DEFS[name].group;
-    fieldArrays[group].remove(entries[group].findIndex((entry) => entry.name === name));
+    fieldArrays[group].remove(fields[group].findIndex((field) => field.name === name));
     rebaseLoadedValues();
   }
 
-  const activeNames = new Set([...contact, ...misc].map((entry) => entry.name));
+  const activeNames = new Set([...contact, ...misc].map((field) => field.name));
   const availableFields = FIELD_NAMES.filter((name) => !activeNames.has(name));
 
   return (
@@ -114,16 +114,16 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
                 }}
               >
                 <div className="flex flex-col gap-1">
-                  {entries[group].map((entry, index) => (
+                  {fields[group].map((field, index) => (
                     <FieldRow
-                      key={entry.name}
-                      name={entry.name}
-                      required={entry.required ?? false}
+                      key={field.name}
+                      name={field.name}
+                      required={field.required ?? false}
                       index={index}
-                      isSelected={selectedField === entry.name}
-                      hasWarning={missingOptions(entry)}
-                      onSelect={() => void selectField(entry.name)}
-                      onDeactivate={FIELD_DEFS[entry.name].canDeactivate === false ? undefined : () => deactivateField(entry.name)}
+                      isSelected={selectedField === field.name}
+                      hasWarning={missingOptions(field)}
+                      onSelect={() => void selectField(field.name)}
+                      onDeactivate={FIELD_DEFS[field.name].canDeactivate === false ? undefined : () => deactivateField(field.name)}
                     />
                   ))}
                 </div>

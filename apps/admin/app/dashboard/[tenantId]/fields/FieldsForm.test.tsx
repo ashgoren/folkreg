@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FIELD_DEFS, MISC_FIELD_DEFS } from "@repo/fields";
-import { defaultFieldEntry, defaultFieldsConfig } from "@repo/tenant-config";
+import { defaultActiveField, defaultFieldsConfig } from "@repo/tenant-config";
 import { makeTenant } from "@/test/fixtures";
 import { expectLastSave, expectNoSave } from "@/test/autosave";
 import type { FieldsConfig } from "@repo/tenant-config";
@@ -148,8 +148,8 @@ describe("FieldsForm", () => {
       await user.click(within(activeRow("last")).getByRole("button", { name: "Remove field" }));
       await user.click(within(availableRow("last")).getByRole("button", { name: "Add" }));
 
-      await expectLastSave(vi.mocked(updateFields), tenant.id, { contact: [defaultFieldEntry("last")], misc: [] });
-      expect(defaultFieldEntry("last")).toMatchObject({ includeOnNametag: true });
+      await expectLastSave(vi.mocked(updateFields), tenant.id, { contact: [defaultActiveField("last")], misc: [] });
+      expect(defaultActiveField("last")).toMatchObject({ includeOnNametag: true });
     });
 
     it("deactivates a field, dropping its config and returning it to the available list", async () => {

@@ -8,8 +8,8 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { makeTenant } from "@/test/fixtures";
 import { expectLastSave, expectNoSave } from "@/test/autosave";
-import { defaultAdmissionsConfig, defaultFieldEntry, defaultFieldsConfig } from "@repo/tenant-config";
-import type { AdmissionsConfig, FieldEntry } from "@repo/tenant-config";
+import { defaultActiveField, defaultAdmissionsConfig, defaultFieldsConfig } from "@repo/tenant-config";
+import type { ActiveField, AdmissionsConfig } from "@repo/tenant-config";
 
 vi.mock("./actions", () => ({ updateAdmissions: vi.fn() }));
 import { updateAdmissions } from "./actions";
@@ -26,9 +26,9 @@ const savedTiered = (values: Partial<AdmissionsConfig["tiered"]>) => expect.obje
 
 // A tenant with the age field active, whose options are the age groups tiered pricing prices by:
 // the catalog's own options unless given others.
-const withAge = (options?: FieldEntry["options"]) => {
+const withAge = (options?: ActiveField["options"]) => {
   const fields = defaultFieldsConfig();
-  fields.misc.push({ ...defaultFieldEntry("age"), ...(options && { options }) });
+  fields.misc.push({ ...defaultActiveField("age"), ...(options && { options }) });
   return { fields_config: fields };
 };
 

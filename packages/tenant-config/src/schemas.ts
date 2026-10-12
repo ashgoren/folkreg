@@ -8,8 +8,8 @@
 // form is seeded straight from its stored config and saves what it validated. Rules are format-only
 // (email format, hex colors, number ranges): a blank field passes, since organizers fill pages in
 // over several sessions. Numbers are always required -- a cleared number input is NaN, which fails
-// with "Required" rather than being saved. Field settings (fieldConfigSchema) are the exception:
-// not every setting applies to every field, so their keys are optional.
+// with "Required" rather than being saved. An active field's settings are the exception: not every
+// setting applies to every field, so their keys are optional.
 
 import { z } from "zod";
 import { FIELD_DEFS, FIELD_NAMES } from "@repo/fields";
@@ -99,12 +99,14 @@ const wholeNumber = ({ min, max }: { min: number; max?: number }, error: string)
   return max === undefined ? number : number.max(max, { error });
 };
 
-// A tenant's settings for one active field: copied from the field's catalog defaults in
-// @repo/fields when the organizer activates it (defaultFieldEntry), then the tenant's own -- the
+// The settings a tenant has for one active field: copied from the field's catalog defaults in
+// @repo/fields when the organizer activates it (defaultActiveField), then the tenant's own -- the
 // registration form reads these, never the catalog's defaults. Keys are optional because not every
 // setting applies to every field (rows only to a textarea, options only to radio and checkbox
-// fields, width only to contact fields).
-export const fieldConfigSchema = z.object({
+// fields, width only to contact fields). Not exported on its own -- activeFieldSchema below (which
+// adds the one thing this doesn't have, which catalog field this is) is the only shape anything
+// outside this file needs.
+const activeFieldSettingsSchema = z.object({
   title: z.string().optional(),
   label: z.string().optional(),
   placeholder: z.string().optional(),
@@ -124,36 +126,35 @@ export const fieldConfigSchema = z.object({
   // Which options the person registering may choose, for a field that can limit them (age).
   firstPersonOptions: z.array(z.string()).optional(),
 });
-export type FieldConfig = z.infer<typeof fieldConfigSchema>;
 
-// An active field: which catalog field it is, plus the tenant's settings for it.
-export const fieldEntrySchema = fieldConfigSchema.extend({ name: z.enum(FIELD_NAMES) });
-export type FieldEntry = z.infer<typeof fieldEntrySchema>;
+// A field that's active for a tenant: which catalog field it is, plus their settings for it.
+export const activeFieldSchema = activeFieldSettingsSchema.extend({ name: z.enum(FIELD_NAMES) });
+export type ActiveField = z.infer<typeof activeFieldSchema>;
 
 // A tenant's active fields, by section of the registration form, each section in the order it
 // shows them. A field is active exactly when it has an entry; removing it removes its settings.
 // Names are checked against the catalog, so a renamed or removed catalog field fails the read
 // loudly rather than being skipped.
 export const fieldsConfigSchema = z.object({
-  contact: z.array(fieldEntrySchema),
-  misc: z.array(fieldEntrySchema),
+  contact: z.array(activeFieldSchema),
+  misc: z.array(activeFieldSchema),
 }).superRefine((config, ctx) => {
   const seen = new Set<string>();
   for (const group of ["contact", "misc"] as const) {
-    config[group].forEach((entry, index) => {
-      const { name } = entry;
-      const issue = (key: keyof FieldEntry, message: string) => ctx.addIssue({ code: "custom", path: [group, index, key], message });
+    config[group].forEach((field, index) => {
+      const { name } = field;
+      const issue = (key: keyof ActiveField, message: string) => ctx.addIssue({ code: "custom", path: [group, index, key], message });
       if (FIELD_DEFS[name].group !== group) issue("name", `${name} belongs in ${FIELD_DEFS[name].group}`);
       if (seen.has(name)) issue("name", `${name} is listed more than once`);
       seen.add(name);
-      checkChoices(entry, issue);
+      checkChoices(field, issue);
     });
   }
 });
 
 // A field's default, first-person options and options against the catalog's rules for its type. Shown on the Fields page
 // under the field's Default and options.
-const checkChoices = ({ name, defaultValue, firstPersonOptions, options = [] }: FieldEntry, issue: (key: keyof FieldEntry, message: string) => void) => {
+const checkChoices = ({ name, defaultValue, firstPersonOptions, options = [] }: ActiveField, issue: (key: keyof ActiveField, message: string) => void) => {
   const def = FIELD_DEFS[name];
   const isCheckbox = def.type === "checkbox";
 

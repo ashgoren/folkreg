@@ -13,12 +13,12 @@ import { Separator } from "@/components/ui/separator";
 import { X, Plus } from "lucide-react";
 import { ChoiceDefault, FirstPersonOptions } from "./OptionPickers";
 
-// Where an active field's entry sits in the form's values, e.g. "contact.2".
-export type FieldEntryPath = `${"contact" | "misc"}.${number}`;
+// Where an active field sits in the form's values, e.g. "contact.2".
+export type ActiveFieldPath = `${"contact" | "misc"}.${number}`;
 
 interface ConfigPanelProps {
   form: UseFormReturn<FieldsConfig>;
-  path: FieldEntryPath;
+  path: ActiveFieldPath;
   fieldName: FieldName;
 }
 
@@ -205,7 +205,7 @@ function NumberSetting({
   max,
 }: {
   control: Control<FieldsConfig>;
-  name: `${FieldEntryPath}.width` | `${FieldEntryPath}.rows`;
+  name: `${ActiveFieldPath}.width` | `${ActiveFieldPath}.rows`;
   caption: string;
   max?: number;
 }) {

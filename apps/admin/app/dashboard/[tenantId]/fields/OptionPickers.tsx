@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Field, FieldDescription, FieldError, FieldLegend, FieldSet } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
-import type { FieldEntryPath } from "./ConfigPanel";
+import type { ActiveFieldPath } from "./ConfigPanel";
 
 // Settings of a radio or checkbox field that choose among its own options: its default, and which
 // options the person registering may pick. Each is chosen the way a registrant would choose.
@@ -21,7 +21,7 @@ type Choice = { value: string; label: string };
 const notAnOption = (value: string): Choice => ({ value, label: `${value} (not an option)` });
 
 // The field's options as choices. An option still being written has no value yet, so there's nothing to choose.
-function useChoices(control: Control<FieldsConfig>, path: FieldEntryPath) {
+function useChoices(control: Control<FieldsConfig>, path: ActiveFieldPath) {
   const options = useWatch({ control, name: `${path}.options` }) ?? [];
   const choices = options
     .filter((option) => option.value !== "")
@@ -68,7 +68,7 @@ function CheckboxChoices({ id, legend, description, choices, isOption, selected,
  */
 export function ChoiceDefault({ control, path, fieldName }: {
   control: Control<FieldsConfig>;
-  path: FieldEntryPath;
+  path: ActiveFieldPath;
   fieldName: FieldName;
 }) {
   const def = FIELD_DEFS[fieldName];
@@ -130,7 +130,7 @@ export function ChoiceDefault({ control, path, fieldName }: {
  */
 export function FirstPersonOptions({ control, path, fieldName }: {
   control: Control<FieldsConfig>;
-  path: FieldEntryPath;
+  path: ActiveFieldPath;
   fieldName: FieldName;
 }) {
   const { choices, isOption } = useChoices(control, path);

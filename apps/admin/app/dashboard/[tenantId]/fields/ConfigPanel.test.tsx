@@ -9,11 +9,11 @@ import userEvent from "@testing-library/user-event";
 import { useForm, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FIELD_DEFS, MISC_FIELD_DEFS, type FieldName } from "@repo/fields";
-import { fieldsConfigSchema, type FieldConfig, type FieldsConfig } from "@repo/tenant-config";
+import { fieldsConfigSchema, type ActiveField, type FieldsConfig } from "@repo/tenant-config";
 import { ConfigPanel } from "./ConfigPanel";
 
 // Renders the panel for one field, returning a function that reads its entry's current values.
-const renderPanel = (fieldName: FieldName, config: FieldConfig = {}) => {
+const renderPanel = (fieldName: FieldName, config: Omit<ActiveField, "name"> = {}) => {
   const group = FIELD_DEFS[fieldName].group;
   const values: FieldsConfig = { contact: [], misc: [] };
   values[group] = [{ name: fieldName, ...config }];

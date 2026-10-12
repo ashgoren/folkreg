@@ -10,7 +10,7 @@
 
 import { FIELD_DEFS, type FieldName } from "@repo/fields";
 import type {
-  AdmissionsConfig, EventConfig, FieldConfig, FieldEntry, FieldsConfig, PaymentsConfig, ReceiptsConfig, RegistrationConfig, SpreadsheetConfig, ThemeConfig, WaiverConfig,
+  ActiveField, AdmissionsConfig, EventConfig, FieldsConfig, PaymentsConfig, ReceiptsConfig, RegistrationConfig, SpreadsheetConfig, ThemeConfig, WaiverConfig,
 } from "./schemas";
 
 export const defaultEventConfig = (): EventConfig => ({
@@ -26,15 +26,16 @@ export const defaultEventConfig = (): EventConfig => ({
 });
 
 // A field's starting settings when it's activated: the label, placeholder, width, etc. from its
-// catalog entry in @repo/fields, whose `defaults` use the same keys as FieldConfig. Cloned so the
-// tenant's copy (options arrays included) never shares objects with the catalog.
-export const defaultFieldConfig = (fieldName: FieldName): FieldConfig => structuredClone(FIELD_DEFS[fieldName].defaults ?? {});
+// catalog entry in @repo/fields, whose `defaults` use the same keys. Cloned so the tenant's copy
+// (options arrays included) never shares objects with the catalog.
+export const defaultActiveFieldSettings = (fieldName: FieldName): Omit<ActiveField, "name"> =>
+  structuredClone(FIELD_DEFS[fieldName].defaults ?? {});
 
 // A field as it starts out, whether in a new tenant's default set or when an organizer turns it on
 // on the Fields page: its catalog defaults, printed on the nametag if it can be.
-export const defaultFieldEntry = (name: FieldName): FieldEntry => ({
+export const defaultActiveField = (name: FieldName): ActiveField => ({
   name,
-  ...defaultFieldConfig(name),
+  ...defaultActiveFieldSettings(name),
   ...(FIELD_DEFS[name].canIncludeOnNametag && { includeOnNametag: true }),
 });
 
@@ -48,8 +49,8 @@ const DEFAULT_MISC_FIELDS: FieldName[] = [
 ];
 
 export const defaultFieldsConfig = (): FieldsConfig => ({
-  contact: DEFAULT_CONTACT_FIELDS.map(defaultFieldEntry),
-  misc: DEFAULT_MISC_FIELDS.map(defaultFieldEntry),
+  contact: DEFAULT_CONTACT_FIELDS.map(defaultActiveField),
+  misc: DEFAULT_MISC_FIELDS.map(defaultActiveField),
 });
 
 // Closed: a new tenant's site takes no registrations until an organizer opens it on the

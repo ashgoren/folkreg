@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { FIELD_DEFS } from "@repo/fields";
-import { defaultAdmissionsConfig, defaultFieldConfig, defaultFieldsConfig, defaultTenantConfig } from "./defaults";
+import { defaultActiveFieldSettings, defaultAdmissionsConfig, defaultFieldsConfig, defaultTenantConfig } from "./defaults";
 import { admissionsConfigSchema, fieldsConfigSchema, tenantConfigSchema } from "./schemas";
 
 // Every new tenant is created with these, and getTenant() parses every row it reads, so the
@@ -18,7 +18,7 @@ describe("defaultTenantConfig", () => {
   // Tiered pricing prices people by their answer to the age field, so the default prices only work
   // if they're for the options that field starts with.
   it("prices exactly the age groups the age field starts with, in its order", () => {
-    const ageValues = defaultFieldConfig("age").options!.map((option) => option.value);
+    const ageValues = defaultActiveFieldSettings("age").options!.map((option) => option.value);
     expect(defaultAdmissionsConfig().tiered.prices.map((entry) => entry.ageGroup)).toEqual(ageValues);
   });
 });
@@ -39,11 +39,11 @@ describe("defaultFieldsConfig", () => {
 
   it("starts each field from its catalog defaults, with last name and pronouns on the nametag", () => {
     const { contact } = defaultFieldsConfig();
-    const entry = (name: string) => contact.find((field) => field.name === name);
-    expect(entry("email")).toEqual({ name: "email", ...defaultFieldConfig("email") });
-    expect(entry("last")).toEqual({ name: "last", ...defaultFieldConfig("last"), includeOnNametag: true });
-    expect(entry("pronouns")).toEqual({ name: "pronouns", ...defaultFieldConfig("pronouns"), includeOnNametag: true });
-    expect(entry("first")).not.toHaveProperty("includeOnNametag");
+    const field = (name: string) => contact.find((field) => field.name === name);
+    expect(field("email")).toEqual({ name: "email", ...defaultActiveFieldSettings("email") });
+    expect(field("last")).toEqual({ name: "last", ...defaultActiveFieldSettings("last"), includeOnNametag: true });
+    expect(field("pronouns")).toEqual({ name: "pronouns", ...defaultActiveFieldSettings("pronouns"), includeOnNametag: true });
+    expect(field("first")).not.toHaveProperty("includeOnNametag");
   });
 });
 
@@ -60,7 +60,7 @@ describe("fresh objects per call", () => {
   });
 
   it("doesn't share a field's options with the @repo/fields catalog", () => {
-    const options = defaultFieldConfig("age").options!;
+    const options = defaultActiveFieldSettings("age").options!;
     expect(options).toEqual(FIELD_DEFS.age.defaults!.options);
     expect(options).not.toBe(FIELD_DEFS.age.defaults!.options);
   });
