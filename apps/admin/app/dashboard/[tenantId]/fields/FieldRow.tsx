@@ -11,7 +11,8 @@ interface FieldRowProps {
   isSelected: boolean;
   hasWarning?: boolean;
   onSelect: () => void;
-  onDeactivate: () => void;
+  // Omitted for a field the Fields page doesn't let an organizer remove (FieldDef.canDeactivate).
+  onDeactivate?: () => void;
 }
 
 export function FieldRow({ name, required, index, isSelected, hasWarning, onSelect, onDeactivate }: FieldRowProps) {
@@ -45,14 +46,16 @@ export function FieldRow({ name, required, index, isSelected, hasWarning, onSele
         {required && <span className="text-destructive ml-1 font-medium">*</span>}
         {hasWarning && <TriangleAlert size={12} className="inline ml-1.5 text-amber-500 shrink-0" />}
       </button>
-      <button
-        type="button"
-        onClick={onDeactivate}
-        className="p-1.5 text-muted-foreground hover:text-destructive"
-        aria-label="Remove field"
-      >
-        <X size={14} />
-      </button>
+      {onDeactivate && (
+        <button
+          type="button"
+          onClick={onDeactivate}
+          className="p-1.5 text-muted-foreground hover:text-destructive"
+          aria-label="Remove field"
+        >
+          <X size={14} />
+        </button>
+      )}
     </div>
   );
 }

@@ -123,7 +123,7 @@ export function FieldsForm({ tenant }: { tenant: Tenant }) {
                       isSelected={selectedField === entry.name}
                       hasWarning={missingOptions(entry)}
                       onSelect={() => void selectField(entry.name)}
-                      onDeactivate={() => deactivateField(entry.name)}
+                      onDeactivate={FIELD_DEFS[entry.name].canDeactivate === false ? undefined : () => deactivateField(entry.name)}
                     />
                   ))}
                 </div>

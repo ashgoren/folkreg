@@ -157,11 +157,11 @@ describe("FieldsForm", () => {
       const user = userEvent.setup();
       render(<FieldsForm tenant={tenant} />);
 
-      await user.click(within(activeRow("email")).getByRole("button", { name: "Remove field" }));
+      await user.click(within(activeRow("first")).getByRole("button", { name: "Remove field" }));
 
-      expect(activeFieldNames()).toEqual(["first", "carpool"]);
-      await expectLastSave(vi.mocked(updateFields), tenant.id, { contact: [first], misc: [carpool] });
-      expect(within(availableRow("email")).getByRole("button", { name: "Add" })).toBeInTheDocument();
+      expect(activeFieldNames()).toEqual(["email", "carpool"]);
+      await expectLastSave(vi.mocked(updateFields), tenant.id, { contact: [email], misc: [carpool] });
+      expect(within(availableRow("first")).getByRole("button", { name: "Add" })).toBeInTheDocument();
     });
 
     it("closes the config panel when the selected field is deactivated", async () => {
@@ -169,13 +169,20 @@ describe("FieldsForm", () => {
       const user = userEvent.setup();
       render(<FieldsForm tenant={tenant} />);
 
-      await user.click(selectButton("email"));
-      expect(screen.getByRole("heading", { name: "email" })).toBeInTheDocument();
+      await user.click(selectButton("first"));
+      expect(screen.getByRole("heading", { name: "first" })).toBeInTheDocument();
 
-      await user.click(within(activeRow("email")).getByRole("button", { name: "Remove field" }));
-      expect(screen.queryByRole("heading", { name: "email" })).not.toBeInTheDocument();
+      await user.click(within(activeRow("first")).getByRole("button", { name: "Remove field" }));
+      expect(screen.queryByRole("heading", { name: "first" })).not.toBeInTheDocument();
       expect(screen.getByText("Select a field to configure it.")).toBeInTheDocument();
-      await expectLastSave(vi.mocked(updateFields), tenant.id, expect.objectContaining({ contact: [first] }));
+      await expectLastSave(vi.mocked(updateFields), tenant.id, expect.objectContaining({ contact: [email] }));
+    });
+
+    it("doesn't offer to remove a field the registration app relies on", () => {
+      const tenant = makeTenant({ fields_config: config });
+      render(<FieldsForm tenant={tenant} />);
+
+      expect(within(activeRow("email")).queryByRole("button", { name: "Remove field" })).not.toBeInTheDocument();
     });
   });
 

@@ -51,6 +51,7 @@ export const CONTACT_FIELD_DEFS = {
     autoComplete: "email",
     format: EMAIL_FORMAT,
     requiredMessage: "Please enter email address.",
+    canDeactivate: false,
     defaults: {
       required: true,
       label: "Email",

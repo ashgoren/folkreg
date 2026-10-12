@@ -84,4 +84,10 @@ export interface FieldDef {
    * "Include on nametag?" switch for it; whether a tenant does is its includeOnNametag setting.
    */
   canIncludeOnNametag?: boolean;
+  /**
+   * false for a field the registration app relies on by name (e.g. email, which autosave checks to
+   * start saving a draft) -- the Fields page offers no way to remove it, so a tenant can't be
+   * configured into a state the registration app can't actually run in.
+   */
+  canDeactivate?: boolean;
 }
