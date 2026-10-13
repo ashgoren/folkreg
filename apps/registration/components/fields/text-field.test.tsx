@@ -10,7 +10,7 @@ import { TestForm } from "./test-helpers";
 import { fieldConfig } from "./types";
 
 const testField = (overrides: Partial<ActiveField> = {}) =>
-  fieldConfig({ name: "first", label: "First name", required: true, ...overrides });
+  fieldConfig({ name: "first", label: "First name", required: true, width: 12, ...overrides });
 
 describe("TextField", () => {
   it("renders the label and placeholder from the tenant's settings", () => {

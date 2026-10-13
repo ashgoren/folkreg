@@ -1,13 +1,16 @@
 import { Controller } from "react-hook-form";
+import { hasValue } from "@repo/fields";
 import { Field, FieldDescription, FieldError } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { FollowUpField } from "./follow-up-field";
 import type { FieldProps } from "./types";
 
 export function RadioField({ control, name, fieldConfig, isRegistrant }: FieldProps) {
   const options = fieldConfig.options ?? [];
   // The registrant's own age can be limited to a subset of the tenant's options.
   const allowedValues = isRegistrant && fieldConfig.canLimitFirstPerson && fieldConfig.firstPersonOptions ? fieldConfig.firstPersonOptions : null;
+  const parentPath = name.slice(0, name.lastIndexOf("."));
 
   return (
     <Controller
@@ -28,6 +31,14 @@ export function RadioField({ control, name, fieldConfig, isRegistrant }: FieldPr
             </RadioGroup>
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>
+          {fieldConfig.followUp && hasValue(field.value, fieldConfig.followUp.triggerValue) && (
+            <FollowUpField
+              control={control}
+              name={`${parentPath}.${fieldConfig.followUp.storageKey}`}
+              followUp={fieldConfig.followUp}
+              width={fieldConfig.width}
+            />
+          )}
         </>
       )}
     />

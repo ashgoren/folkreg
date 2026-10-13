@@ -5,7 +5,7 @@ import { AutocompleteField } from "./autocomplete-field";
 import { TestForm } from "./test-helpers";
 import { fieldConfig } from "./types";
 
-const testField = fieldConfig({ name: "state", label: "State" });
+const testField = fieldConfig({ name: "state", label: "State", width: 12 });
 
 describe("AutocompleteField", () => {
   it("lets the visitor pick a state from the catalog's suggestions", async () => {

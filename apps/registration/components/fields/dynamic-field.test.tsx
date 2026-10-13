@@ -5,7 +5,8 @@ import { DynamicField } from "./dynamic-field";
 import { TestForm } from "./test-helpers";
 import { fieldConfig, type FieldConfig } from "./types";
 
-const field = (activeField: ActiveField): FieldConfig => fieldConfig(activeField);
+// Every field needs a width; dispatch doesn't care what it is.
+const field = (activeField: Omit<ActiveField, "width">): FieldConfig => fieldConfig({ width: 12, ...activeField });
 
 describe("DynamicField", () => {
   it.each<[string, FieldConfig, string]>([

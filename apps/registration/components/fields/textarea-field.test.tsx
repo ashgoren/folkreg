@@ -4,7 +4,7 @@ import { TextareaField } from "./textarea-field";
 import { TestForm } from "./test-helpers";
 import { fieldConfig } from "./types";
 
-const testField = fieldConfig({ name: "comments", label: "Comments", rows: 5 });
+const testField = fieldConfig({ name: "comments", label: "Comments", width: 12, rows: 5 });
 
 describe("TextareaField", () => {
   it("renders a textarea with the tenant's rows", () => {

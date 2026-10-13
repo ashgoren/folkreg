@@ -1,12 +1,14 @@
 import { Controller } from "react-hook-form";
-import { toggleOption } from "@repo/fields";
+import { hasValue, toggleOption } from "@repo/fields";
 import { Field, FieldDescription, FieldError } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FollowUpField } from "./follow-up-field";
 import type { FieldProps } from "./types";
 
 export function CheckboxGroupField({ control, name, fieldConfig }: FieldProps) {
   const options = fieldConfig.options ?? [];
+  const parentPath = name.slice(0, name.lastIndexOf("."));
 
   return (
     <Controller
@@ -41,6 +43,14 @@ export function CheckboxGroupField({ control, name, fieldConfig }: FieldProps) {
               ))}
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
             </Field>
+            {fieldConfig.followUp && hasValue(selected, fieldConfig.followUp.triggerValue) && (
+              <FollowUpField
+                control={control}
+                name={`${parentPath}.${fieldConfig.followUp.storageKey}`}
+                followUp={fieldConfig.followUp}
+                width={fieldConfig.width}
+              />
+            )}
           </>
         );
       }}

@@ -8,9 +8,20 @@ import { fieldConfig } from "./types";
 const shareField = fieldConfig({
   name: "share",
   label: "Roster",
+  width: 12,
   options: [
     { label: "Name", value: "name" },
     { label: "Email", value: "email" },
+  ],
+});
+
+const miscField = fieldConfig({
+  name: "misc",
+  label: "Anything else?",
+  width: 12,
+  options: [
+    { label: "I am under 18 years old", value: "minor" },
+    { label: "I am new to contra", value: "beginner" },
   ],
 });
 
@@ -52,5 +63,20 @@ describe("CheckboxGroupField", () => {
 
     expect(screen.getByRole("checkbox", { name: "Name" })).not.toBeChecked();
     expect(screen.getByRole("checkbox", { name: "Email" })).not.toBeChecked();
+  });
+
+  it("reveals the follow-up field only once its trigger option is checked", async () => {
+    const user = userEvent.setup();
+    render(
+      <TestForm defaultValues={{ person: { misc: [], miscComments: "" } }}>
+        {(control) => <CheckboxGroupField control={control} name="person.misc" fieldConfig={miscField} isRegistrant />}
+      </TestForm>
+    );
+
+    expect(screen.queryByLabelText(/what is your age/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("checkbox", { name: "I am under 18 years old" }));
+
+    expect(screen.getByLabelText(/what is your age/i)).toBeInTheDocument();
   });
 });

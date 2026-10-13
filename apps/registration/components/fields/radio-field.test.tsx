@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { RadioField } from "./radio-field";
 import { TestForm } from "./test-helpers";
 import { fieldConfig } from "./types";
@@ -7,12 +8,23 @@ import { fieldConfig } from "./types";
 const ageField = fieldConfig({
   name: "age",
   label: "Age",
+  width: 12,
   options: [
     { label: "Adult", value: "adult" },
     { label: "13-17 yr old", value: "13-17" },
     { label: "6-12 yr old", value: "6-12" },
   ],
   firstPersonOptions: ["adult", "13-17"],
+});
+
+const photoField = fieldConfig({
+  name: "photo",
+  label: "Photo consent",
+  width: 12,
+  options: [
+    { label: "Yes", value: "Yes" },
+    { label: "Other", value: "Other" },
+  ],
 });
 
 describe("RadioField", () => {
@@ -46,5 +58,20 @@ describe("RadioField", () => {
     );
 
     expect(screen.getByRole("radio", { name: "6-12 yr old" })).toBeEnabled();
+  });
+
+  it("reveals the follow-up field only once its trigger option is selected", async () => {
+    const user = userEvent.setup();
+    render(
+      <TestForm defaultValues={{ person: { photo: "", photoComments: "" } }}>
+        {(control) => <RadioField control={control} name="person.photo" fieldConfig={photoField} isRegistrant />}
+      </TestForm>
+    );
+
+    expect(screen.queryByLabelText(/please explain/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("radio", { name: "Other" }));
+
+    expect(screen.getByLabelText(/please explain/i)).toBeInTheDocument();
   });
 });
