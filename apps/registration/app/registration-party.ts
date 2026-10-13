@@ -1,23 +1,19 @@
 import { z } from "zod";
-import { personSchema, type FieldName } from "@repo/fields";
+import { personSchema, REQUIRED_FIELD_NAMES } from "@repo/fields";
 import type { FieldsConfig } from "@repo/tenant-config";
 import type { Order, Person } from "@repo/types";
 import { fieldConfig, type FieldConfig } from "@/components/fields/types";
 
-// The registration form requires email to be included in fields_config.
-const REQUIRED_FIELD: FieldName = "email";
-const assertRequiredFieldActive = (names: FieldName[]): void => {
-  if (!names.includes(REQUIRED_FIELD))
-    throw new Error(`fields_config is missing "${REQUIRED_FIELD}"`);
-};
-
 // The party being registered: shared by RegistrationForm and actions.ts.
 export type RegistrationParty = { registrant: Person; companions: Person[] };
 
-// The list + order + full config (tenant settings merged with catalog behavior) of active fields for this tenant.
+// All fields used by this tenant (including their full config, which is tenant fields_config merged w/ catalog config).
+// Read by buildRegistrationSchema, buildDefaultPerson, and isPersonValid.
 export const activeFields = (fieldsConfig: FieldsConfig): FieldConfig[] => {
   const fields = [...fieldsConfig.contact, ...fieldsConfig.misc];
-  assertRequiredFieldActive(fields.map((field) => field.name));
+  const fieldNames = fields.map((field) => field.name);
+  const missing = REQUIRED_FIELD_NAMES.filter((name) => !fieldNames.includes(name));
+  if (missing.length > 0) throw new Error(`fields_config is missing ${missing.map((name) => `"${name}"`).join(", ")}`);
   return fields.map(fieldConfig);
 };
 
@@ -38,7 +34,13 @@ export const buildRegistrationSchema = (fieldsConfig: FieldsConfig): z.ZodType<R
   }) as unknown as z.ZodType<RegistrationParty, RegistrationParty>;
 };
 
-// A new person's starting values: each active field's defaultValue.
+// Helper to check if one person's current data passes personSchema.
+// Used on page mount to decide which person, if any, starts in edit mode.
+export const isPersonValid = (fieldsConfig: FieldsConfig, person: Person, personIndex: number): boolean =>
+  personSchema(activeFields(fieldsConfig), personIndex).safeParse(person).success;
+
+// A new person's starting values: each active field's defaultValue. Used both for a freshly
+// appended companion and (via buildInitialValues below) a brand-new registrant.
 export const buildDefaultPerson = (fieldsConfig: FieldsConfig): Person => {
   const person: Record<string, unknown> = {};
   for (const field of activeFields(fieldsConfig)) {
@@ -48,11 +50,12 @@ export const buildDefaultPerson = (fieldsConfig: FieldsConfig): Person => {
   return person as Person;
 };
 
-// Helper to check if one person's current data passes personSchema.
-// Used on page mount to decide which person, if any, starts in edit mode.
-export const isPersonValid = (fieldsConfig: FieldsConfig, person: Person, personIndex: number): boolean =>
-  personSchema(activeFields(fieldsConfig), personIndex).safeParse(person).success;
-
 // Everything RegistrationForm needs to resume a draft, from the order as it's actually stored.
+// Doesn't touch fields_config at all -- this is purely storage shape (Order.people, a flat array)
+// to party shape, independent of which fields a tenant has active.
 export const buildInitialOrder = (order: Order | null): { id: string; updatedAt: string; registrant: Person; companions: Person[] } | null =>
   order && { id: order.id, updatedAt: order.updated_at, registrant: order.people[0]!, companions: order.people.slice(1) };
+
+// RegistrationForm's starting form values from resumed draft or default.
+export const buildInitialValues = (fieldsConfig: FieldsConfig, initialOrder: RegistrationParty | null): RegistrationParty =>
+  initialOrder ?? { registrant: buildDefaultPerson(fieldsConfig), companions: [] };

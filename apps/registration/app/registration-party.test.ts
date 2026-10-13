@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { defaultFieldsConfig } from "@repo/tenant-config";
 import type { Order, Person } from "@repo/types";
-import { activeFields, buildRegistrationSchema, buildDefaultPerson, buildInitialOrder, isPersonValid } from "./registration-schema";
+import { activeFields, buildRegistrationSchema, buildDefaultPerson, buildInitialOrder, buildInitialValues, isPersonValid } from "./registration-party";
 
 // personSchema's base shape requires every active field present as its type (a string or string[]),
 // whether or not the tenant marked it required -- buildDefaultPerson already supplies that for every
@@ -98,6 +98,24 @@ describe("buildInitialOrder", () => {
   it("has no companions for a party of one", () => {
     const registrant = validPerson() as Person;
     expect(buildInitialOrder(order([registrant]))?.companions).toEqual([]);
+  });
+});
+
+describe("buildInitialValues", () => {
+  it("uses buildDefaultPerson and no companions when there's no draft to resume", () => {
+    expect(buildInitialValues(defaultFieldsConfig(), null)).toEqual({
+      registrant: buildDefaultPerson(defaultFieldsConfig()),
+      companions: [],
+    });
+  });
+
+  it("uses the resumed draft's party when there is one", () => {
+    const registrant = validPerson({ first: "Jane" }) as Person;
+    const companion = validPerson({ first: "John" }) as Person;
+    expect(buildInitialValues(defaultFieldsConfig(), { registrant, companions: [companion] })).toEqual({
+      registrant,
+      companions: [companion],
+    });
   });
 });
 
