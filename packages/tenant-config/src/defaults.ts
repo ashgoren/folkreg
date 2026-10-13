@@ -3,10 +3,10 @@
 // from the first page load the admin app shows (and the registration app reads) what's actually
 // saved in the database, rather than a value supplied by code when a column is missing.
 //
-// Values with no sensible default (an event's title, a processor's keys) start as "", the same
-// blank the admin forms use; the organizer reviews and fills in every page before the tenant goes
-// live. Prices are
-// placeholders taken from a real event's config, there to be replaced.
+// Values with no sensible default start as "", the same blank the admin forms use.
+//
+// This is just the starting point for a new tenant.
+// Organizers review and fill in every page before opening registration.
 
 import { FIELD_DEFS, type FieldName } from "@repo/fields";
 import type {
@@ -32,15 +32,12 @@ export const defaultActiveFieldSettings = (fieldName: FieldName): Omit<ActiveFie
   structuredClone(FIELD_DEFS[fieldName].defaults ?? {});
 
 // A field as it starts out, whether in a new tenant's default set or when an organizer turns it on
-// on the Fields page: its catalog defaults, printed on the nametag if it can be.
+// on the Fields page: just its catalog defaults, name attached.
 export const defaultActiveField = (name: FieldName): ActiveField => ({
   name,
   ...defaultActiveFieldSettings(name),
-  ...(FIELD_DEFS[name].canIncludeOnNametag && { includeOnNametag: true }),
 });
 
-// The fields a typical event collects, in the order its form shows them. Removing a few is less
-// work for an organizer than assembling the whole form from nothing.
 const DEFAULT_CONTACT_FIELDS: FieldName[] = [
   "first", "last", "nametag", "pronouns", "email", "emailConfirmation", "phone", "address", "apartment", "city", "state", "zip",
 ];
@@ -53,9 +50,6 @@ export const defaultFieldsConfig = (): FieldsConfig => ({
   misc: DEFAULT_MISC_FIELDS.map(defaultActiveField),
 });
 
-// Closed: a new tenant's site takes no registrations until an organizer opens it on the
-// Registration page. Paid right away, with no closing time or limits; the limits' numbers are
-// ready for when they're switched on.
 export const defaultRegistrationConfig = (): RegistrationConfig => ({
   opening: "closed",
   opensAt: "",
@@ -67,17 +61,12 @@ export const defaultRegistrationConfig = (): RegistrationConfig => ({
   showPreregistration: false,
 });
 
-// Sliding scale is active for a new tenant; the other modes' values are what an organizer sees on
-// first switching to them.
 export const defaultAdmissionsConfig = (): AdmissionsConfig => ({
   mode: "sliding-scale",
   slidingScale: { min: 120, max: 500, default: 350 },
   fixed: { price: 200 },
   tiered: {
     earlybirdCutoff: "",
-    // A typical event's prices, $15 more after the cutoff. They're keyed by the age field's options,
-    // and these are the values that field starts with. Ages 0-12 have one price each, so it's
-    // unlabeled: the registration form shows just the price.
     lateIncrease: 15,
     prices: [
       {
@@ -93,10 +82,6 @@ export const defaultAdmissionsConfig = (): AdmissionsConfig => ({
   admissionQuantityMax: 4,
 });
 
-// processor has no "not chosen" value, so Stripe stands in until the organizer picks. Every key
-// starts blank (and every secret null in tenant_secrets), so getPaymentProcessorCredentials()
-// reports the tenant as unconfigured rather than treating this default as a working setup.
-// Optional features start off, for the organizer to opt in to.
 export const defaultPaymentsConfig = (): PaymentsConfig => ({
   processor: "stripe",
   stripePublishableKeyLive: "",
@@ -105,12 +90,9 @@ export const defaultPaymentsConfig = (): PaymentsConfig => ({
   paypalClientIdTest: "",
   paymentDueDate: "",
   directPaymentUrl: "",
-  // A week to pay once a lottery or waitlist spot is offered.
-  paymentLinkDays: 7,
-  // Off to start, with Stripe's standard rate ready for when it's switched on.
+  paymentLinkDays: 7, // a week to pay once a lottery or waitlist spot is offered
   coverFees: { enabled: false, percent: 2.9, fixed: 0.3 },
   showPaymentSummary: true,
-  // Off to start, with amounts ready for when they're switched on.
   deposit: { enabled: false, amount: 50 },
   donation: { enabled: false, max: 999 },
   checks: { allowed: false, sendTo: "email", payee: "", address: "" },
@@ -128,11 +110,8 @@ export const defaultThemeConfig = (): ThemeConfig => ({
 
 export const defaultWaiverConfig = (): WaiverConfig => ({ show: false, docusealTemplateId: "" });
 
-// Filled in during SES setup for the tenant's sending domain.
 export const defaultReceiptsConfig = (): ReceiptsConfig => ({ emailFrom: "", emailReplyTo: "" });
 
-// No sheet yet. No stored columns either: every available column shows, in field order, until
-// the organizer reorders or hides one on the Spreadsheet page.
 export const defaultSpreadsheetConfig = (): SpreadsheetConfig => ({ sheetId: "", columns: [] });
 
 // Every config column a new tenant row gets.

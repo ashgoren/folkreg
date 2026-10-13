@@ -1,4 +1,7 @@
 import type { z } from "zod";
+import type { FieldDefaults } from "./field-defaults-schema";
+
+export type { FieldDefaults };
 
 export type FieldType =
   | "text"
@@ -17,25 +20,6 @@ export interface FollowUp {
   description?: string;
   rows?: number;
   requiredMessage: string;
-}
-
-export interface FieldDefaults {
-  title?: string;
-  label?: string;
-  placeholder?: string;
-  rows?: number;
-  width?: number;
-  options?: { label: string; value: string }[];
-  /** What the field starts with on the registration form: a checkbox field's checked options, or any other field's value. */
-  defaultValue?: string | string[];
-  /** Where the field's Required switch starts when a tenant activates it. */
-  required?: boolean;
-  /**
-   * For a field that canLimitFirstPerson: the options the first person may choose. The
-   * registration form disables the rest for them, and personSchema rejects anything else. Other
-   * people may choose any option.
-   */
-  firstPersonOptions?: string[];
 }
 
 export interface FieldDef {

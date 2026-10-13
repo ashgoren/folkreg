@@ -12,22 +12,27 @@
 // setting applies to every field, so their keys are optional.
 
 import { z } from "zod";
-import { FIELD_DEFS, FIELD_NAMES } from "@repo/fields";
+import { FIELD_DEFS, FIELD_NAMES, fieldDefaultsSchema } from "@repo/fields";
 
 const requiredNumber = (min: number) => z.number({ error: "Required" }).min(min);
+
+const wholeNumber = ({ min, max }: { min: number; max?: number }, error: string) => {
+  const number = z.number({ error }).int({ error }).min(min, { error });
+  return max === undefined ? number : number.max(max, { error });
+};
+
 const optionalEmail = z.union([z.literal(""), z.string().email("Must be a valid email")]);
-// A calendar date (YYYY-MM-DD, what a date input gives), or "" while unset.
+
 const optionalDate = z.union([z.literal(""), z.iso.date({ error: "Must be a date" })], { error: "Must be a date" });
-// A web link registrants follow: http(s) on a real domain, so a missing "https://" (which would
-// make the link relative to the registration site) or a mailto:/javascript: link is caught.
-// One check, so a value wrong in several ways (e.g. mailto:, with no domain) gets one message.
+
 const webUrl = z.url({ protocol: /^https?$/, hostname: z.regexes.domain });
+
 const optionalUrl = z.string().refine((value) => value === "" || webUrl.safeParse(value).success, {
   error: "Must be a web address starting with https://",
 });
+
 const hexColor = z.string().regex(/^#[0-9a-f]{6}$/i, "Must be a hex color, e.g. #d97706");
 
-// The timezones an event can be in by IANA name, which is what timezone arithmetic needs.
 export const TIMEZONES = [
   { value: "America/New_York", label: "Eastern" },
   { value: "America/Chicago", label: "Central" },
@@ -40,15 +45,13 @@ export const TIMEZONES = [
 export type Timezone = (typeof TIMEZONES)[number]["value"];
 const timezoneSchema = z.enum(TIMEZONES.map((timezone) => timezone.value) as [Timezone, ...Timezone[]], { error: "Choose a timezone" });
 
-// A date and time on the event's own clock, e.g. "2026-04-03T19:00": no offset, since `timezone`
-// says which clock (and so handles daylight saving). "" while it isn't known yet.
+// A floating date and time with no offset, e.g. "2026-04-03T19:00".
 const localDateTime = z.iso.datetime({ local: true });
 const optionalLocalDateTime = z.string().refine(
   (value) => value === "" || (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(value) && localDateTime.safeParse(value).success),
   { error: "Must be a date and time" },
 );
-// The same moment written with seconds ("…T19:00" as "…T19:00:00"), so two values compare
-// correctly as text whichever form each was saved in.
+// The same moment written with seconds, so two values compare correctly.
 const withSeconds = (value: string) => (value.length === "YYYY-MM-DDTHH:MM".length ? `${value}:00` : value);
 
 // The event's facts, each stored once. What's shown elsewhere is derived from them: the year from
@@ -60,13 +63,10 @@ export const eventConfigSchema = z.object({
   start: optionalLocalDateTime,
   end: optionalLocalDateTime,
   timezone: timezoneSchema,
-  // The dates as registrants read them; blank shows the range from start to end.
-  date: z.string(),
+  date: z.string(), // plain text override to display date to registrants
   calendar: z.object({
-    // Whether registrants are offered "Add to calendar" links.
     show: z.boolean(),
     description: z.string(),
-    // For maps apps, which look the location up; blank uses the event's location.
     location: z.string(),
   }),
   contacts: z.object({
@@ -82,8 +82,6 @@ export const eventConfigSchema = z.object({
   if (event.start !== "" && event.end !== "" && withSeconds(event.end) <= withSeconds(event.start)) {
     ctx.addIssue({ code: "custom", path: ["end"], message: "Must be after the start" });
   }
-  // Calendar links need real times. A deliberate exception to blanks being allowed: with the links
-  // on, a missing time would reach registrants as a broken calendar entry.
   if (event.calendar.show) {
     for (const key of ["start", "end"] as const) {
       if (event[key] === "") ctx.addIssue({ code: "custom", path: [key], message: "Needed for the calendar links" });
@@ -92,43 +90,10 @@ export const eventConfigSchema = z.object({
 });
 export type EventConfig = z.infer<typeof eventConfigSchema>;
 
-// A whole number from min (to max, if given), with one message for every way a value can fail it
-// -- not a number, a fraction, out of range -- so fixing one problem never just reveals another.
-const wholeNumber = ({ min, max }: { min: number; max?: number }, error: string) => {
-  const number = z.number({ error }).int({ error }).min(min, { error });
-  return max === undefined ? number : number.max(max, { error });
-};
-
-// The settings a tenant has for one active field: copied from the field's catalog defaults in
-// @repo/fields when the organizer activates it (defaultActiveField), then the tenant's own -- the
-// registration form reads these, never the catalog's defaults. Keys are optional because not every
-// setting applies to every field (rows only to a textarea, options only to radio and checkbox
-// fields, width only to contact fields). Not exported on its own -- activeFieldSchema below (which
-// adds the one thing this doesn't have, which catalog field this is) is the only shape anything
-// outside this file needs.
-const activeFieldSettingsSchema = z.object({
-  title: z.string().optional(),
-  label: z.string().optional(),
-  placeholder: z.string().optional(),
-  options: z.array(z.object({ label: z.string(), value: z.string() })).optional(),
-  // The field's starting value on the registration form: the checked options of a checkbox field,
-  // any other field's value ("" for none). Which of the two a field takes is checked against the
-  // catalog in fieldsConfigSchema.
-  defaultValue: z.union([z.string(), z.array(z.string())]).optional(),
-  // Rows of a textarea; width in columns of the registration form's 12-column grid.
-  // Rows and width are null once an organizer clears them (an undefined value would show in the
-  // form as the one it loaded with), and absent if never set. Either way the registration form
-  // uses its own layout default.
-  rows: wholeNumber({ min: 1 }, "Must be a whole number, 1 or more").nullable().optional(),
-  width: wholeNumber({ min: 1, max: 12 }, "Must be a whole number from 1 to 12").nullable().optional(),
-  required: z.boolean().optional(),
-  includeOnNametag: z.boolean().optional(),
-  // Which options the person registering may choose, for a field that can limit them (age).
-  firstPersonOptions: z.array(z.string()).optional(),
-});
-
 // A field that's active for a tenant: which catalog field it is, plus their settings for it.
-export const activeFieldSchema = activeFieldSettingsSchema.extend({ name: z.enum(FIELD_NAMES) });
+// fieldDefaultsSchema (the settings alone) is @repo/fields' schema, not duplicated here -- it's the
+// same shape a catalog field's own `defaults` uses.
+export const activeFieldSchema = fieldDefaultsSchema.extend({ name: z.enum(FIELD_NAMES) });
 export type ActiveField = z.infer<typeof activeFieldSchema>;
 
 // A tenant's active fields, by section of the registration form, each section in the order it

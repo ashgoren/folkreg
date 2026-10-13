@@ -27,7 +27,8 @@ export const CONTACT_FIELD_DEFS = {
     defaults: {
       required: true,
       label: "Last name",
-      width: 6
+      width: 6,
+      includeOnNametag: true
     },
   },
   nametag: {
@@ -44,7 +45,7 @@ export const CONTACT_FIELD_DEFS = {
     type: "text",
     canIncludeOnNametag: true,
     format: NAME_FORMAT,
-    defaults: { label: "Pronouns", width: 12 },
+    defaults: { label: "Pronouns", width: 12, includeOnNametag: true },
   },
   email: {
     type: "email",
