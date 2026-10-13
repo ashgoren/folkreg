@@ -78,6 +78,7 @@ export const CONTACT_FIELD_DEFS = {
   },
   phone: {
     type: "phone",
+    htmlType: "tel",
     autoComplete: "tel-national",
     format: PHONE_FORMAT,
     requiredMessage: "Please enter phone number.",
@@ -90,6 +91,7 @@ export const CONTACT_FIELD_DEFS = {
   },
   address: {
     type: "address",
+    htmlType: "text",
     autoComplete: "street-address",
     requiredMessage: "Please enter street address.",
     defaults: {

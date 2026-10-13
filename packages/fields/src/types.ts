@@ -25,6 +25,11 @@ export interface FollowUp {
 export interface FieldDef {
   type: FieldType;
   group: "contact" | "misc";
+  /**
+   * The native <input type="..."> this field renders as, for the catalog types that render a plain
+   * Input (text, email, phone, address). Defaults to `type` when omitted.
+   */
+  htmlType?: string;
   autoComplete?: string;
   suggestions?: readonly { id: string; fullName: string; abbreviation: string; country: string }[];
   /**
