@@ -8,6 +8,7 @@ export const MISC_FIELD_DEFS = {
     // are its price brackets.
     canLimitFirstPerson: true,
     defaults: {
+      width: 12,
       required: true,
       title: "Age",
       label: "Please choose one.",
@@ -26,6 +27,7 @@ export const MISC_FIELD_DEFS = {
     type: "checkbox",
     prerequisiteOption: "name",
     defaults: {
+      width: 12,
       title: "Roster",
       label: "What information do you want shared in the roster?",
       options: [
@@ -41,6 +43,7 @@ export const MISC_FIELD_DEFS = {
   carpool: {
     type: "checkbox",
     defaults: {
+      width: 12,
       title: "Transportation and Hosting",
       label: "If you check any of these boxes we will be in touch closer to camp to coordinate. We will do our best to meet everyone's carpool needs. For housing, we will put people directly in touch with possible matches if there are any. NOTE: historically, carpools and housing are tight. If you are able to offer a ride or a place to stay, please check the box!",
       options: [
@@ -57,6 +60,7 @@ export const MISC_FIELD_DEFS = {
   volunteer: {
     type: "checkbox",
     defaults: {
+      width: 12,
       title: "Volunteering",
       label: "Everyone will be asked to help with camp, but we need a few people who can commit in advance or in larger ways.",
       options: [
@@ -71,6 +75,7 @@ export const MISC_FIELD_DEFS = {
     type: "radio",
     requiredMessage: "Please select dietary preference.",
     defaults: {
+      width: 12,
       required: true,
       title: "Dietary Preferences",
       label: "Please choose one.",
@@ -92,6 +97,7 @@ export const MISC_FIELD_DEFS = {
       requiredMessage: "Please provide details about your dietary restrictions.",
     },
     defaults: {
+      width: 12,
       title: "Additional Dietary Restrictions",
       label: "Please note, we will try our best to accommodate you with the prepared meals, but the kitchen has limited options. They do their best, but if you're very worried about your restrictions (if highly allergic, or highly specific requirements) we recommend bringing your own food as well. We have a refrigerator and storage space available for personal use that campers who need it may use. There's room to elaborate on allergies or safety needs below.",
       options: [
@@ -107,6 +113,7 @@ export const MISC_FIELD_DEFS = {
   allergies: {
     type: "textarea",
     defaults: {
+      width: 12,
       title: "Allergy / Safety Information",
       label: "So there's \"I don't eat gluten\" and then there's \"if a single crumb of gluten cross-contaminates my food I will be sick all weekend.\" Please elaborate as much as you need to feel comfortable that we know your safety and allergy needs. This can include non-food things as well.",
       rows: 2,
@@ -115,6 +122,7 @@ export const MISC_FIELD_DEFS = {
   housing: {
     type: "textarea",
     defaults: {
+      width: 12,
       title: "Camp housing needs or requests",
       label: "(e.g. accessibility needs, I plan on camping, etc.)",
       rows: 2,
@@ -123,6 +131,7 @@ export const MISC_FIELD_DEFS = {
   roommate: {
     type: "textarea",
     defaults: {
+      width: 12,
       title: "Room sharing preferences",
       label: "We now pre-assign housing and try our best to meet everyone's needs and preferences. If there are people you would like to room with, list their names here.",
       rows: 2,
@@ -139,6 +148,7 @@ export const MISC_FIELD_DEFS = {
       requiredMessage: "Please provide details for your photo consent preferences.",
     },
     defaults: {
+      width: 12,
       required: true,
       title: "Photo Consent",
       label: "People at the event take photos. Please let us know if you have any concerns about your photo being taken or posted publicly.",
@@ -153,6 +163,7 @@ export const MISC_FIELD_DEFS = {
   bedding: {
     type: "checkbox",
     defaults: {
+      width: 12,
       title: "Bedding and Towels",
       label: "Campers will need a pillow, a towel, and sheets and blanket or a sleeping bag. If at all possible, please bring your own or arrange with a friend directly to borrow.",
       options: [
@@ -166,6 +177,7 @@ export const MISC_FIELD_DEFS = {
   hospitality: {
     type: "checkbox",
     defaults: {
+      width: 12,
       title: "Housing",
       label: "Do you need housing or can you offer housing?",
       options: [
@@ -177,6 +189,7 @@ export const MISC_FIELD_DEFS = {
   scholarship: {
     type: "checkbox",
     defaults: {
+      width: 12,
       title: "Scholarships (limited availability)",
       label: "We feel we've kept the price of camp remarkably low. However, if you are limited financially, we have a small number of half price scholarships available for camp. If you'd like to be considered for one of these, please let us know.",
       options: [{ label: "Yes, please consider me for a scholarship", value: "yes" }],
@@ -185,6 +198,7 @@ export const MISC_FIELD_DEFS = {
   tests: {
     type: "checkbox",
     defaults: {
+      width: 12,
       title: "Covid Tests",
       label: "You will need to test shortly before arriving at camp AND again on Saturday afternoon. Please also bring an extra test or two, for your own use if you should feel ill during the weekend. If you can not bring your own tests, please let us know here.",
       options: [
@@ -196,6 +210,7 @@ export const MISC_FIELD_DEFS = {
   comments: {
     type: "textarea",
     defaults: {
+      width: 12,
       title: "Anything else?",
       label: "Tell us anything else you'd like us to know. We want to be sure we don't miss anything that could make the weekend welcoming and enjoyable.",
       rows: 5,
@@ -211,6 +226,7 @@ export const MISC_FIELD_DEFS = {
       requiredMessage: "Please provide your age if you are under 18.",
     },
     defaults: {
+      width: 12,
       title: "Do any of the following apply to you?",
       options: [
         { label: "I am under 18 years old", value: "minor" },
@@ -225,6 +241,7 @@ export const MISC_FIELD_DEFS = {
     firstPersonOnly: true,
     requiredMessage: "Please check this box to continue.",
     defaults: {
+      width: 12,
       required: true,
       title: "Values and Expectations",
       label: "Do you agree that everyone you are registering will follow the event's values and expectations?",

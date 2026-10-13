@@ -2,7 +2,7 @@ import { Controller } from "react-hook-form";
 import { Field, FieldDescription, FieldError } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
 import { Textarea } from "@/components/ui/textarea";
-import { gridColumnStyle, type FieldProps } from "./types";
+import type { FieldProps } from "./types";
 
 export function TextareaField({ control, name, fieldConfig }: FieldProps) {
   return (
@@ -10,7 +10,7 @@ export function TextareaField({ control, name, fieldConfig }: FieldProps) {
       name={name}
       control={control}
       render={({ field, fieldState }) => (
-        <Field data-invalid={fieldState.invalid} style={gridColumnStyle(fieldConfig.width)}>
+        <Field data-invalid={fieldState.invalid} style={{ gridColumn: `span ${fieldConfig.width}` }}>
           <FormLabel htmlFor={name} required={fieldConfig.required}>{fieldConfig.label}</FormLabel>
           {fieldConfig.title && <FieldDescription>{fieldConfig.title}</FieldDescription>}
           <Textarea

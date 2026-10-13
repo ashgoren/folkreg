@@ -1,10 +1,15 @@
 import { describe, it, expect } from "vitest";
 import { defaultTenantConfig } from "./defaults";
 import { resolveSpreadsheetColumns } from "./spreadsheet-columns";
-import type { FieldsConfig, TenantConfig } from "./schemas";
+import type { ActiveField, FieldsConfig, TenantConfig } from "./schemas";
 
 const config = (overrides: Partial<TenantConfig> = {}): TenantConfig => ({ ...defaultTenantConfig(), ...overrides });
-const fields = (contact: FieldsConfig["contact"], misc: FieldsConfig["misc"] = []): FieldsConfig => ({ contact, misc });
+// Every field needs a width; these tests don't care what it is, so it's filled in here once rather
+// than at every call site.
+const fields = (contact: Pick<ActiveField, "name">[], misc: Pick<ActiveField, "name">[] = []): FieldsConfig => ({
+  contact: contact.map((field) => ({ width: 12, ...field })),
+  misc: misc.map((field) => ({ width: 12, ...field })),
+});
 const names = (columns: { name: string }[]) => columns.map((column) => column.name);
 
 describe("resolveSpreadsheetColumns", () => {

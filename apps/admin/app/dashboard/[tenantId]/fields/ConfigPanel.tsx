@@ -57,7 +57,7 @@ export function ConfigPanel({ form, path, fieldName }: ConfigPanelProps) {
               )}
             />
           </div>
-          {showWidth && <NumberSetting control={control} name={`${path}.width`} caption="Width" max={12} />}
+          {showWidth && <NumberSetting control={control} name={`${path}.width`} caption="Width" max={12} clearable={false} />}
           {showRows && <NumberSetting control={control} name={`${path}.rows`} caption="Rows" />}
         </div>
       </div>
@@ -187,27 +187,33 @@ export function ConfigPanel({ form, path, fieldName }: ConfigPanelProps) {
 }
 
 // A number input's value is "" both when it's empty and when it holds text that isn't a number
-// (browsers allow typing letters into one; Chrome allows "e"). Empty unsets the setting; anything
-// else unparseable is NaN, which the schema rejects with an error beside what was typed.
-const numberSetting = ({ value, validity }: HTMLInputElement) => {
+// (browsers allow typing letters into one; Chrome allows "e"). For a clearable setting (rows),
+// empty unsets it; for one that isn't (width -- every field has one, so there's no "unset" to fall
+// back to), empty is as invalid as any other unparseable text. Either way, unparseable text is NaN,
+// which the schema rejects with an error beside what was typed.
+const numberSetting = ({ value, validity }: HTMLInputElement, clearable: boolean) => {
   if (value !== "") return Number(value);
-  return validity.badInput ? NaN : null;
+  return clearable && !validity.badInput ? null : NaN;
 };
 
-// A small optional whole-number setting (width, rows) beside a caption, with its error beneath.
-// Clearing it unsets the setting, so the registration form uses its own layout default, rather
-// than storing 0 or NaN. The cleared value is null, not undefined: react-hook-form shows an
-// undefined value as the one the form loaded with, so the input would refill itself.
+// A small whole-number setting (width, rows) beside a caption, with its error beneath. A clearable
+// setting unsets when emptied, so the registration form uses its own layout default, rather than
+// storing 0 or NaN -- the cleared value is null, not undefined: react-hook-form shows an undefined
+// value as the one the form loaded with, so the input would refill itself. A non-clearable setting
+// (width) has no such default to fall back to, so emptying it is just an invalid, unsaved value,
+// the same as typing letters - the same as NumberField elsewhere in the admin.
 function NumberSetting({
   control,
   name,
   caption,
   max,
+  clearable = true,
 }: {
   control: Control<FieldsConfig>;
   name: `${ActiveFieldPath}.width` | `${ActiveFieldPath}.rows`;
   caption: string;
   max?: number;
+  clearable?: boolean;
 }) {
   return (
     <Controller
@@ -222,11 +228,11 @@ function NumberSetting({
               min={1}
               max={max}
               value={field.value ?? ""}
-              onChange={(e) => field.onChange(numberSetting(e.target))}
+              onChange={(e) => field.onChange(numberSetting(e.target, clearable))}
               onBlur={(e) => {
                 // Typing text into an empty input leaves its value "", so React fires no change
                 // for it; leaving the input is when that text gets noticed.
-                const value = numberSetting(e.target);
+                const value = numberSetting(e.target, clearable);
                 if (!Object.is(value, field.value)) field.onChange(value);
                 field.onBlur();
               }}

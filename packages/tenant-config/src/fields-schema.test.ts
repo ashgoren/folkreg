@@ -1,9 +1,18 @@
 import { describe, it, expect } from "vitest";
 import { fieldsConfigSchema } from "./schemas";
 
+// Every entry needs a width; these tests are about other settings, so fill it in here (an entry
+// that sets its own, e.g. to test width itself, keeps that value).
+const withWidths = (value: unknown): unknown => {
+  if (typeof value !== "object" || value === null) return value;
+  const addWidth = (entries: unknown[]) => entries.map((entry) => ({ width: 12, ...(entry as object) }));
+  const { contact, misc, ...rest } = value as { contact?: unknown[]; misc?: unknown[] };
+  return { ...rest, ...(contact && { contact: addWidth(contact) }), ...(misc && { misc: addWidth(misc) }) };
+};
+
 // The messages a config gets, keyed by path.
 const issues = (value: unknown) => {
-  const result = fieldsConfigSchema.safeParse(value);
+  const result = fieldsConfigSchema.safeParse(withWidths(value));
   return result.success ? {} : Object.fromEntries(result.error.issues.map((issue) => [issue.path.join("."), issue.message]));
 };
 
@@ -19,15 +28,21 @@ describe("fieldsConfigSchema", () => {
         { name: "last", label: "Last name", width: 6, includeOnNametag: true },
       ],
       misc: [
-        { name: "age", title: "Age", label: "Pick one", options: [{ label: "Adult", value: "adult" }], defaultValue: "adult", placeholder: "" },
-        { name: "comments", rows: 3 },
+        { name: "age", title: "Age", label: "Pick one", width: 12, options: [{ label: "Adult", value: "adult" }], defaultValue: "adult", placeholder: "" },
+        { name: "comments", width: 12, rows: 3 },
       ],
     };
     expect(fieldsConfigSchema.safeParse(value).success).toBe(true);
   });
 
-  it("accepts an entry with no settings at all", () => {
-    expect(fieldsConfigSchema.safeParse({ contact: [{ name: "first" }], misc: [] }).success).toBe(true);
+  // width is the one setting every entry must have; everything else can be left unset.
+  it("accepts an entry with no settings beyond width", () => {
+    expect(fieldsConfigSchema.safeParse({ contact: [{ name: "first", width: 12 }], misc: [] }).success).toBe(true);
+  });
+
+  it("rejects an entry with no width", () => {
+    const result = fieldsConfigSchema.safeParse({ contact: [{ name: "first" }], misc: [] });
+    expect(result.success).toBe(false);
   });
 
   // A stored name the catalog doesn't define -- e.g. a field since renamed -- fails the read
@@ -60,9 +75,14 @@ describe("fieldsConfigSchema", () => {
     expect(issues({ contact: [], misc: [{ name: "comments", rows }] })).toEqual({ "misc.0.rows": "Must be a whole number, 1 or more" });
   });
 
-  // The Fields page clears these to null, meaning no setting.
-  it("accepts a null width or rows", () => {
-    expect(fieldsConfigSchema.safeParse({ contact: [{ name: "first", width: null }], misc: [{ name: "comments", rows: null }] }).success).toBe(true);
+  // Every field has a width, so there's no "unset" state for it -- unlike rows, which the Fields
+  // page can still clear to null, meaning no setting.
+  it("rejects a null width", () => {
+    expect(fieldsConfigSchema.safeParse({ contact: [{ name: "first", width: null }], misc: [] }).success).toBe(false);
+  });
+
+  it("accepts a null rows", () => {
+    expect(fieldsConfigSchema.safeParse({ contact: [{ name: "first", width: 12 }], misc: [{ name: "comments", width: 12, rows: null }] }).success).toBe(true);
   });
 
   describe("defaults", () => {

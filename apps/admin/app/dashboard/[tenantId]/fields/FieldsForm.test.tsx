@@ -36,7 +36,7 @@ const availableRow = (name: string) => {
 
 const first = { name: "first", label: "First name", width: 6, required: true } as const;
 const email = { name: "email", label: "Email", width: 6 } as const;
-const carpool = { name: "carpool", title: "Transportation" } as const;
+const carpool = { name: "carpool", title: "Transportation", width: 12 } as const;
 const config: FieldsConfig = { contact: [first, email], misc: [carpool] };
 
 // What the page looks like once an organizer has deactivated every field.
@@ -114,10 +114,10 @@ describe("FieldsForm", () => {
 
       await user.click(within(availableRow("age")).getByRole("button", { name: "Add" }));
 
-      const ageDefaults = FIELD_DEFS.age.defaults!;
+      const ageDefaults = FIELD_DEFS.age.defaults;
       await expectLastSave(vi.mocked(updateFields), tenant.id, {
         contact: [],
-        misc: [{ name: "age", label: ageDefaults.label, title: ageDefaults.title, options: ageDefaults.options, defaultValue: "adult", firstPersonOptions: ["adult", "13-17"], required: true }],
+        misc: [{ name: "age", label: ageDefaults.label, title: ageDefaults.title, width: ageDefaults.width, options: ageDefaults.options, defaultValue: "adult", firstPersonOptions: ["adult", "13-17"], required: true }],
       });
       // age ships with options, so it carries no missing-options warning.
       expect(activeRow("age").querySelector(".text-amber-500")).toBeNull();
@@ -141,7 +141,7 @@ describe("FieldsForm", () => {
     // Removing a field deletes its settings, so adding it back starts over from the same entry a
     // new tenant gets (including being on the nametag, for fields that can be).
     it("re-activates a removed field with fresh defaults", async () => {
-      const tenant = makeTenant({ fields_config: { contact: [{ name: "last", label: "Surname" }], misc: [] } });
+      const tenant = makeTenant({ fields_config: { contact: [{ name: "last", label: "Surname", width: 12 }], misc: [] } });
       const user = userEvent.setup();
       render(<FieldsForm tenant={tenant} />);
 
@@ -289,7 +289,9 @@ describe("FieldsForm", () => {
       await expectNoSave(vi.mocked(updateFields));
     });
 
-    it("saves a cleared width as null", async () => {
+    // Every field has a width, so there's no "unset" to fall back to -- clearing it is as invalid
+    // as typing an out-of-range number.
+    it("shows an error when width is cleared, and doesn't save it", async () => {
       const tenant = makeTenant({ fields_config: config });
       const user = userEvent.setup();
       render(<FieldsForm tenant={tenant} />);
@@ -298,7 +300,8 @@ describe("FieldsForm", () => {
       await user.clear(widthInput());
       await user.tab();
 
-      await expectLastSave(vi.mocked(updateFields), tenant.id, { contact: [first, { ...email, width: null }], misc: [carpool] });
+      expect(await screen.findByText("Must be a whole number from 1 to 12")).toBeInTheDocument();
+      await expectNoSave(vi.mocked(updateFields));
     });
 
     // Another field's panel would hide the error while it still blocked every save.
@@ -328,7 +331,7 @@ describe("FieldsForm", () => {
 
   describe("defaults of choice fields", () => {
     const shareOptions = MISC_FIELD_DEFS.share.defaults.options;
-    const share = { name: "share" as const, options: shareOptions, defaultValue: ["name", "email"] };
+    const share = { name: "share" as const, options: shareOptions, width: 12, defaultValue: ["name", "email"] };
     const withShare: FieldsConfig = { contact: [first], misc: [share] };
     const defaultGroup = () => within(screen.getByRole("group", { name: "Default" }));
 
@@ -373,7 +376,7 @@ describe("FieldsForm", () => {
 
   // Nobody could register a group.
   it("flags unchecking every option the person registering may choose, and doesn't save", async () => {
-    const age = { name: "age" as const, options: [{ label: "Adult", value: "adult" }, { label: "Child", value: "child" }], firstPersonOptions: ["adult"] };
+    const age = { name: "age" as const, options: [{ label: "Adult", value: "adult" }, { label: "Child", value: "child" }], width: 12, firstPersonOptions: ["adult"] };
     const tenant = makeTenant({ fields_config: { contact: [first], misc: [age] } });
     const user = userEvent.setup();
     render(<FieldsForm tenant={tenant} />);
@@ -389,8 +392,8 @@ describe("FieldsForm", () => {
   // held when the page loaded must show its own settings, not that field's (react-hook-form falls
   // back to the loaded value at a path for a setting that's absent).
   it("shows a moved field its own settings, not those of the field that was there before", async () => {
-    const share = { name: "share" as const, options: MISC_FIELD_DEFS.share.defaults.options, defaultValue: ["name", "email"] };
-    const allergies = { name: "allergies" as const, title: "Allergies", rows: 2 };
+    const share = { name: "share" as const, options: MISC_FIELD_DEFS.share.defaults.options, width: 12, defaultValue: ["name", "email"] };
+    const allergies = { name: "allergies" as const, title: "Allergies", width: 12, rows: 2 };
     const tenant = makeTenant({ fields_config: { contact: [first], misc: [share, allergies] } });
     const user = userEvent.setup();
     render(<FieldsForm tenant={tenant} />);
@@ -406,7 +409,7 @@ describe("FieldsForm", () => {
   // Admissions prices each age group by its option's value, so a repeat would make two age groups
   // share prices; it's caught here, where the options are edited.
   it("flags two options with the same value, and doesn't save", async () => {
-    const age = { name: "age" as const, options: [{ label: "Adult", value: "adult" }, { label: "Teenager", value: "13-17" }] };
+    const age = { name: "age" as const, options: [{ label: "Adult", value: "adult" }, { label: "Teenager", value: "13-17" }], width: 12 };
     const tenant = makeTenant({ fields_config: { contact: [first], misc: [age] } });
     const user = userEvent.setup();
     render(<FieldsForm tenant={tenant} />);

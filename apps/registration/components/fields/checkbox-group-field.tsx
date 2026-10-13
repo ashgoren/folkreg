@@ -3,7 +3,7 @@ import { toggleOption } from "@repo/fields";
 import { Field, FieldDescription, FieldError } from "@/components/ui/field";
 import { FormLabel } from "@/components/form-label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { gridColumnStyle, type FieldProps } from "./types";
+import type { FieldProps } from "./types";
 
 export function CheckboxGroupField({ control, name, fieldConfig }: FieldProps) {
   const options = fieldConfig.options ?? [];
@@ -16,7 +16,7 @@ export function CheckboxGroupField({ control, name, fieldConfig }: FieldProps) {
         const selected: string[] = Array.isArray(field.value) ? field.value : [];
         return (
           <>
-            <Field data-invalid={fieldState.invalid} style={gridColumnStyle(fieldConfig.width)}>
+            <Field data-invalid={fieldState.invalid} style={{ gridColumn: `span ${fieldConfig.width}` }}>
               <FormLabel required={fieldConfig.required}>{fieldConfig.label}</FormLabel>
               {fieldConfig.title && <FieldDescription>{fieldConfig.title}</FieldDescription>}
               {options.map((option) => (

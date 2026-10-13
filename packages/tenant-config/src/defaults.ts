@@ -29,7 +29,7 @@ export const defaultEventConfig = (): EventConfig => ({
 // catalog entry in @repo/fields, whose `defaults` use the same keys. Cloned so the tenant's copy
 // (options arrays included) never shares objects with the catalog.
 export const defaultActiveFieldSettings = (fieldName: FieldName): Omit<ActiveField, "name"> =>
-  structuredClone(FIELD_DEFS[fieldName].defaults ?? {});
+  structuredClone(FIELD_DEFS[fieldName].defaults);
 
 // A field as it starts out, whether in a new tenant's default set or when an organizer turns it on
 // on the Fields page: just its catalog defaults, name attached.

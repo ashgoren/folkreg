@@ -20,7 +20,7 @@ export const fieldDefaultsSchema = z.object({
   options: z.array(z.object({ label: z.string(), value: z.string() })).optional(),
   defaultValue: z.union([z.string(), z.array(z.string())]).optional(),
   rows: wholeNumber({ min: 1 }, "Must be a whole number, 1 or more").nullable().optional(),
-  width: wholeNumber({ min: 1, max: 12 }, "Must be a whole number from 1 to 12").nullable().optional(),
+  width: wholeNumber({ min: 1, max: 12 }, "Must be a whole number from 1 to 12"),
   required: z.boolean().optional(),
   includeOnNametag: z.boolean().optional(), // offered to organizer as option for pronouns & last name fields
   firstPersonOptions: z.array(z.string()).optional(), // age options can be limited for first person

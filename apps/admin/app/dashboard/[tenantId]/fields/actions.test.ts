@@ -14,7 +14,7 @@ const config = (): FieldsConfig => ({
     { name: "last", label: "Last name", width: 6, includeOnNametag: true },
     { name: "email", label: "Email", width: 12 },
   ],
-  misc: [{ name: "age", title: "Age", options: [{ label: "Adult", value: "adult" }], defaultValue: "adult" }],
+  misc: [{ name: "age", title: "Age", width: 12, options: [{ label: "Adult", value: "adult" }], defaultValue: "adult" }],
 });
 
 describe("updateFields", () => {

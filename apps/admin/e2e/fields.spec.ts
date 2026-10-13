@@ -32,6 +32,7 @@ test("adding a field saves it with its default config", async ({ page, tenantId 
         name: "age",
         title: "Age",
         label: "Please choose one.",
+        width: 12,
         options: [
           { label: "Adult", value: "adult" },
           { label: "13-17 yr old", value: "13-17" },

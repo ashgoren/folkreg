@@ -67,7 +67,7 @@ export interface FieldDef {
    * unchecks the rest (toggleOption); a selection without it is invalid unless empty.
    */
   prerequisiteOption?: string;
-  defaults?: FieldDefaults;
+  defaults: FieldDefaults;
   /** Excluded from the Spreadsheet page's available columns (e.g. emailConfirmation, structurally redundant with email) */
   excludeFromSpreadsheet?: boolean;
   /**

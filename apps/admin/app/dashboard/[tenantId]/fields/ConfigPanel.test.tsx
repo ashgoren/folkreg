@@ -13,10 +13,11 @@ import { fieldsConfigSchema, type ActiveField, type FieldsConfig } from "@repo/t
 import { ConfigPanel } from "./ConfigPanel";
 
 // Renders the panel for one field, returning a function that reads its entry's current values.
-const renderPanel = (fieldName: FieldName, config: Omit<ActiveField, "name"> = {}) => {
+// width defaults to 12 (full width) since every entry needs one and most of these tests don't care.
+const renderPanel = (fieldName: FieldName, config: Partial<Omit<ActiveField, "name">> = {}) => {
   const group = FIELD_DEFS[fieldName].group;
   const values: FieldsConfig = { contact: [], misc: [] };
-  values[group] = [{ name: fieldName, ...config }];
+  values[group] = [{ name: fieldName, width: 12, ...config }];
   let form!: UseFormReturn<FieldsConfig>;
   function Harness() {
     form = useForm<FieldsConfig>({ mode: "onBlur", resolver: zodResolver(fieldsConfigSchema), defaultValues: values });
@@ -55,20 +56,23 @@ describe("ConfigPanel", () => {
       const entry = renderPanel("first");
 
       await user.type(screen.getByLabelText("Placeholder"), "J");
+      await user.clear(captionedInput("Width"));
       await user.type(captionedInput("Width"), "4");
       await user.click(document.getElementById("config-required-first")!);
 
       expect(entry()).toEqual({ name: "first", placeholder: "J", width: 4, required: true });
     });
 
-    // Cleared to null: react-hook-form would show an undefined value as the width the form loaded with.
-    it("clear width to unset, leaving the input empty to type into", async () => {
+    // Every field has a width, so there's no "unset" state to fall back to -- clearing it is as
+    // invalid as typing letters, the same as NumberField elsewhere in the admin.
+    it("shows an error when width is cleared, rather than unsetting it", async () => {
       const user = userEvent.setup();
       const entry = renderPanel("first", { width: 6 });
 
       await user.clear(captionedInput("Width"));
-      expect(entry().width).toBeNull();
-      expect(captionedInput("Width")).toHaveValue(null);
+      expect(entry().width).toBeNaN();
+      await user.tab();
+      expect(await screen.findByText("Must be a whole number from 1 to 12")).toBeInTheDocument();
 
       await user.type(captionedInput("Width"), "4");
       expect(entry().width).toBe(4);
@@ -87,11 +91,13 @@ describe("ConfigPanel", () => {
       expect(await screen.findByText("Must be a whole number from 1 to 12")).toBeInTheDocument();
     });
 
-    // Typed into an empty input, the text doesn't change the value (still ""), so there's no
+    // Typed into an emptied input, the text doesn't change the value (still ""), so there's no
     // change event; it's caught when the input loses focus.
-    it("show an error for text that isn't a number typed into an empty width", async () => {
-      const entry = renderPanel("first");
+    it("show an error for text that isn't a number typed into an emptied width", async () => {
+      const user = userEvent.setup();
+      const entry = renderPanel("first", { width: 6 });
       const input = captionedInput("Width");
+      await user.clear(input);
       Object.defineProperty(input, "validity", { value: { badInput: true } });
 
       fireEvent.blur(input);
@@ -115,6 +121,7 @@ describe("ConfigPanel", () => {
         const user = userEvent.setup();
         renderPanel("first");
 
+        await user.clear(captionedInput("Width"));
         await user.type(captionedInput("Width"), width);
         expect(screen.queryByText(message)).not.toBeInTheDocument();
         await user.tab();
