@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { defaultFieldsConfig } from "@repo/tenant-config";
-import type { Person } from "@repo/types";
-import { activeFields, buildRegistrationSchema, buildDefaultPerson, isPersonValid } from "./registration-schema";
+import type { Order, Person } from "@repo/types";
+import { activeFields, buildRegistrationSchema, buildDefaultPerson, buildInitialOrder, isPersonValid } from "./registration-schema";
 
 // personSchema's base shape requires every active field present as its type (a string or string[]),
 // whether or not the tenant marked it required -- buildDefaultPerson already supplies that for every
@@ -72,6 +72,32 @@ describe("isPersonValid", () => {
 
   it("doesn't require agreement for a companion", () => {
     expect(isPersonValid(defaultFieldsConfig(), validPerson() as Person, 1)).toBe(true);
+  });
+});
+
+describe("buildInitialOrder", () => {
+  // Only id, updated_at, and people matter here -- the rest of Order (payments, submission_mode,
+  // etc.) isn't read, so the cast keeps the fixture focused on what's actually under test.
+  const order = (people: Person[]) => ({ id: "order-1", updated_at: "2026-01-01T00:00:00Z", people }) as Order;
+
+  it("returns null when there's no order to resume", () => {
+    expect(buildInitialOrder(null)).toBeNull();
+  });
+
+  it("splits the stored people into registrant and companions, keeping id and updatedAt", () => {
+    const registrant = validPerson({ first: "Jane" }) as Person;
+    const companion = validPerson({ first: "John" }) as Person;
+    expect(buildInitialOrder(order([registrant, companion]))).toEqual({
+      id: "order-1",
+      updatedAt: "2026-01-01T00:00:00Z",
+      registrant,
+      companions: [companion],
+    });
+  });
+
+  it("has no companions for a party of one", () => {
+    const registrant = validPerson() as Person;
+    expect(buildInitialOrder(order([registrant]))?.companions).toEqual([]);
   });
 });
 
