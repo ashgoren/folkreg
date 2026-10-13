@@ -3,37 +3,39 @@ import { toggleOption } from "./options";
 
 describe("toggleOption", () => {
   describe("without a prerequisite", () => {
-    const def = {};
+    const toggle = (selected: string[], value: string, checked: boolean) =>
+      toggleOption({ prerequisiteOption: undefined, selected, value, checked });
 
     it("checks and unchecks just the one option", () => {
-      expect(toggleOption(def, ["a"], "b", true)).toEqual(["a", "b"]);
-      expect(toggleOption(def, ["a", "b"], "a", false)).toEqual(["b"]);
+      expect(toggle(["a"], "b", true)).toEqual(["a", "b"]);
+      expect(toggle(["a", "b"], "a", false)).toEqual(["b"]);
     });
 
     it("doesn't list an option twice", () => {
-      expect(toggleOption(def, ["a"], "a", true)).toEqual(["a"]);
+      expect(toggle(["a"], "a", true)).toEqual(["a"]);
     });
   });
 
   // A roster can't show someone's email without their name.
   describe("with a prerequisite", () => {
-    const def = { prerequisiteOption: "name" };
+    const toggle = (selected: string[], value: string, checked: boolean) =>
+      toggleOption({ prerequisiteOption: "name", selected, value, checked });
 
     it("checks the prerequisite along with any other option", () => {
-      expect(toggleOption(def, [], "email", true)).toEqual(["name", "email"]);
-      expect(toggleOption(def, ["name", "phone"], "email", true)).toEqual(["name", "phone", "email"]);
+      expect(toggle([], "email", true)).toEqual(["name", "email"]);
+      expect(toggle(["name", "phone"], "email", true)).toEqual(["name", "phone", "email"]);
     });
 
     it("checks the prerequisite on its own", () => {
-      expect(toggleOption(def, [], "name", true)).toEqual(["name"]);
+      expect(toggle([], "name", true)).toEqual(["name"]);
     });
 
     it("unchecks everything when the prerequisite is unchecked", () => {
-      expect(toggleOption(def, ["name", "email", "phone"], "name", false)).toEqual([]);
+      expect(toggle(["name", "email", "phone"], "name", false)).toEqual([]);
     });
 
     it("unchecks another option on its own", () => {
-      expect(toggleOption(def, ["name", "email", "phone"], "email", false)).toEqual(["name", "phone"]);
+      expect(toggle(["name", "email", "phone"], "email", false)).toEqual(["name", "phone"]);
     });
   });
 });

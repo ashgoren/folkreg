@@ -6,7 +6,11 @@ export const createOrderMethods = (supabase: DbClient, tenantId: string) => {
   // pays with the test keys, so it must come from a server-verified preview session. eventYear is
   // required too -- which year's event this order belongs to, since a tenant reuses the same row
   // across years and counts (closeAfter, waitlistAfter) must count only the current one.
-  const createOrder = async (people: Person[], isTest: boolean, eventYear: number): Promise<{ id: string; updatedAt: string }> => {
+  const createOrder = async ({ people, isTest, eventYear }: {
+    people: Person[];
+    isTest: boolean;
+    eventYear: number;
+  }): Promise<{ id: string; updatedAt: string }> => {
     const { data, error } = await supabase
       .from("orders")
       .insert({

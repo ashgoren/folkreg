@@ -92,7 +92,7 @@ export function ChoiceDefault({ control, path, fieldName }: {
               choices={choices}
               isOption={isOption}
               selected={selected}
-              onToggle={(value, checked) => field.onChange(toggleOption(def, selected, value, checked))}
+              onToggle={(value, checked) => field.onChange(toggleOption({ prerequisiteOption: def.prerequisiteOption, selected, value, checked }))}
               error={error}
             />
           );

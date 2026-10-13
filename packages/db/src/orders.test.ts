@@ -29,7 +29,7 @@ describe("order methods (via createTenantDb)", () => {
   });
 
   it("creates an order with sensible defaults", async () => {
-    const { id, updatedAt } = await orders.createOrder([testPerson()], false, EVENT_YEAR);
+    const { id, updatedAt } = await orders.createOrder({ people: [testPerson()], isTest: false, eventYear: EVENT_YEAR });
     expect(id).toBeTruthy();
     expect(updatedAt).toBeTruthy();
 
@@ -44,7 +44,7 @@ describe("order methods (via createTenantDb)", () => {
   });
 
   it("records a test order as one", async () => {
-    const { id } = await orders.createOrder([testPerson()], true, EVENT_YEAR);
+    const { id } = await orders.createOrder({ people: [testPerson()], isTest: true, eventYear: EVENT_YEAR });
     expect((await orders.getOrder(id))!.is_test).toBe(true);
   });
 
@@ -63,7 +63,7 @@ describe("order methods (via createTenantDb)", () => {
   });
 
   it("updates people and advances updated_at", async () => {
-    const created = await orders.createOrder([testPerson()], false, EVENT_YEAR);
+    const created = await orders.createOrder({ people: [testPerson()], isTest: false, eventYear: EVENT_YEAR });
     const updatedPeople = [testPerson({ first: "Updated" })];
 
     const result = await orders.updateOrderPeople(created.id, updatedPeople, created.updatedAt);
@@ -75,7 +75,7 @@ describe("order methods (via createTenantDb)", () => {
   });
 
   it("refuses to apply an update based on a stale updated_at", async () => {
-    const created = await orders.createOrder([testPerson()], false, EVENT_YEAR);
+    const created = await orders.createOrder({ people: [testPerson()], isTest: false, eventYear: EVENT_YEAR });
 
     // Simulate another writer (e.g. a second tab sharing the same draft) updating first.
     const firstWrite = await orders.updateOrderPeople(created.id, [testPerson({ first: "FirstWriter" })], created.updatedAt);
@@ -90,7 +90,7 @@ describe("order methods (via createTenantDb)", () => {
   });
 
   it.each(["pay", "waitlist", "lottery"] as const)("records submission_mode as '%s' on confirmation", async (mode) => {
-    const created = await orders.createOrder([testPerson()], false, EVENT_YEAR);
+    const created = await orders.createOrder({ people: [testPerson()], isTest: false, eventYear: EVENT_YEAR });
     await orders.confirmRegistration(created.id, mode);
 
     const order = await orders.getOrder(created.id);
@@ -98,7 +98,7 @@ describe("order methods (via createTenantDb)", () => {
   });
 
   it("sets registered_at on confirmation, and leaves it and submission_mode untouched on a repeat confirmation", async () => {
-    const created = await orders.createOrder([testPerson()], false, EVENT_YEAR);
+    const created = await orders.createOrder({ people: [testPerson()], isTest: false, eventYear: EVENT_YEAR });
     await orders.confirmRegistration(created.id, "pay");
 
     const confirmed = await orders.getOrder(created.id);
@@ -118,21 +118,21 @@ describe("order methods (via createTenantDb)", () => {
     const COUNT_EVENT_YEAR = 2099;
 
     it("counts people on confirmed, live orders for the given event year", async () => {
-      await orders.createOrder([testPerson(), testPerson({ last: "Two" })], false, COUNT_EVENT_YEAR); // draft, never confirmed
+      await orders.createOrder({ people: [testPerson(), testPerson({ last: "Two" })], isTest: false, eventYear: COUNT_EVENT_YEAR }); // draft, never confirmed
 
-      const pay = await orders.createOrder([testPerson()], false, COUNT_EVENT_YEAR);
+      const pay = await orders.createOrder({ people: [testPerson()], isTest: false, eventYear: COUNT_EVENT_YEAR });
       await orders.confirmRegistration(pay.id, "pay");
 
-      const waitlist = await orders.createOrder([testPerson(), testPerson({ last: "Two" }), testPerson({ last: "Three" })], false, COUNT_EVENT_YEAR);
+      const waitlist = await orders.createOrder({ people: [testPerson(), testPerson({ last: "Two" }), testPerson({ last: "Three" })], isTest: false, eventYear: COUNT_EVENT_YEAR });
       await orders.confirmRegistration(waitlist.id, "waitlist");
 
-      const lottery = await orders.createOrder([testPerson(), testPerson({ last: "Two" })], false, COUNT_EVENT_YEAR);
+      const lottery = await orders.createOrder({ people: [testPerson(), testPerson({ last: "Two" })], isTest: false, eventYear: COUNT_EVENT_YEAR });
       await orders.confirmRegistration(lottery.id, "lottery");
 
-      const test = await orders.createOrder([testPerson({ last: "Test1" }), testPerson({ last: "Test2" })], true, COUNT_EVENT_YEAR);
+      const test = await orders.createOrder({ people: [testPerson({ last: "Test1" }), testPerson({ last: "Test2" })], isTest: true, eventYear: COUNT_EVENT_YEAR });
       await orders.confirmRegistration(test.id, "pay");
 
-      const otherYear = await orders.createOrder([testPerson()], false, COUNT_EVENT_YEAR + 1);
+      const otherYear = await orders.createOrder({ people: [testPerson()], isTest: false, eventYear: COUNT_EVENT_YEAR + 1 });
       await orders.confirmRegistration(otherYear.id, "pay");
 
       // draft (never confirmed), the test order, and the other year's order are all excluded;
