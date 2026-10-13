@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { CONTACT_FIELD_DEFS, FIELD_DEFS, FIELD_NAMES, MISC_FIELD_DEFS, STATE_OPTIONS } from "./index";
+import { CONTACT_FIELD_DEFS, FIELD_DEFS, FIELD_NAMES, MISC_FIELD_DEFS, REQUIRED_FIELD_NAMES, STATE_OPTIONS } from "./index";
 
 describe("FIELD_DEFS", () => {
   it("merges both catalogs, tagging each field with its group", () => {
@@ -20,6 +20,11 @@ describe("FIELD_DEFS", () => {
     const storageKeys = Object.values(FIELD_DEFS).flatMap((def) => (def.followUp ? [def.followUp.storageKey] : []));
     expect(storageKeys.filter((key) => key in FIELD_DEFS)).toEqual([]);
     expect(new Set(storageKeys).size).toBe(storageKeys.length);
+  });
+
+  it("lists every field marked canDeactivate: false, and nothing else", () => {
+    expect(REQUIRED_FIELD_NAMES).toEqual(["email"]);
+    for (const name of FIELD_NAMES) expect(FIELD_DEFS[name].canDeactivate === false, name).toBe(REQUIRED_FIELD_NAMES.includes(name));
   });
 
   // Contact fields are laid out on a 12-column grid (the admin Fields page's Width control).

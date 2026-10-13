@@ -15,3 +15,6 @@ export type FieldName = keyof typeof FIELD_DEFS;
 
 // As a non-empty tuple, the form zod's z.enum takes.
 export const FIELD_NAMES = Object.keys(FIELD_DEFS) as [FieldName, ...FieldName[]];
+
+// Fields required by the registration app in order to function.
+export const REQUIRED_FIELD_NAMES = FIELD_NAMES.filter((name) => FIELD_DEFS[name].canDeactivate === false);

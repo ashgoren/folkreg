@@ -5,7 +5,7 @@ import { STATE_OPTIONS } from "./stateOptions";
 
 export type { FieldDef, FieldType, FollowUp, FieldDefaults };
 export { CONTACT_FIELD_DEFS, MISC_FIELD_DEFS, STATE_OPTIONS };
-export { FIELD_DEFS, FIELD_NAMES, type FieldName } from "./catalog";
+export { FIELD_DEFS, FIELD_NAMES, REQUIRED_FIELD_NAMES, type FieldName } from "./catalog";
 export { personSchema, hasValue, type FieldSettings } from "./person-schema";
 export { toggleOption } from "./options";
 export { fieldDefaultsSchema } from "./field-defaults-schema";
