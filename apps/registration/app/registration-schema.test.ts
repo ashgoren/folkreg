@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { defaultFieldsConfig } from "@repo/tenant-config";
-import { activeFieldNames, buildRegistrationSchema, buildDefaultPerson } from "./registration-schema";
+import type { Person } from "@repo/types";
+import { activeFields, buildRegistrationSchema, buildDefaultPerson, isPersonValid } from "./registration-schema";
 
 // personSchema's base shape requires every active field present as its type (a string or string[]),
 // whether or not the tenant marked it required -- buildDefaultPerson already supplies that for every
@@ -21,14 +22,15 @@ const validPerson = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-describe("activeFieldNames", () => {
+describe("activeFields", () => {
   it("throws if the tenant's config has deactivated email", () => {
-    expect(() => activeFieldNames({ contact: [], misc: [] })).toThrow(/email/);
+    expect(() => activeFields({ contact: [], misc: [] })).toThrow(/email/);
   });
 
-  it("flattens contact and misc into one list", () => {
-    const names = activeFieldNames(defaultFieldsConfig()).map((field) => field.name);
-    expect(names).toEqual(expect.arrayContaining(["first", "agreement"]));
+  it("flattens contact and misc into one ordered list, keeping each field's full settings", () => {
+    const fields = activeFields(defaultFieldsConfig());
+    const email = fields.find((field) => field.name === "email");
+    expect(email).toMatchObject({ required: true, label: "Email" });
   });
 });
 
@@ -56,6 +58,20 @@ describe("buildRegistrationSchema", () => {
       companions: [validPerson({ email: "" })],
     });
     expect(issuePaths(result)).toContain("companions.0.email");
+  });
+});
+
+describe("isPersonValid", () => {
+  it("is true for a fully valid registrant", () => {
+    expect(isPersonValid(defaultFieldsConfig(), validPerson({ agreement: ["yes"] }) as Person, 0)).toBe(true);
+  });
+
+  it("is false when a required field is blank", () => {
+    expect(isPersonValid(defaultFieldsConfig(), validPerson({ agreement: ["yes"], first: "" }) as Person, 0)).toBe(false);
+  });
+
+  it("doesn't require agreement for a companion", () => {
+    expect(isPersonValid(defaultFieldsConfig(), validPerson() as Person, 1)).toBe(true);
   });
 });
 
