@@ -4,22 +4,19 @@ import userEvent from "@testing-library/user-event";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { personSchema } from "@repo/fields";
-import type { FieldEntry } from "@repo/tenant-config";
+import type { ActiveField } from "@repo/tenant-config";
 import { TextField } from "./text-field";
 import { TestForm } from "./test-helpers";
+import { fieldConfig } from "./types";
 
-const entry = (overrides: Partial<FieldEntry> = {}): FieldEntry => ({
-  name: "first",
-  label: "First name",
-  required: true,
-  ...overrides,
-});
+const testField = (overrides: Partial<ActiveField> = {}) =>
+  fieldConfig({ name: "first", label: "First name", required: true, ...overrides });
 
 describe("TextField", () => {
-  it("renders the label and placeholder from the tenant's entry", () => {
+  it("renders the label and placeholder from the tenant's settings", () => {
     render(
       <TestForm defaultValues={{ person: { first: "" } }}>
-        {(control) => <TextField control={control} name="person.first" entry={entry({ placeholder: "Jane" })} isRegistrant />}
+        {(control) => <TextField control={control} name="person.first" fieldConfig={testField({ placeholder: "Jane" })} isRegistrant />}
       </TestForm>
     );
 
@@ -30,7 +27,7 @@ describe("TextField", () => {
   it("uses the catalog's HTML type and autoComplete, not the tenant's", () => {
     render(
       <TestForm defaultValues={{ person: { email: "" } }}>
-        {(control) => <TextField control={control} name="person.email" entry={entry({ name: "email", label: "Email" })} isRegistrant />}
+        {(control) => <TextField control={control} name="person.email" fieldConfig={testField({ name: "email", label: "Email" })} isRegistrant />}
       </TestForm>
     );
 
@@ -44,7 +41,7 @@ describe("TextField", () => {
     const user = userEvent.setup();
     render(
       <TestForm defaultValues={{ person: { first: "" } }} resolver={zodResolver(schema)}>
-        {(control) => <TextField control={control} name="person.first" entry={entry()} isRegistrant />}
+        {(control) => <TextField control={control} name="person.first" fieldConfig={testField()} isRegistrant />}
       </TestForm>
     );
 

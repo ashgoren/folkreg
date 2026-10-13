@@ -1,18 +1,18 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { FieldEntry } from "@repo/tenant-config";
-import { StateSelectField } from "./state-select-field";
+import { AutocompleteField } from "./autocomplete-field";
 import { TestForm } from "./test-helpers";
+import { fieldConfig } from "./types";
 
-const entry: FieldEntry = { name: "state", label: "State" };
+const testField = fieldConfig({ name: "state", label: "State" });
 
-describe("StateSelectField", () => {
+describe("AutocompleteField", () => {
   it("lets the visitor pick a state from the catalog's suggestions", async () => {
     const user = userEvent.setup();
     render(
       <TestForm defaultValues={{ person: { state: "" } }}>
-        {(control) => <StateSelectField control={control} name="person.state" entry={entry} isRegistrant />}
+        {(control) => <AutocompleteField control={control} name="person.state" fieldConfig={testField} isRegistrant />}
       </TestForm>
     );
 

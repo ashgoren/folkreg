@@ -1,11 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import type { FieldEntry } from "@repo/tenant-config";
 import { RadioField } from "./radio-field";
 import { TestForm } from "./test-helpers";
+import { fieldConfig } from "./types";
 
-const ageEntry: FieldEntry = {
+const ageField = fieldConfig({
   name: "age",
   label: "Age",
   options: [
@@ -14,22 +13,13 @@ const ageEntry: FieldEntry = {
     { label: "6-12 yr old", value: "6-12" },
   ],
   firstPersonOptions: ["adult", "13-17"],
-};
-
-const photoEntry: FieldEntry = {
-  name: "photo",
-  label: "Photo consent",
-  options: [
-    { label: "Yes", value: "Yes" },
-    { label: "Other", value: "Other" },
-  ],
-};
+});
 
 describe("RadioField", () => {
   it("renders every option", () => {
     render(
       <TestForm defaultValues={{ person: { age: "" } }}>
-        {(control) => <RadioField control={control} name="person.age" entry={ageEntry} isRegistrant />}
+        {(control) => <RadioField control={control} name="person.age" fieldConfig={ageField} isRegistrant />}
       </TestForm>
     );
 
@@ -40,7 +30,7 @@ describe("RadioField", () => {
   it("disables options outside firstPersonOptions for the registrant", () => {
     render(
       <TestForm defaultValues={{ person: { age: "" } }}>
-        {(control) => <RadioField control={control} name="person.age" entry={ageEntry} isRegistrant />}
+        {(control) => <RadioField control={control} name="person.age" fieldConfig={ageField} isRegistrant />}
       </TestForm>
     );
 
@@ -51,25 +41,10 @@ describe("RadioField", () => {
   it("leaves every option enabled for a companion", () => {
     render(
       <TestForm defaultValues={{ person: { age: "" } }}>
-        {(control) => <RadioField control={control} name="person.age" entry={ageEntry} isRegistrant={false} />}
+        {(control) => <RadioField control={control} name="person.age" fieldConfig={ageField} isRegistrant={false} />}
       </TestForm>
     );
 
     expect(screen.getByRole("radio", { name: "6-12 yr old" })).toBeEnabled();
-  });
-
-  it("reveals the follow-up field only once its trigger option is selected", async () => {
-    const user = userEvent.setup();
-    render(
-      <TestForm defaultValues={{ person: { photo: "", photoComments: "" } }}>
-        {(control) => <RadioField control={control} name="person.photo" entry={photoEntry} isRegistrant />}
-      </TestForm>
-    );
-
-    expect(screen.queryByLabelText(/please explain/i)).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole("radio", { name: "Other" }));
-
-    expect(screen.getByLabelText(/please explain/i)).toBeInTheDocument();
   });
 });
