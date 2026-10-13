@@ -24,12 +24,18 @@ export const activeFields = (fieldsConfig: FieldsConfig): FieldConfig[] => {
 // One schema for the whole party, including special rules for the first person (agreement, age options).
 // Used by RHF zodResolver for per-field errors + save/continue submits, and also by submitRegistration
 // server-side. Autosave doesn't validate.
-export const buildRegistrationSchema = (fieldsConfig: FieldsConfig) => {
+//
+// The cast: personSchema's shape is a dynamic z.looseObject (whatever fields_config activates), not
+// literally Person -- @repo/fields can't import Person to type it precisely without a circular
+// package dependency (Person lives in @repo/types, which depends on @repo/tenant-config, which
+// depends on @repo/fields). This is the one place that reconciles the two, so neither caller
+// (RegistrationForm's zodResolver, submitRegistration's safeParse) needs its own cast.
+export const buildRegistrationSchema = (fieldsConfig: FieldsConfig): z.ZodType<RegistrationParty, RegistrationParty> => {
   const fields = activeFields(fieldsConfig);
   return z.object({
     registrant: personSchema(fields, 0),
     companions: z.array(personSchema(fields, 1)), // any nonzero personIndex is equivalent
-  });
+  }) as unknown as z.ZodType<RegistrationParty, RegistrationParty>;
 };
 
 // A new person's starting values: each active field's defaultValue.
