@@ -31,7 +31,9 @@ export interface FieldDef {
    */
   htmlType?: string;
   autoComplete?: string;
-  suggestions?: readonly { id: string; fullName: string; abbreviation: string; country: string }[];
+  // A fixed, code-provided list offered for an "autocomplete" field (e.g. state) -- unlike options,
+  // never tenant-editable, so there's no admin UI for it.
+  suggestions?: readonly { label: string; value: string }[];
   /**
    * The format a filled-in value must have, e.g. an email address. A blank value isn't checked
    * against it: whether a blank is allowed is the tenant's required setting (see personSchema).
