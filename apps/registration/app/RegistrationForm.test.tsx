@@ -2,15 +2,21 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { FieldsConfig, WaiverConfig } from "@repo/tenant-config";
+import type { Person } from "@repo/types";
+import type { InitialOrder } from "./registration-party";
 
 vi.mock("./actions", () => ({ saveDraft: vi.fn(), submitRegistration: vi.fn() }));
 import { saveDraft, submitRegistration } from "./actions";
 import { RegistrationForm } from "./RegistrationForm";
 
+// first/last/email/phone can't be deactivated (REQUIRED_FIELD_NAMES), so every fixture needs all
+// four active -- last and phone stay optional here so fillValidRegistrant doesn't need to fill them.
 const fieldsConfig: FieldsConfig = {
   contact: [
     { name: "first", label: "First name", width: 12, required: true },
+    { name: "last", label: "Last name", width: 12, required: false },
     { name: "email", label: "Email", width: 12, required: true },
+    { name: "phone", label: "Phone", width: 12, required: false },
   ],
   misc: [{ name: "agreement", label: "Agreement", width: 12, options: [{ label: "Yes", value: "yes" }], required: true }],
 };
@@ -37,6 +43,25 @@ describe("RegistrationForm", () => {
   it("renders the registrant card open by default", () => {
     renderForm();
     expect(screen.getByLabelText("First name", { exact: false })).toBeInTheDocument();
+  });
+
+  it("resumes a draft's registrant values when initialOrder is given", () => {
+    const initialOrder: InitialOrder = {
+      id: "order-1",
+      updatedAt: "2026-01-01T00:00:00Z",
+      // Every active field needs a key present (last/phone are optional but still active --
+      // first/last/email/phone can't be deactivated), or isPersonValid sees it as incomplete.
+      registrant: { first: "Jane", last: "", email: "jane@example.com", phone: "", agreement: ["yes"] } as unknown as Person,
+      companions: [],
+    };
+
+    render(<RegistrationForm fieldsConfig={fieldsConfig} waiverConfig={waiverConfig} initialOrder={initialOrder} />);
+
+    // The resumed registrant is already valid, so the card starts in summary mode, showing the
+    // resumed name instead of "You" and no input fields -- proof the resumed values, not
+    // buildDefaultPerson's blanks, seeded the form.
+    expect(screen.getByText("Jane")).toBeInTheDocument();
+    expect(screen.queryByLabelText("First name", { exact: false })).not.toBeInTheDocument();
   });
 
   it("hides Add Someone Else while a form is open, showing a hint instead", () => {

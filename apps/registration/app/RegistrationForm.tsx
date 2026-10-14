@@ -1,13 +1,13 @@
 "use client";
 
 import type { FieldsConfig, WaiverConfig } from "@repo/tenant-config";
-import type { RegistrationParty } from "./registration-party";
+import type { InitialOrder, RegistrationParty } from "./registration-party";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm, type Control, type FieldValues } from "react-hook-form";
 import { PersonCard } from "@/components/person-card";
-import { activeFields, buildDefaultPerson, buildInitialValues, buildRegistrationSchema, isPersonValid  } from "./registration-party";
+import { activeFields, buildDefaultPerson, buildRegistrationSchema, isPersonValid  } from "./registration-party";
 
 // At most one person is ever being edited at a time; everyone else shows a read-only summary.
 // The editingKey is either "registrant" or a companion's index, or null if no one is being edited.
@@ -16,9 +16,9 @@ type PersonKey = "registrant" | number;
 export function RegistrationForm({ fieldsConfig, waiverConfig, initialOrder }: {
   fieldsConfig: FieldsConfig;
   waiverConfig: WaiverConfig;
-  initialOrder: RegistrationParty | null;
+  initialOrder: InitialOrder | null;
 }) {
-  const defaultValues = buildInitialValues(fieldsConfig, initialOrder);
+  const defaultValues = initialOrder ?? { registrant: buildDefaultPerson(fieldsConfig), companions: [] };
 
   const form = useForm<RegistrationParty>({
     defaultValues,

@@ -1,6 +1,9 @@
 import { registrationStatus } from "@repo/tenant-config";
 import { ClosedPage } from "@/components/closed-page";
 import { getRequestTenant } from "@/lib/tenant";
+import { getOrderFromCookie } from "@/lib/order-session";
+import { parseSavedOrder } from "./registration-party";
+import { RegistrationForm } from "./RegistrationForm";
 
 export default async function RegistrationPage() {
   const { tenant } = await getRequestTenant();
@@ -17,5 +20,13 @@ export default async function RegistrationPage() {
     return <ClosedPage status={status} timezone={timezone} websiteUrl={links.info} />;
   }
 
-  return <p>Registration is open.</p>;
+  const order = await getOrderFromCookie();
+
+  return (
+    <RegistrationForm
+      fieldsConfig={tenant.fields_config}
+      waiverConfig={tenant.waiver_config}
+      initialOrder={order ? parseSavedOrder(order) : null}
+    />
+  );
 }

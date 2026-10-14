@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { defaultFieldsConfig } from "@repo/tenant-config";
 import type { Order, Person } from "@repo/types";
-import { activeFields, buildRegistrationSchema, buildDefaultPerson, buildInitialOrder, buildInitialValues, isPersonValid } from "./registration-party";
+import { activeFields, buildRegistrationSchema, buildDefaultPerson, parseSavedOrder, isPersonValid } from "./registration-party";
 
 // personSchema's base shape requires every active field present as its type (a string or string[]),
 // whether or not the tenant marked it required -- buildDefaultPerson already supplies that for every
@@ -75,19 +75,15 @@ describe("isPersonValid", () => {
   });
 });
 
-describe("buildInitialOrder", () => {
+describe("parseSavedOrder", () => {
   // Only id, updated_at, and people matter here -- the rest of Order (payments, submission_mode,
   // etc.) isn't read, so the cast keeps the fixture focused on what's actually under test.
   const order = (people: Person[]) => ({ id: "order-1", updated_at: "2026-01-01T00:00:00Z", people }) as Order;
 
-  it("returns null when there's no order to resume", () => {
-    expect(buildInitialOrder(null)).toBeNull();
-  });
-
   it("splits the stored people into registrant and companions, keeping id and updatedAt", () => {
     const registrant = validPerson({ first: "Jane" }) as Person;
     const companion = validPerson({ first: "John" }) as Person;
-    expect(buildInitialOrder(order([registrant, companion]))).toEqual({
+    expect(parseSavedOrder(order([registrant, companion]))).toEqual({
       id: "order-1",
       updatedAt: "2026-01-01T00:00:00Z",
       registrant,
@@ -97,25 +93,7 @@ describe("buildInitialOrder", () => {
 
   it("has no companions for a party of one", () => {
     const registrant = validPerson() as Person;
-    expect(buildInitialOrder(order([registrant]))?.companions).toEqual([]);
-  });
-});
-
-describe("buildInitialValues", () => {
-  it("uses buildDefaultPerson and no companions when there's no draft to resume", () => {
-    expect(buildInitialValues(defaultFieldsConfig(), null)).toEqual({
-      registrant: buildDefaultPerson(defaultFieldsConfig()),
-      companions: [],
-    });
-  });
-
-  it("uses the resumed draft's party when there is one", () => {
-    const registrant = validPerson({ first: "Jane" }) as Person;
-    const companion = validPerson({ first: "John" }) as Person;
-    expect(buildInitialValues(defaultFieldsConfig(), { registrant, companions: [companion] })).toEqual({
-      registrant,
-      companions: [companion],
-    });
+    expect(parseSavedOrder(order([registrant]))?.companions).toEqual([]);
   });
 });
 

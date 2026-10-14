@@ -4,8 +4,8 @@ import type { FieldsConfig } from "@repo/tenant-config";
 import type { Order, Person } from "@repo/types";
 import { fieldConfig, type FieldConfig } from "@/components/fields/types";
 
-// The party being registered: shared by RegistrationForm and actions.ts.
 export type RegistrationParty = { registrant: Person; companions: Person[] };
+export type InitialOrder = RegistrationParty & { id: string; updatedAt: string };
 
 // All fields used by this tenant (including their full config, which is tenant fields_config merged w/ catalog config).
 // Read by buildRegistrationSchema, buildDefaultPerson, and isPersonValid.
@@ -40,7 +40,7 @@ export const isPersonValid = (fieldsConfig: FieldsConfig, person: Person, person
   personSchema(activeFields(fieldsConfig), personIndex).safeParse(person).success;
 
 // A new person's starting values: each active field's defaultValue. Used both for a freshly
-// appended companion and (via buildInitialValues below) a brand-new registrant.
+// appended companion and, in RegistrationForm, a brand-new registrant.
 export const buildDefaultPerson = (fieldsConfig: FieldsConfig): Person => {
   const person: Record<string, unknown> = {};
   for (const field of activeFields(fieldsConfig)) {
@@ -51,11 +51,6 @@ export const buildDefaultPerson = (fieldsConfig: FieldsConfig): Person => {
 };
 
 // Everything RegistrationForm needs to resume a draft, from the order as it's actually stored.
-// Doesn't touch fields_config at all -- this is purely storage shape (Order.people, a flat array)
-// to party shape, independent of which fields a tenant has active.
-export const buildInitialOrder = (order: Order | null): { id: string; updatedAt: string; registrant: Person; companions: Person[] } | null =>
-  order && { id: order.id, updatedAt: order.updated_at, registrant: order.people[0]!, companions: order.people.slice(1) };
-
-// RegistrationForm's starting form values from resumed draft or default.
-export const buildInitialValues = (fieldsConfig: FieldsConfig, initialOrder: RegistrationParty | null): RegistrationParty =>
-  initialOrder ?? { registrant: buildDefaultPerson(fieldsConfig), companions: [] };
+// Just converts order from its persisted shape (flat people) to the shape RegistrationForm needs (registrant + companions).
+export const parseSavedOrder = (order: Order): InitialOrder =>
+  ({ id: order.id, updatedAt: order.updated_at, registrant: order.people[0]!, companions: order.people.slice(1) });

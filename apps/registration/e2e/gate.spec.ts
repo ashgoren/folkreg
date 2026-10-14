@@ -24,7 +24,7 @@ test("a scheduled opening that has passed shows the form", async ({ page, tenant
 
   await page.goto("/");
 
-  await expect(page.getByText("Registration is open.")).toBeVisible();
+  await expect(page.getByRole("group", { name: "You" })).toBeVisible();
 });
 
 test("a closing time that has passed closes registration", async ({ page, tenantId }) => {
@@ -40,7 +40,7 @@ test("registration opened now shows the form", async ({ page, tenantId }) => {
 
   await page.goto("/");
 
-  await expect(page.getByText("Registration is open.")).toBeVisible();
+  await expect(page.getByRole("group", { name: "You" })).toBeVisible();
 });
 
 test("the closed page links to the event's website", async ({ page, tenantId }) => {
