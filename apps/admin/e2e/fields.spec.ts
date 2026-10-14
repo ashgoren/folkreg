@@ -49,14 +49,14 @@ test("adding a field saves it with its default config", async ({ page, tenantId 
 });
 
 test("removing a field drops its entry, settings and all", async ({ page, tenantId }) => {
-  await activeRow(page, "last").getByRole("button", { name: "Remove field" }).click();
+  await activeRow(page, "pronouns").getByRole("button", { name: "Remove field" }).click();
 
   await expect.poll(() => fieldsConfig(tenantId)).toEqual({
-    contact: defaults.contact.filter((field) => field.name !== "last"),
+    contact: defaults.contact.filter((field) => field.name !== "pronouns"),
     misc: defaults.misc,
   });
   // It's back in the available list.
-  await expect(availableAddButton(page, "last")).toBeVisible();
+  await expect(availableAddButton(page, "pronouns")).toBeVisible();
 });
 
 test("editing a field in the config panel saves its config", async ({ page, tenantId }) => {

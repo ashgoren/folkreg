@@ -141,15 +141,15 @@ describe("FieldsForm", () => {
     // Removing a field deletes its settings, so adding it back starts over from the same entry a
     // new tenant gets (including being on the nametag, for fields that can be).
     it("re-activates a removed field with fresh defaults", async () => {
-      const tenant = makeTenant({ fields_config: { contact: [{ name: "last", label: "Surname", width: 12 }], misc: [] } });
+      const tenant = makeTenant({ fields_config: { contact: [{ name: "pronouns", label: "Preferred pronouns", width: 12 }], misc: [] } });
       const user = userEvent.setup();
       render(<FieldsForm tenant={tenant} />);
 
-      await user.click(within(activeRow("last")).getByRole("button", { name: "Remove field" }));
-      await user.click(within(availableRow("last")).getByRole("button", { name: "Add" }));
+      await user.click(within(activeRow("pronouns")).getByRole("button", { name: "Remove field" }));
+      await user.click(within(availableRow("pronouns")).getByRole("button", { name: "Add" }));
 
-      await expectLastSave(vi.mocked(updateFields), tenant.id, { contact: [defaultActiveField("last")], misc: [] });
-      expect(defaultActiveField("last")).toMatchObject({ includeOnNametag: true });
+      await expectLastSave(vi.mocked(updateFields), tenant.id, { contact: [defaultActiveField("pronouns")], misc: [] });
+      expect(defaultActiveField("pronouns")).toMatchObject({ includeOnNametag: true });
     });
 
     it("deactivates a field, dropping its config and returning it to the available list", async () => {
@@ -157,11 +157,11 @@ describe("FieldsForm", () => {
       const user = userEvent.setup();
       render(<FieldsForm tenant={tenant} />);
 
-      await user.click(within(activeRow("first")).getByRole("button", { name: "Remove field" }));
+      await user.click(within(activeRow("carpool")).getByRole("button", { name: "Remove field" }));
 
-      expect(activeFieldNames()).toEqual(["email", "carpool"]);
-      await expectLastSave(vi.mocked(updateFields), tenant.id, { contact: [email], misc: [carpool] });
-      expect(within(availableRow("first")).getByRole("button", { name: "Add" })).toBeInTheDocument();
+      expect(activeFieldNames()).toEqual(["first", "email"]);
+      await expectLastSave(vi.mocked(updateFields), tenant.id, { contact: [first, email], misc: [] });
+      expect(within(availableRow("carpool")).getByRole("button", { name: "Add" })).toBeInTheDocument();
     });
 
     it("closes the config panel when the selected field is deactivated", async () => {
@@ -169,19 +169,20 @@ describe("FieldsForm", () => {
       const user = userEvent.setup();
       render(<FieldsForm tenant={tenant} />);
 
-      await user.click(selectButton("first"));
-      expect(screen.getByRole("heading", { name: "first" })).toBeInTheDocument();
+      await user.click(selectButton("carpool"));
+      expect(screen.getByRole("heading", { name: "carpool" })).toBeInTheDocument();
 
-      await user.click(within(activeRow("first")).getByRole("button", { name: "Remove field" }));
-      expect(screen.queryByRole("heading", { name: "first" })).not.toBeInTheDocument();
+      await user.click(within(activeRow("carpool")).getByRole("button", { name: "Remove field" }));
+      expect(screen.queryByRole("heading", { name: "carpool" })).not.toBeInTheDocument();
       expect(screen.getByText("Select a field to configure it.")).toBeInTheDocument();
-      await expectLastSave(vi.mocked(updateFields), tenant.id, expect.objectContaining({ contact: [email] }));
+      await expectLastSave(vi.mocked(updateFields), tenant.id, expect.objectContaining({ misc: [] }));
     });
 
     it("doesn't offer to remove a field the registration app relies on", () => {
       const tenant = makeTenant({ fields_config: config });
       render(<FieldsForm tenant={tenant} />);
 
+      expect(within(activeRow("first")).queryByRole("button", { name: "Remove field" })).not.toBeInTheDocument();
       expect(within(activeRow("email")).queryByRole("button", { name: "Remove field" })).not.toBeInTheDocument();
     });
   });
@@ -241,12 +242,13 @@ describe("FieldsForm", () => {
 
     // The panel is bound to the field's place in its list, which a removal above it changes.
     it("keeps editing the selected field after a field above it is removed", async () => {
-      const tenant = makeTenant({ fields_config: config });
+      const pronouns = { name: "pronouns", label: "Pronouns", width: 12 } as const;
+      const tenant = makeTenant({ fields_config: { contact: [pronouns, email], misc: [carpool] } });
       const user = userEvent.setup();
       render(<FieldsForm tenant={tenant} />);
 
       await user.click(selectButton("email"));
-      await user.click(within(activeRow("first")).getByRole("button", { name: "Remove field" }));
+      await user.click(within(activeRow("pronouns")).getByRole("button", { name: "Remove field" }));
       expect(screen.getByLabelText("Label")).toHaveValue("Email");
 
       await user.type(screen.getByLabelText("Placeholder"), "you@example.com");

@@ -12,6 +12,7 @@ export const CONTACT_FIELD_DEFS = {
     autoComplete: "given-name",
     format: NAME_FORMAT,
     requiredMessage: "Please enter first name.",
+    canDeactivate: false,
     defaults: {
       required: true,
       label: "First name",
@@ -24,6 +25,7 @@ export const CONTACT_FIELD_DEFS = {
     autoComplete: "family-name",
     format: NAME_FORMAT,
     requiredMessage: "Please enter last name.",
+    canDeactivate: false,
     defaults: {
       required: true,
       label: "Last name",
@@ -64,6 +66,7 @@ export const CONTACT_FIELD_DEFS = {
     autoComplete: "email",
     format: EMAIL_FORMAT,
     requiredMessage: "Please re-enter your email address.",
+    canDeactivate: false,
     crossValidation: (person) => {
       return person.email === person.emailConfirmation
         ? null
@@ -82,6 +85,7 @@ export const CONTACT_FIELD_DEFS = {
     autoComplete: "tel-national",
     format: PHONE_FORMAT,
     requiredMessage: "Please enter phone number.",
+    canDeactivate: false,
     defaults: {
       required: true,
       label: "Phone",

@@ -9,13 +9,16 @@ vi.mock("./actions", () => ({ saveDraft: vi.fn(), submitRegistration: vi.fn() })
 import { saveDraft, submitRegistration } from "./actions";
 import { RegistrationForm } from "./RegistrationForm";
 
-// first/last/email/phone can't be deactivated (REQUIRED_FIELD_NAMES), so every fixture needs all
-// four active -- last and phone stay optional here so fillValidRegistrant doesn't need to fill them.
+// first/last/email/emailConfirmation/phone can't be deactivated (REQUIRED_FIELD_NAMES), so every
+// fixture needs all five active -- last and phone stay optional here so fillValidRegistrant doesn't
+// need to fill them (unlike emailConfirmation, whose crossValidation runs unconditionally whenever
+// it's active, so it has to be filled to match email regardless of its own required setting).
 const fieldsConfig: FieldsConfig = {
   contact: [
     { name: "first", label: "First name", width: 12, required: true },
     { name: "last", label: "Last name", width: 12, required: false },
     { name: "email", label: "Email", width: 12, required: true },
+    { name: "emailConfirmation", label: "Confirm email", width: 12, required: true },
     { name: "phone", label: "Phone", width: 12, required: false },
   ],
   misc: [{ name: "agreement", label: "Agreement", width: 12, options: [{ label: "Yes", value: "yes" }], required: true }],
@@ -27,9 +30,15 @@ const renderForm = () => render(<RegistrationForm fieldsConfig={fieldsConfig} wa
 // Fills the registrant's required fields and clicks Save, leaving it valid and in summary mode --
 // Add Someone Else and Edit (on other people) are both hidden while a form is still open, so this
 // is the realistic sequence for any test that needs to get past the registrant.
+// "Email" and "Confirm email" need a query that distinguishes them, but exact:false (substring,
+// case-insensitive) matches both, and exact:true fails both -- getByLabelText reads the <label>'s
+// plain textContent, which includes the required asterisk span despite its aria-hidden (that only
+// affects the accessible-name computation getByRole uses, not this). An anchored regex sidesteps
+// both problems.
 const fillValidRegistrant = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.type(screen.getByLabelText("First name", { exact: false }), "Jane");
-  await user.type(screen.getByLabelText("Email", { exact: false }), "jane@example.com");
+  await user.type(screen.getByLabelText(/^Email/), "jane@example.com");
+  await user.type(screen.getByLabelText(/^Confirm email/), "jane@example.com");
   await user.click(screen.getByRole("checkbox", { name: "Yes" }));
   await user.click(screen.getByRole("button", { name: "Save" }));
 };
@@ -50,8 +59,12 @@ describe("RegistrationForm", () => {
       id: "order-1",
       updatedAt: "2026-01-01T00:00:00Z",
       // Every active field needs a key present (last/phone are optional but still active --
-      // first/last/email/phone can't be deactivated), or isPersonValid sees it as incomplete.
-      registrant: { first: "Jane", last: "", email: "jane@example.com", phone: "", agreement: ["yes"] } as unknown as Person,
+      // first/last/email/emailConfirmation/phone can't be deactivated), or isPersonValid sees it as
+      // incomplete; emailConfirmation also has to match email, since its crossValidation runs
+      // unconditionally whenever it's active.
+      registrant: {
+        first: "Jane", last: "", email: "jane@example.com", emailConfirmation: "jane@example.com", phone: "", agreement: ["yes"],
+      } as unknown as Person,
       companions: [],
     };
 
@@ -108,7 +121,8 @@ describe("RegistrationForm", () => {
     await user.click(screen.getByRole("button", { name: "Add someone else" })); // Person 2 opens
 
     await user.type(screen.getByLabelText("First name", { exact: false }), "Bob");
-    await user.type(screen.getByLabelText("Email", { exact: false }), "bob@example.com");
+    await user.type(screen.getByLabelText(/^Email/), "bob@example.com");
+    await user.type(screen.getByLabelText(/^Confirm email/), "bob@example.com");
     await user.click(screen.getByRole("button", { name: "Save" })); // Person 2 collapses; Edit buttons reappear
 
     await user.click(screen.getByRole("button", { name: "Edit Jane" })); // the registrant's Edit button, labeled by its typed name
@@ -123,7 +137,7 @@ describe("RegistrationForm", () => {
       const user = userEvent.setup();
       renderForm();
 
-      await user.type(screen.getByLabelText("Email", { exact: false }), "jane@example.com");
+      await user.type(screen.getByLabelText(/^Email/), "jane@example.com");
 
       expect(saveDraft).not.toHaveBeenCalled();
     });
@@ -132,7 +146,7 @@ describe("RegistrationForm", () => {
       const user = userEvent.setup();
       renderForm();
 
-      await user.type(screen.getByLabelText("Email", { exact: false }), "jane@example.com");
+      await user.type(screen.getByLabelText(/^Email/), "jane@example.com");
       await user.tab();
 
       expect(saveDraft).toHaveBeenCalledWith(null, expect.objectContaining({ registrant: expect.objectContaining({ email: "jane@example.com" }) }));
@@ -154,7 +168,7 @@ describe("RegistrationForm", () => {
     it("saves immediately on a checkbox change, without waiting for blur", async () => {
       const user = userEvent.setup();
       renderForm();
-      await user.type(screen.getByLabelText("Email", { exact: false }), "jane@example.com");
+      await user.type(screen.getByLabelText(/^Email/), "jane@example.com");
       await user.tab();
       await waitFor(() => expect(saveDraft).toHaveBeenCalledTimes(1));
       vi.mocked(saveDraft).mockClear();

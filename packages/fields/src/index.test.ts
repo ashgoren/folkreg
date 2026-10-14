@@ -23,7 +23,7 @@ describe("FIELD_DEFS", () => {
   });
 
   it("lists every field marked canDeactivate: false, and nothing else", () => {
-    expect(REQUIRED_FIELD_NAMES).toEqual(["email"]);
+    expect(REQUIRED_FIELD_NAMES).toEqual(["first", "last", "email", "emailConfirmation", "phone"]);
     for (const name of FIELD_NAMES) expect(FIELD_DEFS[name].canDeactivate === false, name).toBe(REQUIRED_FIELD_NAMES.includes(name));
   });
 
