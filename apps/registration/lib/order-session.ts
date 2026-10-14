@@ -4,8 +4,10 @@ import { getRequestTenant } from "./tenant";
 
 export const ORDER_COOKIE = "orderId";
 
-// Not readable by client JS - the client tracks { orderId, updatedAt } in its own state instead,
-// seeded from this page's initial render, which already needs the order's full data to resume a draft.
+// Not readable by client JS, and the only source of which order a request is about: server actions
+// read the id from here rather than accepting one as an argument. The client tracks just the order's
+// updatedAt in its own state, seeded from the page's initial render, which already needs the order's
+// full data to resume a draft.
 const COOKIE_OPTIONS = {
   httpOnly: true,
   sameSite: "lax",

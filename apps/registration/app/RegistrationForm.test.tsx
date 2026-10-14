@@ -46,7 +46,7 @@ const fillValidRegistrant = async (user: ReturnType<typeof userEvent.setup>) => 
 };
 
 beforeEach(() => {
-  vi.mocked(saveDraft).mockResolvedValue({ orderId: "order-1", updatedAt: "2026-01-01T00:00:00Z" });
+  vi.mocked(saveDraft).mockResolvedValue({ updatedAt: "2026-01-01T00:00:00Z" });
   vi.mocked(submitRegistration).mockResolvedValue({ error: "unused in most tests" } as never);
 });
 
@@ -58,7 +58,6 @@ describe("RegistrationForm", () => {
 
   it("resumes a draft's registrant values when initialOrder is given", () => {
     const initialOrder: InitialOrder = {
-      id: "order-1",
       updatedAt: "2026-01-01T00:00:00Z",
       // first/last/email/emailConfirmation/phone are all required now (not just active), so each
       // needs a real value -- emailConfirmation also has to match email, since its crossValidation
@@ -180,7 +179,7 @@ describe("RegistrationForm", () => {
 
       await waitFor(() =>
         expect(saveDraft).toHaveBeenCalledWith(
-          { orderId: "order-1", updatedAt: "2026-01-01T00:00:00Z" },
+          "2026-01-01T00:00:00Z",
           expect.objectContaining({ registrant: expect.objectContaining({ agreement: ["yes"] }) })
         )
       );

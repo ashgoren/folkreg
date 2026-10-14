@@ -76,15 +76,14 @@ describe("isPersonValid", () => {
 });
 
 describe("parseSavedOrder", () => {
-  // Only id, updated_at, and people matter here -- the rest of Order (payments, submission_mode,
+  // Only updated_at and people matter here -- the rest of Order (payments, submission_mode,
   // etc.) isn't read, so the cast keeps the fixture focused on what's actually under test.
   const order = (people: Person[]) => ({ id: "order-1", updated_at: "2026-01-01T00:00:00Z", people }) as Order;
 
-  it("splits the stored people into registrant and companions, keeping id and updatedAt", () => {
+  it("splits the stored people into registrant and companions, keeping updatedAt", () => {
     const registrant = validPerson({ first: "Jane" }) as Person;
     const companion = validPerson({ first: "John" }) as Person;
     expect(parseSavedOrder(order([registrant, companion]))).toEqual({
-      id: "order-1",
       updatedAt: "2026-01-01T00:00:00Z",
       registrant,
       companions: [companion],

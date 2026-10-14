@@ -5,7 +5,7 @@ import type { Order, Person } from "@repo/types";
 import { fieldConfig, type FieldConfig } from "@/components/fields/types";
 
 export type RegistrationParty = { registrant: Person; companions: Person[] };
-export type InitialOrder = RegistrationParty & { id: string; updatedAt: string };
+export type InitialOrder = RegistrationParty & { updatedAt: string };
 
 // All fields used by this tenant (including their full config, which is tenant fields_config merged w/ catalog config).
 // Read by buildRegistrationSchema, buildDefaultPerson, and isPersonValid.
@@ -53,4 +53,4 @@ export const buildDefaultPerson = (fieldsConfig: FieldsConfig): Person => {
 // Everything RegistrationForm needs to resume a draft, from the order as it's actually stored.
 // Just converts order from its persisted shape (flat people) to the shape RegistrationForm needs (registrant + companions).
 export const parseSavedOrder = (order: Order): InitialOrder =>
-  ({ id: order.id, updatedAt: order.updated_at, registrant: order.people[0]!, companions: order.people.slice(1) });
+  ({ updatedAt: order.updated_at, registrant: order.people[0]!, companions: order.people.slice(1) });
