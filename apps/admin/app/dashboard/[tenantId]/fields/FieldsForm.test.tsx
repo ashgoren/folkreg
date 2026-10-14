@@ -35,7 +35,7 @@ const availableRow = (name: string) => {
 };
 
 const first = { name: "first", label: "First name", width: 6, required: true } as const;
-const email = { name: "email", label: "Email", width: 6 } as const;
+const email = { name: "email", label: "Email", width: 6, required: true } as const;
 const carpool = { name: "carpool", title: "Transportation", width: 12 } as const;
 const config: FieldsConfig = { contact: [first, email], misc: [carpool] };
 
@@ -80,7 +80,7 @@ describe("FieldsForm", () => {
     it("marks required fields with an asterisk", () => {
       render(<FieldsForm tenant={makeTenant({ fields_config: config })} />);
       expect(within(activeRow("first")).getByText("*")).toBeInTheDocument();
-      expect(within(activeRow("email")).queryByText("*")).not.toBeInTheDocument();
+      expect(within(activeRow("carpool")).queryByText("*")).not.toBeInTheDocument();
     });
 
     it("warns on radio/checkbox fields that have no options to choose from", () => {
@@ -264,12 +264,12 @@ describe("FieldsForm", () => {
       const user = userEvent.setup();
       render(<FieldsForm tenant={tenant} />);
 
-      await user.click(selectButton("email"));
-      await user.click(document.getElementById("config-required-email")!);
+      await user.click(selectButton("carpool"));
+      await user.click(document.getElementById("config-required-carpool")!);
 
-      expect(within(activeRow("email")).getByText("*")).toBeInTheDocument();
+      expect(within(activeRow("carpool")).getByText("*")).toBeInTheDocument();
       await expectLastSave(vi.mocked(updateFields), tenant.id, expect.objectContaining({
-        contact: [first, { ...email, required: true }],
+        misc: [{ ...carpool, required: true }],
       }));
     });
   });

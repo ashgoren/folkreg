@@ -22,9 +22,18 @@ describe("personSchema", () => {
     });
 
     it("accepts a blank field the tenant hasn't made required", () => {
-      expect(errors({ first: { required: false } }, { first: "" })).toEqual({});
-      expect(errors({ first: {} }, { first: "" })).toEqual({});
+      expect(errors({ pronouns: { required: false } }, { pronouns: "" })).toEqual({});
+      expect(errors({ pronouns: {} }, { pronouns: "" })).toEqual({});
     });
+
+    // first/last/email/emailConfirmation/phone can't be deactivated, so they're required no matter
+    // what the tenant's own setting says -- see person-schema.ts's isBlank branch.
+    it.each(["first", "last", "email", "emailConfirmation", "phone"] as const)(
+      "requires %s even when the tenant marks it optional",
+      (name) => {
+        expect(errors({ [name]: { required: false } }, { [name]: "" })).toHaveProperty(name);
+      }
+    );
 
     // Any field can be switched to required, including ones the catalog gives no message of their own.
     it.each([
@@ -79,9 +88,9 @@ describe("personSchema", () => {
       expect(errors({ phone: {} }, { phone: "+44 20 7946 0000" })).toEqual({ phone: "Please enter a valid phone number." });
     });
 
-    // A blank optional email is fine; it's only checked as an email once something's typed.
+    // A blank optional field is fine; its format is only checked once something's typed.
     it("skips the format check for a blank value", () => {
-      expect(errors({ email: {} }, { email: "" })).toEqual({});
+      expect(errors({ pronouns: {} }, { pronouns: "" })).toEqual({});
     });
 
     // Reported as missing, not as a badly formatted email.
@@ -130,9 +139,14 @@ describe("personSchema", () => {
         .toEqual({ emailConfirmation: "Email addresses must match." });
     });
 
-    // Both left blank match; whether blank is allowed is each field's required setting.
-    it("accepts both blank", () => {
-      expect(errors(settings, { email: "", emailConfirmation: "" })).toEqual({});
+    // Both blank match each other, so crossValidation adds no "must match" error on top -- but
+    // neither field can be left blank at all (see the "required" describe block above), so each
+    // still gets its own required error.
+    it("doesn't add a mismatch error when both are blank", () => {
+      expect(errors(settings, { email: "", emailConfirmation: "" })).toEqual({
+        email: "Please enter email address.",
+        emailConfirmation: "Please re-enter your email address.",
+      });
     });
 
     it("applies to every person, not just the first", () => {

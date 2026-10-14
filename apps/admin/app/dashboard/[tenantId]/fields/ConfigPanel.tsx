@@ -32,6 +32,8 @@ export function ConfigPanel({ form, path, fieldName }: ConfigPanelProps) {
   const showRows = def.type === "textarea";
   const showOptions = def.type === "radio" || def.type === "checkbox";
   const showNametagToggle = def.canIncludeOnNametag ?? false;
+  // A field that can't be deactivated is always required too -- nothing to toggle.
+  const showRequiredToggle = def.canDeactivate !== false;
 
   return (
     <div className="border rounded-lg p-6 space-y-6 w-full max-w-2xl">
@@ -43,20 +45,22 @@ export function ConfigPanel({ form, path, fieldName }: ConfigPanelProps) {
           </span>
         </div>
         <div className="flex flex-col items-end gap-4 shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Required</span>
-            <Controller
-              name={`${path}.required`}
-              control={control}
-              render={({ field }) => (
-                <Switch
-                  id={`config-required-${fieldName}`}
-                  checked={field.value ?? false}
-                  onCheckedChange={field.onChange}
-                />
-              )}
-            />
-          </div>
+          {showRequiredToggle && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Required</span>
+              <Controller
+                name={`${path}.required`}
+                control={control}
+                render={({ field }) => (
+                  <Switch
+                    id={`config-required-${fieldName}`}
+                    checked={field.value ?? false}
+                    onCheckedChange={field.onChange}
+                  />
+                )}
+              />
+            </div>
+          )}
           {showWidth && <NumberSetting control={control} name={`${path}.width`} caption="Width" max={12} clearable={false} />}
           {showRows && <NumberSetting control={control} name={`${path}.rows`} caption="Rows" />}
         </div>

@@ -9,17 +9,17 @@ vi.mock("./actions", () => ({ saveDraft: vi.fn(), submitRegistration: vi.fn() })
 import { saveDraft, submitRegistration } from "./actions";
 import { RegistrationForm } from "./RegistrationForm";
 
-// first/last/email/emailConfirmation/phone can't be deactivated (REQUIRED_FIELD_NAMES), so every
-// fixture needs all five active -- last and phone stay optional here so fillValidRegistrant doesn't
-// need to fill them (unlike emailConfirmation, whose crossValidation runs unconditionally whenever
-// it's active, so it has to be filled to match email regardless of its own required setting).
+// first/last/email/emailConfirmation/phone can't be deactivated (REQUIRED_FIELD_NAMES) and are
+// always required too, regardless of this fixture's own required settings (fieldsConfigSchema
+// rejects storing otherwise, and person-schema.ts enforces it either way) -- every fixture needs
+// all five active, and fillValidRegistrant fills all five.
 const fieldsConfig: FieldsConfig = {
   contact: [
     { name: "first", label: "First name", width: 12, required: true },
-    { name: "last", label: "Last name", width: 12, required: false },
+    { name: "last", label: "Last name", width: 12, required: true },
     { name: "email", label: "Email", width: 12, required: true },
     { name: "emailConfirmation", label: "Confirm email", width: 12, required: true },
-    { name: "phone", label: "Phone", width: 12, required: false },
+    { name: "phone", label: "Phone", width: 12, required: true },
   ],
   misc: [{ name: "agreement", label: "Agreement", width: 12, options: [{ label: "Yes", value: "yes" }], required: true }],
 };
@@ -37,8 +37,10 @@ const renderForm = () => render(<RegistrationForm fieldsConfig={fieldsConfig} wa
 // both problems.
 const fillValidRegistrant = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.type(screen.getByLabelText("First name", { exact: false }), "Jane");
+  await user.type(screen.getByLabelText("Last name", { exact: false }), "Doe");
   await user.type(screen.getByLabelText(/^Email/), "jane@example.com");
   await user.type(screen.getByLabelText(/^Confirm email/), "jane@example.com");
+  await user.type(screen.getByLabelText("Phone", { exact: false }), "555-555-5555");
   await user.click(screen.getByRole("checkbox", { name: "Yes" }));
   await user.click(screen.getByRole("button", { name: "Save" }));
 };
@@ -58,12 +60,11 @@ describe("RegistrationForm", () => {
     const initialOrder: InitialOrder = {
       id: "order-1",
       updatedAt: "2026-01-01T00:00:00Z",
-      // Every active field needs a key present (last/phone are optional but still active --
-      // first/last/email/emailConfirmation/phone can't be deactivated), or isPersonValid sees it as
-      // incomplete; emailConfirmation also has to match email, since its crossValidation runs
-      // unconditionally whenever it's active.
+      // first/last/email/emailConfirmation/phone are all required now (not just active), so each
+      // needs a real value -- emailConfirmation also has to match email, since its crossValidation
+      // runs unconditionally whenever it's active.
       registrant: {
-        first: "Jane", last: "", email: "jane@example.com", emailConfirmation: "jane@example.com", phone: "", agreement: ["yes"],
+        first: "Jane", last: "Doe", email: "jane@example.com", emailConfirmation: "jane@example.com", phone: "555-555-5555", agreement: ["yes"],
       } as unknown as Person,
       companions: [],
     };
@@ -73,7 +74,7 @@ describe("RegistrationForm", () => {
     // The resumed registrant is already valid, so the card starts in summary mode, showing the
     // resumed name instead of "You" and no input fields -- proof the resumed values, not
     // buildDefaultPerson's blanks, seeded the form.
-    expect(screen.getByText("Jane")).toBeInTheDocument();
+    expect(screen.getByText("Jane Doe")).toBeInTheDocument();
     expect(screen.queryByLabelText("First name", { exact: false })).not.toBeInTheDocument();
   });
 
@@ -111,7 +112,7 @@ describe("RegistrationForm", () => {
     await fillValidRegistrant(user); // registrant valid and in summary mode
     await user.click(screen.getByRole("button", { name: "Add someone else" })); // Person 2 opens
 
-    expect(screen.queryByRole("button", { name: "Edit Jane" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Edit Jane Doe" })).not.toBeInTheDocument();
   });
 
   it("switching to editing a different person requires saving the current one first", async () => {
@@ -121,11 +122,13 @@ describe("RegistrationForm", () => {
     await user.click(screen.getByRole("button", { name: "Add someone else" })); // Person 2 opens
 
     await user.type(screen.getByLabelText("First name", { exact: false }), "Bob");
+    await user.type(screen.getByLabelText("Last name", { exact: false }), "Smith");
     await user.type(screen.getByLabelText(/^Email/), "bob@example.com");
     await user.type(screen.getByLabelText(/^Confirm email/), "bob@example.com");
+    await user.type(screen.getByLabelText("Phone", { exact: false }), "555-555-5555");
     await user.click(screen.getByRole("button", { name: "Save" })); // Person 2 collapses; Edit buttons reappear
 
-    await user.click(screen.getByRole("button", { name: "Edit Jane" })); // the registrant's Edit button, labeled by its typed name
+    await user.click(screen.getByRole("button", { name: "Edit Jane Doe" })); // the registrant's Edit button, labeled by its typed name
 
     expect(screen.getAllByLabelText("First name", { exact: false })).toHaveLength(1);
     expect(screen.getByRole("group", { name: "You" })).toBeInTheDocument();

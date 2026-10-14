@@ -25,7 +25,7 @@ describe("fieldsConfigSchema", () => {
     const value = {
       contact: [
         { name: "first", label: "First name", width: 6, required: true },
-        { name: "last", label: "Last name", width: 6, includeOnNametag: true },
+        { name: "last", label: "Last name", width: 6, required: true, includeOnNametag: true },
       ],
       misc: [
         { name: "age", title: "Age", label: "Pick one", width: 12, options: [{ label: "Adult", value: "adult" }], defaultValue: "adult", placeholder: "" },
@@ -37,7 +37,7 @@ describe("fieldsConfigSchema", () => {
 
   // width is the one setting every entry must have; everything else can be left unset.
   it("accepts an entry with no settings beyond width", () => {
-    expect(fieldsConfigSchema.safeParse({ contact: [{ name: "first", width: 12 }], misc: [] }).success).toBe(true);
+    expect(fieldsConfigSchema.safeParse({ contact: [{ name: "pronouns", width: 12 }], misc: [] }).success).toBe(true);
   });
 
   it("rejects an entry with no width", () => {
@@ -57,18 +57,27 @@ describe("fieldsConfigSchema", () => {
   });
 
   it("rejects a field listed twice", () => {
-    expect(issues({ contact: [{ name: "first" }, { name: "first" }], misc: [] }))
-      .toEqual({ "contact.1.name": "first is listed more than once" });
+    expect(issues({ contact: [{ name: "pronouns" }, { name: "pronouns" }], misc: [] }))
+      .toEqual({ "contact.1.name": "pronouns is listed more than once" });
+  });
+
+  // first/last/email/emailConfirmation/phone can't be deactivated, so storing them as not required
+  // would contradict person-schema.ts, which requires them regardless of this setting anyway.
+  it("rejects a field that can't be deactivated stored as not required", () => {
+    expect(issues({ contact: [{ name: "first", required: false }], misc: [] }))
+      .toEqual({ "contact.0.required": "first can't be made optional" });
+    expect(issues({ contact: [{ name: "first" }], misc: [] }))
+      .toEqual({ "contact.0.required": "first can't be made optional" });
   });
 
   // The Fields page shows this under the width input. It's one message whatever the problem, so
   // fixing one never just reveals another. NaN is text in the input that isn't a number.
   it.each([0, 13, 6.5, NaN])("rejects a width of %j (a whole number of columns, 1 to 12)", (width) => {
-    expect(issues({ contact: [{ name: "first", width }], misc: [] })).toEqual({ "contact.0.width": "Must be a whole number from 1 to 12" });
+    expect(issues({ contact: [{ name: "pronouns", width }], misc: [] })).toEqual({ "contact.0.width": "Must be a whole number from 1 to 12" });
   });
 
   it("rejects a width that isn't a number", () => {
-    expect(issues({ contact: [{ name: "first", width: "6" }], misc: [] })).toHaveProperty(["contact.0.width"]);
+    expect(issues({ contact: [{ name: "pronouns", width: "6" }], misc: [] })).toHaveProperty(["contact.0.width"]);
   });
 
   it.each([0, 1.5, NaN])("rejects %j rows (a whole number, at least 1)", (rows) => {
@@ -82,7 +91,7 @@ describe("fieldsConfigSchema", () => {
   });
 
   it("accepts a null rows", () => {
-    expect(fieldsConfigSchema.safeParse({ contact: [{ name: "first", width: 12 }], misc: [{ name: "comments", width: 12, rows: null }] }).success).toBe(true);
+    expect(fieldsConfigSchema.safeParse({ contact: [{ name: "pronouns", width: 12 }], misc: [{ name: "comments", width: 12, rows: null }] }).success).toBe(true);
   });
 
   describe("defaults", () => {
@@ -91,7 +100,7 @@ describe("fieldsConfigSchema", () => {
 
     it("accepts a checkbox field's list of options, a radio field's option or none, and any text", () => {
       expect(issues({
-        contact: [{ name: "first", defaultValue: "Ada" }],
+        contact: [{ name: "pronouns", defaultValue: "Ada" }],
         misc: [
           { name: "age", options: ageOptions, defaultValue: "13-17" },
           { name: "dietaryPreferences", options: [{ label: "Vegan", value: "vegan" }], defaultValue: "" },
@@ -105,7 +114,7 @@ describe("fieldsConfigSchema", () => {
     it("rejects a single value for a checkbox field, and a list for anything else", () => {
       expect(issues({ contact: [], misc: [{ name: "share", options: shareOptions, defaultValue: "name" }] }))
         .toEqual({ "misc.0.defaultValue": "Must be a list of options" });
-      expect(issues({ contact: [{ name: "first", defaultValue: ["Ada"] }], misc: [] }))
+      expect(issues({ contact: [{ name: "pronouns", defaultValue: ["Ada"] }], misc: [] }))
         .toEqual({ "contact.0.defaultValue": "Must be a single value" });
     });
 

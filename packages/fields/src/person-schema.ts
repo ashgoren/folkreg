@@ -58,8 +58,10 @@ export const personSchema = (activeFields: FieldSettings[], personIndex: number)
       const value = person[name];
 
       // A blank value is only ever "missing", never "malformed": the format applies to what's typed.
+      // A field that can't be deactivated is required regardless of the tenant's own setting, which
+      // is also enforced in the admin UI, but enforced here as a backup.)
       if (isBlank(value)) {
-        if (settings.required) issue(name, def.requiredMessage ?? FALLBACK_REQUIRED_MESSAGES[def.type]);
+        if (settings.required || def.canDeactivate === false) issue(name, def.requiredMessage ?? FALLBACK_REQUIRED_MESSAGES[def.type]);
       } else if (def.format && typeof value === "string") {
         const result = def.format.safeParse(value);
         if (!result.success) issue(name, result.error.issues[0]!.message);

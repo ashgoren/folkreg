@@ -96,10 +96,9 @@ export type EventConfig = z.infer<typeof eventConfigSchema>;
 export const activeFieldSchema = fieldDefaultsSchema.extend({ name: z.enum(FIELD_NAMES) });
 export type ActiveField = z.infer<typeof activeFieldSchema>;
 
-// A tenant's active fields, by section of the registration form, each section in the order it
-// shows them. A field is active exactly when it has an entry; removing it removes its settings.
-// Names are checked against the catalog, so a renamed or removed catalog field fails the read
-// loudly rather than being skipped.
+// A tenant's active fields, in the order the fields are displayed.
+// A field is active when it has an entry; removing it removes its settings.
+// Names are checked against the catalog, so a renamed or removed catalog field fails loudly.
 export const fieldsConfigSchema = z.object({
   contact: z.array(activeFieldSchema),
   misc: z.array(activeFieldSchema),
@@ -112,6 +111,7 @@ export const fieldsConfigSchema = z.object({
       if (FIELD_DEFS[name].group !== group) issue("name", `${name} belongs in ${FIELD_DEFS[name].group}`);
       if (seen.has(name)) issue("name", `${name} is listed more than once`);
       seen.add(name);
+      if (FIELD_DEFS[name].canDeactivate === false && field.required !== true) issue("required", `${name} can't be made optional`);
       checkChoices(field, issue);
     });
   }

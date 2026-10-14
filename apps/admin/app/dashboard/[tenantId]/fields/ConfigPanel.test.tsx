@@ -40,8 +40,8 @@ describe("ConfigPanel", () => {
 
   describe("contact text fields", () => {
     it("offer label, placeholder, default, and width -- but no heading, rows, or options", () => {
-      renderPanel("first", { label: "First name", width: 6 });
-      expect(screen.getByLabelText("Label")).toHaveValue("First name");
+      renderPanel("pronouns", { label: "Pronouns", width: 6 });
+      expect(screen.getByLabelText("Label")).toHaveValue("Pronouns");
       expect(screen.getByLabelText("Label").tagName).toBe("INPUT");
       expect(screen.getByLabelText("Placeholder")).toBeInTheDocument();
       expect(screen.getByLabelText("Default")).toBeInTheDocument();
@@ -51,16 +51,23 @@ describe("ConfigPanel", () => {
       expect(screen.queryByRole("button", { name: /Add option/ })).not.toBeInTheDocument();
     });
 
+    // first/last/email/emailConfirmation/phone are always required, so there's nothing to toggle.
+    it("doesn't offer the required toggle for a field that can't be deactivated", () => {
+      renderPanel("first");
+      expect(screen.queryByText("Required")).not.toBeInTheDocument();
+      expect(document.getElementById("config-required-first")).not.toBeInTheDocument();
+    });
+
     it("write each edit into the field's entry", async () => {
       const user = userEvent.setup();
-      const entry = renderPanel("first");
+      const entry = renderPanel("pronouns");
 
       await user.type(screen.getByLabelText("Placeholder"), "J");
       await user.clear(captionedInput("Width"));
       await user.type(captionedInput("Width"), "4");
-      await user.click(document.getElementById("config-required-first")!);
+      await user.click(document.getElementById("config-required-pronouns")!);
 
-      expect(entry()).toEqual({ name: "first", placeholder: "J", width: 4, required: true });
+      expect(entry()).toEqual({ name: "pronouns", placeholder: "J", width: 4, required: true });
     });
 
     // Every field has a width, so there's no "unset" state to fall back to -- clearing it is as

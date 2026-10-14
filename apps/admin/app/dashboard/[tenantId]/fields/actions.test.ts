@@ -11,8 +11,8 @@ import type { FieldsConfig } from "@repo/tenant-config";
 const config = (): FieldsConfig => ({
   contact: [
     { name: "first", label: "First name", width: 6, required: true },
-    { name: "last", label: "Last name", width: 6, includeOnNametag: true },
-    { name: "email", label: "Email", width: 12 },
+    { name: "last", label: "Last name", width: 6, required: true, includeOnNametag: true },
+    { name: "email", label: "Email", width: 12, required: true },
   ],
   misc: [{ name: "age", title: "Age", width: 12, options: [{ label: "Adult", value: "adult" }], defaultValue: "adult" }],
 });

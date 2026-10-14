@@ -11,7 +11,12 @@ test.beforeEach(async ({ page, tenantId, dashboardUrl }) => {
   // needs some before there's anything to configure.
   const { error } = await service.from("tenants").update({
     fields_config: {
-      contact: [{ name: "first", width: 12 }, { name: "last", width: 12 }, { name: "email", width: 12 }, { name: "emailConfirmation", width: 12 }],
+      contact: [
+        { name: "first", width: 12, required: true },
+        { name: "last", width: 12, required: true },
+        { name: "email", width: 12, required: true },
+        { name: "emailConfirmation", width: 12, required: true },
+      ],
       misc: [{ name: "photo", width: 12 }],
     },
   }).eq("id", tenantId);

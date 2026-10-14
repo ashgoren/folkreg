@@ -60,24 +60,25 @@ test("removing a field drops its entry, settings and all", async ({ page, tenant
 });
 
 test("editing a field in the config panel saves its config", async ({ page, tenantId }) => {
-  await rowButton(page, "first").click();
-  await expect(page.getByRole("heading", { name: "first" })).toBeVisible();
+  await rowButton(page, "city").click();
+  await expect(page.getByRole("heading", { name: "city" })).toBeVisible();
 
-  await page.locator("#config-label-first").fill("Given name");
+  await page.locator("#config-label-city").fill("Town");
   // Addressed by id: the "Required" text beside this switch is a plain <span>, not a <label>
-  // tied to it, so the switch has no accessible name to find it by. First name starts required
-  // (from its catalog defaults), so this click turns it off.
-  await page.locator("#config-required-first").click();
+  // tied to it, so the switch has no accessible name to find it by. City starts required (from its
+  // catalog defaults, and first/last/email/emailConfirmation/phone no longer offer this toggle at
+  // all), so this click turns it off.
+  await page.locator("#config-required-city").click();
   await waitForSaved(page);
 
-  await expect.poll(async () => (await fieldsConfig(tenantId)).contact.find((field) => field.name === "first"))
-    .toEqual({ name: "first", label: "Given name", width: 6, required: false });
+  await expect.poll(async () => (await fieldsConfig(tenantId)).contact.find((field) => field.name === "city"))
+    .toEqual({ name: "city", label: "Town", width: 5, required: false });
 
   await page.reload();
   // No longer required, the row has no "*".
-  await expect(rowButton(page, "first")).toHaveText("first");
-  await rowButton(page, "first").click();
-  await expect(page.locator("#config-label-first")).toHaveValue("Given name");
+  await expect(rowButton(page, "city")).toHaveText("city");
+  await rowButton(page, "city").click();
+  await expect(page.locator("#config-label-city")).toHaveValue("Town");
 });
 
 // Chromium allows "e" in a number input (for exponents); on its own it isn't a number. Firefox
