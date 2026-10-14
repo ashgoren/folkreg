@@ -85,14 +85,13 @@ describe("parseSavedOrder", () => {
     const companion = validPerson({ first: "John" }) as Person;
     expect(parseSavedOrder(order([registrant, companion]))).toEqual({
       updatedAt: "2026-01-01T00:00:00Z",
-      registrant,
-      companions: [companion],
+      party: { registrant, companions: [companion] },
     });
   });
 
   it("has no companions for a party of one", () => {
     const registrant = validPerson() as Person;
-    expect(parseSavedOrder(order([registrant]))?.companions).toEqual([]);
+    expect(parseSavedOrder(order([registrant])).party.companions).toEqual([]);
   });
 });
 

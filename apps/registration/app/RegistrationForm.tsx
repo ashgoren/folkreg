@@ -18,7 +18,8 @@ export function RegistrationForm({ fieldsConfig, waiverConfig, initialOrder }: {
   waiverConfig: WaiverConfig;
   initialOrder: InitialOrder | null;
 }) {
-  const defaultValues = initialOrder ?? { registrant: buildDefaultPerson(fieldsConfig), companions: [] };
+  // Default values for the RHF form: either the saved order's party or a new registrant with no companions.
+  const defaultValues = initialOrder?.party ?? { registrant: buildDefaultPerson(fieldsConfig), companions: [] };
 
   const form = useForm<RegistrationParty>({
     defaultValues,

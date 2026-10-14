@@ -59,13 +59,15 @@ describe("RegistrationForm", () => {
   it("resumes a draft's registrant values when initialOrder is given", () => {
     const initialOrder: InitialOrder = {
       updatedAt: "2026-01-01T00:00:00Z",
-      // first/last/email/emailConfirmation/phone are all required now (not just active), so each
-      // needs a real value -- emailConfirmation also has to match email, since its crossValidation
-      // runs unconditionally whenever it's active.
-      registrant: {
-        first: "Jane", last: "Doe", email: "jane@example.com", emailConfirmation: "jane@example.com", phone: "555-555-5555", agreement: ["yes"],
-      } as unknown as Person,
-      companions: [],
+      party: {
+        // first/last/email/emailConfirmation/phone are all required now (not just active), so each
+        // needs a real value -- emailConfirmation also has to match email, since its crossValidation
+        // runs unconditionally whenever it's active.
+        registrant: {
+          first: "Jane", last: "Doe", email: "jane@example.com", emailConfirmation: "jane@example.com", phone: "555-555-5555", agreement: ["yes"],
+        } as unknown as Person,
+        companions: [],
+      },
     };
 
     render(<RegistrationForm fieldsConfig={fieldsConfig} waiverConfig={waiverConfig} initialOrder={initialOrder} />);
