@@ -14,31 +14,18 @@ import { activeFields, buildDefaultPerson, buildRegistrationSchema, isPersonVali
 // The editingKey is either "registrant" or a companion's index, or null if no one is being edited.
 type PersonKey = "registrant" | number;
 
+// Which person's card starts open for a party: the first one who isn't valid yet, or no one.
+const firstPersonToEdit = (fieldsConfig: FieldsConfig, party: RegistrationParty): PersonKey | null => {
+  if (!isPersonValid(fieldsConfig, party.registrant, 0)) return "registrant";
+  const index = party.companions.findIndex((person) => !isPersonValid(fieldsConfig, person, 1));
+  return index === -1 ? null : index;
+};
+
 export function RegistrationForm({ fieldsConfig, waiverConfig }: { fieldsConfig: FieldsConfig; waiverConfig: WaiverConfig }) {
-  // The draft lives in sessionStorage, not server-side, so don't render until the component is mounted on the client.
-  const [isClient, setIsClient] = useState(false);
-  useEffect(() => setIsClient(true), []);
-  if (!isClient) return null;
-
-  return (
-    <PartyForm
-      fieldsConfig={fieldsConfig}
-      waiverConfig={waiverConfig}
-      initialParty={readDraftParty()}
-    />
-  );
-}
-
-function PartyForm({ fieldsConfig, waiverConfig, initialParty }: {
-  fieldsConfig: FieldsConfig;
-  waiverConfig: WaiverConfig;
-  initialParty: RegistrationParty | null;
-}) {
-  // Default values for the RHF form: either this tab's draft or a new registrant with no companions.
-  const defaultValues = initialParty ?? { registrant: buildDefaultPerson(fieldsConfig), companions: [] };
-
+  // Always starts as a blank party, so the server can render the form and every registrant sees it immediately.
+  // A draft from this tab is restored after mount (below). Accepting the risk of re-render flash in case of a saved draft.
   const form = useForm<RegistrationParty>({
-    defaultValues,
+    defaultValues: { registrant: buildDefaultPerson(fieldsConfig), companions: [] },
     resolver: zodResolver(buildRegistrationSchema(fieldsConfig)),
     mode: "onBlur",
   });
@@ -48,18 +35,20 @@ function PartyForm({ fieldsConfig, waiverConfig, initialParty }: {
     name: "companions"
   });
 
-  // Save to sessionStorage on every change. (Note: drafts aren't validated.)
-  // form.watch's callback form is a subscription, so this doesn't cause re-renders.
+  const [editingKey, setEditingKey] = useState<PersonKey | null>("registrant");
+
+  // Restore this tab's draft from sessionStorage (client only), then save every change to it. Read before subscribe
+  // keeps a write from replacing the draft before it's restored and prevents the restore itself from being written back.
   useEffect(() => {
+    const draft = readDraftParty();
+    if (draft) {
+      form.reset(draft);
+      setEditingKey(firstPersonToEdit(fieldsConfig, draft));
+    }
+    // form.watch callback form to prevent re-renders
     const subscription = form.watch(() => writeDraftParty(form.getValues()));
     return () => subscription.unsubscribe();
-  }, [form]);
-
-  const [editingKey, setEditingKey] = useState<PersonKey | null>(() => {
-    if (!isPersonValid(fieldsConfig, defaultValues.registrant, 0)) return "registrant";
-    const index = defaultValues.companions.findIndex((person) => !isPersonValid(fieldsConfig, person, 1));
-    return index === -1 ? null : index;
-  });
+  }, [form, fieldsConfig]);
 
   const fieldStatePathFor = (key: PersonKey) => (key === "registrant" ? "registrant" : (`companions.${key}` as const));
   const titleFor = (key: PersonKey) => (key === "registrant" ? "You" : `Person ${key + 2}`);
