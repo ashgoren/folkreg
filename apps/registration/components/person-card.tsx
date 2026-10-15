@@ -8,7 +8,7 @@ type PersonCardMode = "summary" | "editing";
 
 // A person has two mutually exclusive display states: summary or edit.
 // Any number of people can be in summary at once but only one can ever be editing.
-export function PersonCard({ control, namePrefix, fields, isRegistrant, title, mode, onEdit, onSave, onRemove }: {
+export function PersonCard({ control, namePrefix, fields, isRegistrant, title, mode, onEdit, onDone, onRemove }: {
   control: Control<FieldValues>;
   namePrefix: string; // "registrant" or "companions.${index}"
   fields: FieldConfig[]; // already filtered for this person (e.g. firstPersonOnly)
@@ -16,7 +16,7 @@ export function PersonCard({ control, namePrefix, fields, isRegistrant, title, m
   title: string; // e.g. "You" or "Person 2"
   mode: PersonCardMode;
   onEdit?: () => void; // omitted while someone else is already being edited
-  onSave: () => void; // request to validate and stop editing this person
+  onDone: () => void; // request to validate and stop editing this person
   onRemove?: () => void; // omitted for the registrant
 }) {
   const first = useWatch({ control, name: `${namePrefix}.first` });
@@ -46,8 +46,8 @@ export function PersonCard({ control, namePrefix, fields, isRegistrant, title, m
             />
           ))}
         </div>
-        <Button type="button" className="mt-4" onClick={onSave}>
-          Save
+        <Button type="button" className="mt-4" onClick={onDone}>
+          Done
         </Button>
       </div>
     );

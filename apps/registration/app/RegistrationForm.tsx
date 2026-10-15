@@ -1,25 +1,41 @@
 "use client";
 
 import type { FieldsConfig, WaiverConfig } from "@repo/tenant-config";
-import type { InitialOrder, RegistrationParty } from "./registration-party";
-import { useState } from "react";
+import type { RegistrationParty } from "./registration-party";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm, type Control, type FieldValues } from "react-hook-form";
 import { PersonCard } from "@/components/person-card";
-import { activeFields, buildDefaultPerson, buildRegistrationSchema, isPersonValid  } from "./registration-party";
+import { readDraftParty, writeDraftParty } from "@/lib/draft-storage";
+import { activeFields, buildDefaultPerson, buildRegistrationSchema, isPersonValid } from "./registration-party";
 
 // At most one person is ever being edited at a time; everyone else shows a read-only summary.
 // The editingKey is either "registrant" or a companion's index, or null if no one is being edited.
 type PersonKey = "registrant" | number;
 
-export function RegistrationForm({ fieldsConfig, waiverConfig, initialOrder }: {
+export function RegistrationForm({ fieldsConfig, waiverConfig }: { fieldsConfig: FieldsConfig; waiverConfig: WaiverConfig }) {
+  // The draft lives in sessionStorage, not server-side, so don't render until the component is mounted on the client.
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => setIsClient(true), []);
+  if (!isClient) return null;
+
+  return (
+    <PartyForm
+      fieldsConfig={fieldsConfig}
+      waiverConfig={waiverConfig}
+      initialParty={readDraftParty()}
+    />
+  );
+}
+
+function PartyForm({ fieldsConfig, waiverConfig, initialParty }: {
   fieldsConfig: FieldsConfig;
   waiverConfig: WaiverConfig;
-  initialOrder: InitialOrder | null;
+  initialParty: RegistrationParty | null;
 }) {
-  // Default values for the RHF form: either the saved order's party or a new registrant with no companions.
-  const defaultValues = initialOrder?.party ?? { registrant: buildDefaultPerson(fieldsConfig), companions: [] };
+  // Default values for the RHF form: either this tab's draft or a new registrant with no companions.
+  const defaultValues = initialParty ?? { registrant: buildDefaultPerson(fieldsConfig), companions: [] };
 
   const form = useForm<RegistrationParty>({
     defaultValues,
@@ -32,6 +48,13 @@ export function RegistrationForm({ fieldsConfig, waiverConfig, initialOrder }: {
     name: "companions"
   });
 
+  // Save to sessionStorage on every change. (Note: drafts aren't validated.)
+  // form.watch's callback form is a subscription, so this doesn't cause re-renders.
+  useEffect(() => {
+    const subscription = form.watch(() => writeDraftParty(form.getValues()));
+    return () => subscription.unsubscribe();
+  }, [form]);
+
   const [editingKey, setEditingKey] = useState<PersonKey | null>(() => {
     if (!isPersonValid(fieldsConfig, defaultValues.registrant, 0)) return "registrant";
     const index = defaultValues.companions.findIndex((person) => !isPersonValid(fieldsConfig, person, 1));
@@ -42,14 +65,11 @@ export function RegistrationForm({ fieldsConfig, waiverConfig, initialOrder }: {
   const titleFor = (key: PersonKey) => (key === "registrant" ? "You" : `Person ${key + 2}`);
   const modeFor = (key: PersonKey) => (editingKey === key ? "editing" : "summary");
 
-  // Whoever is currently being edited must pass validation before freeing the slot for someone else.
-  // Triggering the whole form validates everything and displays errors.
-  // Fire-and-forget: both PersonCards' Save buttons just trigger the attempt, no caller needs the result.
-  const handleSave = async () => {
+  // Fire-and-forget: trigger validation, and if the person passes, clear the editingKey to show their summary instead of the form.
+  const finishEditing = async () => {
     await form.trigger();
-    if (form.getFieldState(fieldStatePathFor(editingKey!)).invalid) return false;
+    if (form.getFieldState(fieldStatePathFor(editingKey!)).invalid) return;
     setEditingKey(null);
-    return true;
   };
 
   const addCompanion = () => {
@@ -82,7 +102,7 @@ export function RegistrationForm({ fieldsConfig, waiverConfig, initialOrder }: {
         title="You"
         mode={modeFor("registrant")}
         onEdit={editingKey === null ? () => setEditingKey("registrant") : undefined}
-        onSave={handleSave}
+        onDone={finishEditing}
       />
       {companions.map((field, index) => (
         <PersonCard
@@ -94,7 +114,7 @@ export function RegistrationForm({ fieldsConfig, waiverConfig, initialOrder }: {
           title={titleFor(index)}
           mode={modeFor(index)}
           onEdit={editingKey === null ? () => setEditingKey(index) : undefined}
-          onSave={handleSave}
+          onDone={finishEditing}
           onRemove={() => removeCompanion(index)}
         />
       ))}

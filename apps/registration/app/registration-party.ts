@@ -1,11 +1,10 @@
 import { z } from "zod";
 import { personSchema, REQUIRED_FIELD_NAMES } from "@repo/fields";
 import type { FieldsConfig } from "@repo/tenant-config";
-import type { Order, Person } from "@repo/types";
+import type { Person } from "@repo/types";
 import { fieldConfig, type FieldConfig } from "@/components/fields/types";
 
 export type RegistrationParty = { registrant: Person; companions: Person[] };
-export type InitialOrder = { updatedAt: string; party: RegistrationParty };
 
 // All fields used by this tenant (including their full config, which is tenant fields_config merged w/ catalog config).
 // Read by buildRegistrationSchema, buildDefaultPerson, and isPersonValid.
@@ -49,10 +48,3 @@ export const buildDefaultPerson = (fieldsConfig: FieldsConfig): Person => {
   }
   return person as Person;
 };
-
-// Everything RegistrationForm needs to resume a draft, from the order as it's actually stored.
-// Just converts order from its persisted shape (flat people) to the shape RegistrationForm needs (registrant + companions).
-export const parseSavedOrder = (order: Order): InitialOrder => ({
-  updatedAt: order.updated_at,
-  party: { registrant: order.people[0]!, companions: order.people.slice(1) },
-});

@@ -1,5 +1,4 @@
 import { defaultRegistrationConfig } from "@repo/tenant-config";
-import type { Person } from "@repo/types";
 import { test, expect, service } from "./fixtures";
 import { updateTenantConfig } from "../test/supabase";
 
@@ -32,44 +31,30 @@ const fillRequiredFields = async (page: import("@playwright/test").Page) => {
   await page.getByRole("checkbox", { name: "Yes" }).check();
 };
 
-test("typing the registrant's email creates a draft order", async ({ page, tenantId }) => {
+// The draft lives in the tab's sessionStorage, which a reload keeps -- and nothing reaches the
+// database until the registration is submitted.
+test("reloading keeps what's been typed, without creating an order", async ({ page, tenantId }) => {
   await page.goto("/");
-
   await labelField(page, "First name").fill("Jane");
-  await labelField(page, "Email").fill("jane@example.com");
-  await labelField(page, "Email").blur();
+  await page.getByRole("checkbox", { name: "Yes" }).check();
 
-  await expect
-    .poll(
-      async () => {
-        const { data } = await service.from("orders").select("people").eq("tenant_id", tenantId).is("registered_at", null);
-        return (data?.[0]?.people as Person[] | undefined)?.[0]?.email;
-      },
-      { message: "waiting for the debounced autosave to land", timeout: 5000 }
-    )
-    .toBe("jane@example.com");
+  await page.reload();
+
+  await expect(labelField(page, "First name")).toHaveValue("Jane");
+  await expect(page.getByRole("checkbox", { name: "Yes" })).toBeChecked();
+  const { data } = await service.from("orders").select("id").eq("tenant_id", tenantId);
+  expect(data).toHaveLength(0);
 });
 
-test("continuing to edit updates the same draft rather than creating a second one", async ({ page, tenantId }) => {
+// A new tab gets its own empty sessionStorage, so it's a new registration.
+test("a new tab starts a blank form", async ({ page, context }) => {
   await page.goto("/");
-  await labelField(page, "Email").fill("jane@example.com");
-  await labelField(page, "Email").blur();
-  await expect.poll(async () => (await service.from("orders").select("id").eq("tenant_id", tenantId)).data?.length, { timeout: 5000 }).toBe(1);
-
   await labelField(page, "First name").fill("Jane");
-  await labelField(page, "First name").blur();
 
-  await expect
-    .poll(
-      async () => {
-        const { data } = await service.from("orders").select("people").eq("tenant_id", tenantId);
-        return (data?.[0]?.people as Person[] | undefined)?.[0]?.first;
-      },
-      { timeout: 5000 }
-    )
-    .toBe("Jane");
-  const { data } = await service.from("orders").select("id").eq("tenant_id", tenantId);
-  expect(data).toHaveLength(1);
+  const newTab = await context.newPage();
+  await newTab.goto("/");
+
+  await expect(labelField(newTab, "First name")).toHaveValue("");
 });
 
 test("submitting a complete registration confirms the order and redirects to /payment", async ({ page, tenantId }) => {

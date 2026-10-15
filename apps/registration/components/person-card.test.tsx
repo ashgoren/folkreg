@@ -25,7 +25,7 @@ describe("PersonCard", () => {
             title="You"
             mode="summary"
             onEdit={noop}
-            onSave={noop}
+            onDone={noop}
           />
         )}
       </TestForm>
@@ -43,7 +43,7 @@ describe("PersonCard", () => {
             title="You"
             mode="editing"
             onEdit={noop}
-            onSave={noop}
+            onDone={noop}
           />
         )}
       </TestForm>
@@ -63,7 +63,7 @@ describe("PersonCard", () => {
             title="You"
             mode="summary"
             onEdit={noop}
-            onSave={noop}
+            onDone={noop}
           />
         )}
       </TestForm>
@@ -85,7 +85,7 @@ describe("PersonCard", () => {
             title="You"
             mode="summary"
             onEdit={onEdit}
-            onSave={noop}
+            onDone={noop}
           />
         )}
       </TestForm>
@@ -96,8 +96,8 @@ describe("PersonCard", () => {
     expect(onEdit).toHaveBeenCalled();
   });
 
-  it("calls onSave when the editing card's Save button is clicked", async () => {
-    const onSave = vi.fn();
+  it("calls onDone when the editing card's Done button is clicked", async () => {
+    const onDone = vi.fn();
     const user = userEvent.setup();
     render(
       <TestForm defaultValues={{ registrant: { first: "", agreement: [] } }}>
@@ -110,15 +110,15 @@ describe("PersonCard", () => {
             title="You"
             mode="editing"
             onEdit={noop}
-            onSave={onSave}
+            onDone={onDone}
           />
         )}
       </TestForm>
     );
 
-    await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(screen.getByRole("button", { name: "Done" }));
 
-    expect(onSave).toHaveBeenCalled();
+    expect(onDone).toHaveBeenCalled();
   });
 
   it("shows a remove button only when onRemove is given", () => {
@@ -133,7 +133,7 @@ describe("PersonCard", () => {
             title="You"
             mode="summary"
             onEdit={noop}
-            onSave={noop}
+            onDone={noop}
           />
         )}
       </TestForm>
@@ -151,7 +151,7 @@ describe("PersonCard", () => {
             title="You"
             mode="summary"
             onEdit={noop}
-            onSave={noop}
+            onDone={noop}
             onRemove={noop}
           />
         )}
@@ -174,7 +174,7 @@ describe("PersonCard", () => {
             title="You"
             mode="summary"
             onEdit={noop}
-            onSave={noop}
+            onDone={noop}
             onRemove={onRemove}
           />
         )}
@@ -198,7 +198,7 @@ describe("PersonCard", () => {
             title="You"
             mode="summary"
             onEdit={noop}
-            onSave={noop}
+            onDone={noop}
           />
         )}
       </TestForm>

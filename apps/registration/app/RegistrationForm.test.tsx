@@ -1,12 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { FieldsConfig, WaiverConfig } from "@repo/tenant-config";
 import type { Person } from "@repo/types";
-import type { InitialOrder } from "./registration-party";
 
-vi.mock("./actions", () => ({ saveDraft: vi.fn(), submitRegistration: vi.fn() }));
-import { saveDraft, submitRegistration } from "./actions";
+vi.mock("./actions", () => ({ submitRegistration: vi.fn() }));
+import { submitRegistration } from "./actions";
 import { RegistrationForm } from "./RegistrationForm";
 
 // first/last/email/emailConfirmation/phone can't be deactivated (REQUIRED_FIELD_NAMES) and are
@@ -25,9 +24,9 @@ const fieldsConfig: FieldsConfig = {
 };
 const waiverConfig: WaiverConfig = { show: false, docusealTemplateId: "" };
 
-const renderForm = () => render(<RegistrationForm fieldsConfig={fieldsConfig} waiverConfig={waiverConfig} initialOrder={null} />);
+const renderForm = () => render(<RegistrationForm fieldsConfig={fieldsConfig} waiverConfig={waiverConfig} />);
 
-// Fills the registrant's required fields and clicks Save, leaving it valid and in summary mode --
+// Fills the registrant's required fields and clicks Done, leaving it valid and in summary mode --
 // Add Someone Else and Edit (on other people) are both hidden while a form is still open, so this
 // is the realistic sequence for any test that needs to get past the registrant.
 // "Email" and "Confirm email" need a query that distinguishes them, but exact:false (substring,
@@ -42,11 +41,11 @@ const fillValidRegistrant = async (user: ReturnType<typeof userEvent.setup>) => 
   await user.type(screen.getByLabelText(/^Confirm email/), "jane@example.com");
   await user.type(screen.getByLabelText("Phone", { exact: false }), "555-555-5555");
   await user.click(screen.getByRole("checkbox", { name: "Yes" }));
-  await user.click(screen.getByRole("button", { name: "Save" }));
+  await user.click(screen.getByRole("button", { name: "Done" }));
 };
 
 beforeEach(() => {
-  vi.mocked(saveDraft).mockResolvedValue({ updatedAt: "2026-01-01T00:00:00Z" });
+  window.sessionStorage.clear();
   vi.mocked(submitRegistration).mockResolvedValue({ error: "unused in most tests" } as never);
 });
 
@@ -56,21 +55,16 @@ describe("RegistrationForm", () => {
     expect(screen.getByLabelText("First name", { exact: false })).toBeInTheDocument();
   });
 
-  it("resumes a draft's registrant values when initialOrder is given", () => {
-    const initialOrder: InitialOrder = {
-      updatedAt: "2026-01-01T00:00:00Z",
-      party: {
-        // first/last/email/emailConfirmation/phone are all required now (not just active), so each
-        // needs a real value -- emailConfirmation also has to match email, since its crossValidation
-        // runs unconditionally whenever it's active.
-        registrant: {
-          first: "Jane", last: "Doe", email: "jane@example.com", emailConfirmation: "jane@example.com", phone: "555-555-5555", agreement: ["yes"],
-        } as unknown as Person,
-        companions: [],
-      },
-    };
+  it("resumes the draft saved earlier in this tab", () => {
+    // first/last/email/emailConfirmation/phone are all required now (not just active), so each
+    // needs a real value -- emailConfirmation also has to match email, since its crossValidation
+    // runs unconditionally whenever it's active.
+    const registrant = {
+      first: "Jane", last: "Doe", email: "jane@example.com", emailConfirmation: "jane@example.com", phone: "555-555-5555", agreement: ["yes"],
+    } as unknown as Person;
+    window.sessionStorage.setItem("registration-draft", JSON.stringify({ party: { registrant, companions: [] } }));
 
-    render(<RegistrationForm fieldsConfig={fieldsConfig} waiverConfig={waiverConfig} initialOrder={initialOrder} />);
+    renderForm();
 
     // The resumed registrant is already valid, so the card starts in summary mode, showing the
     // resumed name instead of "You" and no input fields -- proof the resumed values, not
@@ -97,11 +91,11 @@ describe("RegistrationForm", () => {
     expect(screen.getByRole("group", { name: "Person 2" })).toBeInTheDocument();
   });
 
-  it("clicking Save on an invalid card shows its errors and keeps it in edit mode", async () => {
+  it("clicking Done on an invalid card shows its errors and keeps it in edit mode", async () => {
     const user = userEvent.setup();
     renderForm();
 
-    await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(screen.getByRole("button", { name: "Done" }));
 
     expect(screen.getByLabelText("First name", { exact: false })).toBeInTheDocument();
     expect(await screen.findByText("Please enter first name.")).toBeInTheDocument();
@@ -127,7 +121,7 @@ describe("RegistrationForm", () => {
     await user.type(screen.getByLabelText(/^Email/), "bob@example.com");
     await user.type(screen.getByLabelText(/^Confirm email/), "bob@example.com");
     await user.type(screen.getByLabelText("Phone", { exact: false }), "555-555-5555");
-    await user.click(screen.getByRole("button", { name: "Save" })); // Person 2 collapses; Edit buttons reappear
+    await user.click(screen.getByRole("button", { name: "Done" })); // Person 2 collapses; Edit buttons reappear
 
     await user.click(screen.getByRole("button", { name: "Edit Jane Doe" })); // the registrant's Edit button, labeled by its typed name
 
@@ -136,55 +130,34 @@ describe("RegistrationForm", () => {
     expect(screen.getByRole("group", { name: "Person 2" })).toBeInTheDocument();
   });
 
-  describe("autosave", () => {
-    it("doesn't save while a text field is still focused, even with a non-empty email", async () => {
-      const user = userEvent.setup();
-      renderForm();
+  describe("draft", () => {
+    const savedDraft = () => JSON.parse(window.sessionStorage.getItem("registration-draft")!).party;
 
-      await user.type(screen.getByLabelText(/^Email/), "jane@example.com");
-
-      expect(saveDraft).not.toHaveBeenCalled();
-    });
-
-    it("saves a draft once the registrant's email field is blurred with content", async () => {
-      const user = userEvent.setup();
-      renderForm();
-
-      await user.type(screen.getByLabelText(/^Email/), "jane@example.com");
-      await user.tab();
-
-      expect(saveDraft).toHaveBeenCalledWith(null, expect.objectContaining({ registrant: expect.objectContaining({ email: "jane@example.com" }) }));
-    });
-
-    it("doesn't save a blurred field while the registrant's email is still empty", async () => {
+    // Saved locally, so there's no reason to wait for the field to lose focus.
+    it("saves every keystroke to the tab's draft, without waiting for blur", async () => {
       const user = userEvent.setup();
       renderForm();
 
       await user.type(screen.getByLabelText("First name", { exact: false }), "Jane");
-      await user.tab();
 
-      expect(saveDraft).not.toHaveBeenCalled();
+      expect(savedDraft().registrant.first).toBe("Jane");
     });
 
-    // A checkbox/radio/select change is a complete gesture (unlike a keystroke mid-typing), so it
-    // saves right away rather than waiting for the form to lose focus -- matching the admin app's
-    // own autosave convention.
-    it("saves immediately on a checkbox change, without waiting for blur", async () => {
+    it("saves a checkbox change to the tab's draft", async () => {
       const user = userEvent.setup();
       renderForm();
-      await user.type(screen.getByLabelText(/^Email/), "jane@example.com");
-      await user.tab();
-      await waitFor(() => expect(saveDraft).toHaveBeenCalledTimes(1));
-      vi.mocked(saveDraft).mockClear();
 
       await user.click(screen.getByRole("checkbox", { name: "Yes" }));
 
-      await waitFor(() =>
-        expect(saveDraft).toHaveBeenCalledWith(
-          "2026-01-01T00:00:00Z",
-          expect.objectContaining({ registrant: expect.objectContaining({ agreement: ["yes"] }) })
-        )
-      );
+      expect(savedDraft().registrant.agreement).toEqual(["yes"]);
+    });
+
+    it("starts blank when the stored draft isn't usable", () => {
+      window.sessionStorage.setItem("registration-draft", "not json");
+
+      renderForm();
+
+      expect(screen.getByLabelText("First name", { exact: false })).toHaveValue("");
     });
   });
 
