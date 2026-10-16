@@ -44,10 +44,9 @@ export interface Payment {
 export type Order = Omit<Tables<'orders'>, 'people' | 'payments' | 'submission_mode'> & {
   people: Person[];
   payments: Payment[];
-  // null until confirmRegistration sets it; the resolved outcome of submissionMode(), not a copy of
-  // the tenant's configured registration_config.mode -- a pay-configured tenant can still resolve to
-  // 'waitlist' once waitlistAfter trips.
-  submission_mode: RegistrationConfig['mode'] | null;
+  // Set at creation: the resolved outcome of submissionMode(), not a copy of the tenant's configured
+  // registration_config.mode (a pay-configured tenant can still resolve to 'waitlist' once waitlistAfter trips).
+  submission_mode: RegistrationConfig['mode'];
 }
 
 // A tenants row with its jsonb config columns typed (and, when read through createTenantDb's

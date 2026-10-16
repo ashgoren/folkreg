@@ -43,7 +43,7 @@ export type Database = {
           payments: Json
           people: Json | null
           registered_at: string | null
-          submission_mode: string | null
+          submission_mode: string
           tenant_id: string
           updated_at: string
         }
@@ -55,7 +55,7 @@ export type Database = {
           payments?: Json
           people?: Json | null
           registered_at?: string | null
-          submission_mode?: string | null
+          submission_mode: string
           tenant_id: string
           updated_at?: string
         }
@@ -67,7 +67,7 @@ export type Database = {
           payments?: Json
           people?: Json | null
           registered_at?: string | null
-          submission_mode?: string | null
+          submission_mode?: string
           tenant_id?: string
           updated_at?: string
         }
