@@ -8,13 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 // Rendered by RadioField/CheckboxGroupField when their own value matches followUp.triggerValue -
 // not a top-level FieldType, since a follow-up only ever exists attached to the field that reveals it.
 // name is the full path to followUp.storageKey (the triggering field's own parent path plus the storage key),
-// computed by the caller since storageKey alone doesn't say which person it belongs to. width is the
-// triggering field's own width.
-export function FollowUpField({ control, name, followUp, width }: {
+// computed by the caller since storageKey alone doesn't say which person it belongs to. It renders
+// inside the triggering field's own grid item, so it takes that field's width.
+export function FollowUpField({ control, name, followUp }: {
   control: Control<FieldValues>;
   name: string;
   followUp: FollowUp;
-  width: number;
 }) {
   const InputComponent = followUp.rows ? Textarea : Input;
 
@@ -23,8 +22,7 @@ export function FollowUpField({ control, name, followUp, width }: {
       name={name}
       control={control}
       render={({ field, fieldState }) => (
-        // Displays same width as the field that triggered it.
-        <Field data-invalid={fieldState.invalid} style={{ gridColumn: `span ${width}` }}>
+        <Field data-invalid={fieldState.invalid}>
           <FormLabel htmlFor={name}>{followUp.label}</FormLabel>
           {followUp.description && <FieldDescription>{followUp.description}</FieldDescription>}
           <InputComponent

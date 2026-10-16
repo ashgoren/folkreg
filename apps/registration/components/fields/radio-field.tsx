@@ -17,8 +17,9 @@ export function RadioField({ control, name, fieldConfig, isRegistrant }: FieldPr
       name={name}
       control={control}
       render={({ field, fieldState }) => (
-        <>
-          <Field data-invalid={fieldState.invalid} style={{ gridColumn: `span ${fieldConfig.width}` }}>
+        // One grid item for question and follow-up, so the follow-up isn't a full row gap away.
+        <div className="flex flex-col gap-4" style={{ gridColumn: `span ${fieldConfig.width}` }}>
+          <Field data-invalid={fieldState.invalid}>
             <FormLabel required={fieldConfig.required}>{fieldConfig.label}</FormLabel>
             {fieldConfig.title && <FieldDescription>{fieldConfig.title}</FieldDescription>}
             <RadioGroup value={typeof field.value === "string" ? field.value : ""} onValueChange={field.onChange} onBlur={field.onBlur} aria-invalid={fieldState.invalid}>
@@ -36,10 +37,9 @@ export function RadioField({ control, name, fieldConfig, isRegistrant }: FieldPr
               control={control}
               name={`${parentPath}.${fieldConfig.followUp.storageKey}`}
               followUp={fieldConfig.followUp}
-              width={fieldConfig.width}
             />
           )}
-        </>
+        </div>
       )}
     />
   );

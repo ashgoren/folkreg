@@ -74,4 +74,20 @@ describe("RadioField", () => {
 
     expect(screen.getByLabelText(/please explain/i)).toBeInTheDocument();
   });
+
+  it("keeps the follow-up in the question's own grid item, at the question's width", async () => {
+    const user = userEvent.setup();
+    render(
+      <TestForm defaultValues={{ person: { photo: "", photoComments: "" } }}>
+        {(control) => <RadioField control={control} name="person.photo" fieldConfig={{ ...photoField, width: 6 }} isRegistrant />}
+      </TestForm>
+    );
+
+    await user.click(screen.getByRole("radio", { name: "Other" }));
+
+    // The nearest ancestor setting a grid column (Radix gives the radio group its own inline style).
+    const gridItem = screen.getByRole("radiogroup").closest<HTMLElement>("[style*='grid-column']");
+    expect(gridItem).toHaveStyle({ gridColumn: "span 6" });
+    expect(gridItem).toContainElement(screen.getByLabelText(/please explain/i));
+  });
 });

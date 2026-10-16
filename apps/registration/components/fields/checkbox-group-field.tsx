@@ -17,8 +17,9 @@ export function CheckboxGroupField({ control, name, fieldConfig }: FieldProps) {
       render={({ field, fieldState }) => {
         const selected: string[] = Array.isArray(field.value) ? field.value : [];
         return (
-          <>
-            <Field data-invalid={fieldState.invalid} style={{ gridColumn: `span ${fieldConfig.width}` }}>
+          // One grid item for question and follow-up, so the follow-up isn't a full row gap away.
+          <div className="flex flex-col gap-4" style={{ gridColumn: `span ${fieldConfig.width}` }}>
+            <Field data-invalid={fieldState.invalid}>
               <FormLabel required={fieldConfig.required}>{fieldConfig.label}</FormLabel>
               {fieldConfig.title && <FieldDescription>{fieldConfig.title}</FieldDescription>}
               {options.map((option) => (
@@ -48,10 +49,9 @@ export function CheckboxGroupField({ control, name, fieldConfig }: FieldProps) {
                 control={control}
                 name={`${parentPath}.${fieldConfig.followUp.storageKey}`}
                 followUp={fieldConfig.followUp}
-                width={fieldConfig.width}
               />
             )}
-          </>
+          </div>
         );
       }}
     />

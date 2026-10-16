@@ -12,7 +12,6 @@ describe("FollowUpField", () => {
             control={control}
             name="person.comments"
             followUp={{ triggerValue: "other", storageKey: "comments", label: "Please specify", requiredMessage: "Required" }}
-            width={12}
           />
         )}
       </TestForm>
@@ -29,29 +28,11 @@ describe("FollowUpField", () => {
             control={control}
             name="person.comments"
             followUp={{ triggerValue: "other", storageKey: "comments", label: "Please specify", rows: 3, requiredMessage: "Required" }}
-            width={12}
           />
         )}
       </TestForm>
     );
 
     expect(screen.getByRole("textbox", { name: "Please specify" })).toHaveAttribute("rows", "3");
-  });
-
-  it("spans the same width as the field that triggered it", () => {
-    render(
-      <TestForm defaultValues={{ person: { comments: "" } }}>
-        {(control) => (
-          <FollowUpField
-            control={control}
-            name="person.comments"
-            followUp={{ triggerValue: "other", storageKey: "comments", label: "Please specify", requiredMessage: "Required" }}
-            width={6}
-          />
-        )}
-      </TestForm>
-    );
-
-    expect(screen.getByRole("textbox", { name: "Please specify" }).closest("[data-slot=field]")).toHaveStyle({ gridColumn: "span 6" });
   });
 });
