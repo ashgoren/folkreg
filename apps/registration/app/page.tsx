@@ -1,17 +1,18 @@
-import { registrationStatus } from "@repo/tenant-config";
+import { eventYear, registrationStatus } from "@repo/tenant-config";
 import { ClosedPage } from "@/components/closed-page";
 import { getRequestTenant } from "@/lib/tenant";
 import { RegistrationForm } from "./RegistrationForm";
 
 export default async function RegistrationPage() {
-  const { tenant } = await getRequestTenant();
+  const { db, tenant } = await getRequestTenant();
   const { timezone, links } = tenant.event_config;
+  const year = eventYear(tenant.event_config) ?? new Date().getFullYear();
 
   const status = registrationStatus({
     registration: tenant.registration_config,
     timezone,
     now: new Date(),
-    peopleRegistered: null, // TEMPORARY until orders record the year of the event they belong to
+    peopleRegistered: await db.countRegisteredPeople(year),
   });
 
   if (status.state !== "open") {

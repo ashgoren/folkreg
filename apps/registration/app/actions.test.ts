@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from "vitest";
 import { createTenantDb } from "@repo/db/queries";
-import { defaultFieldsConfig, defaultRegistrationConfig } from "@repo/tenant-config";
+import { defaultFieldsConfig, defaultRegistrationConfig, eventYear } from "@repo/tenant-config";
 import type { Person } from "@repo/types";
 import { createServiceClient, getTenantIdBySlug, resetTenant, updateTenantConfig, REGISTRATION_TENANT_SLUG } from "../test/supabase";
 import { buildDefaultPerson } from "./registration-party";
@@ -56,14 +56,14 @@ const party = { registrant: validPerson(), companions: [] };
 describe("submitRegistration", () => {
   // redirect() throws (by design, in real Next.js code) rather than returning -- the success path
   // is covered through this, not by inspecting a resolved value.
-  it("creates and confirms the order and throws to redirect, for a pay-mode tenant", async () => {
+  it("creates a pending pay-mode order and throws to redirect, for a pay-mode tenant", async () => {
     await expect(submitRegistration(party)).rejects.toThrow();
 
     const [order] = await findOrders();
     expect(order!.people).toEqual([validPerson()]);
     expect(order!.is_test).toBe(false);
-    expect(order!.registered_at).not.toBeNull();
     expect(order!.submission_mode).toBe("pay");
+    expect(order!.registered_at).toBeNull(); // registered at its first payment, not at submit
   });
 
   it("stores the registrant first, then companions, as the order's people", async () => {
@@ -82,6 +82,52 @@ describe("submitRegistration", () => {
 
     const [order] = await findOrders();
     expect(order!.submission_mode).toBe("lottery");
+    expect(order!.registered_at).not.toBeNull(); // the entry is the registration
+  });
+
+  describe("people limits", () => {
+    // An order already in the tenant's current event year, as countRegisteredPeople counts them.
+    const existingOrder = async (submissionMode: "pay" | "waitlist" | "lottery") => {
+      const tenant = (await db.getTenant())!;
+      const year = eventYear(tenant.event_config) ?? new Date().getFullYear();
+      await db.createOrder({ people: [validPerson()], isTest: false, eventYear: year, submissionMode });
+    };
+    const latestOrder = async () => (await findOrders()).sort((a, b) => b.created_at.localeCompare(a.created_at))[0]!;
+
+    it("waitlists a new registrant once waitlistAfter is reached", async () => {
+      await updateTenantConfig(service, tenantId, {
+        registration_config: { ...defaultRegistrationConfig(), opening: "now", waitlistAfter: { enabled: true, people: 1 } },
+      });
+      await existingOrder("waitlist");
+
+      await expect(submitRegistration(party)).rejects.toThrow();
+
+      expect((await latestOrder()).submission_mode).toBe("waitlist");
+    });
+
+    // A pending pay-mode order is an unfinished checkout and holds no spot.
+    it("doesn't count a pending pay-mode order toward waitlistAfter", async () => {
+      await updateTenantConfig(service, tenantId, {
+        registration_config: { ...defaultRegistrationConfig(), opening: "now", waitlistAfter: { enabled: true, people: 1 } },
+      });
+      await existingOrder("pay");
+
+      await expect(submitRegistration(party)).rejects.toThrow();
+
+      expect((await latestOrder()).submission_mode).toBe("pay");
+    });
+
+    it("refuses once closeAfter is reached, without creating an order", async () => {
+      await updateTenantConfig(service, tenantId, {
+        registration_config: { ...defaultRegistrationConfig(), opening: "now", closeAfter: { enabled: true, people: 1 } },
+      });
+      await existingOrder("lottery");
+
+      const result = await submitRegistration(party);
+
+      expect(result).toMatchObject({ error: expect.any(String) });
+      expect(await findOrders()).toHaveLength(1);
+    });
   });
 
   it("refuses once registration is no longer open, without creating an order", async () => {

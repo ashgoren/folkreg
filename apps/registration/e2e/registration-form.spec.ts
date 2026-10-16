@@ -57,7 +57,7 @@ test("a new tab starts a blank form", async ({ page, context }) => {
   await expect(labelField(newTab, "First name")).toHaveValue("");
 });
 
-test("submitting a complete registration confirms the order and redirects to /payment", async ({ page, tenantId }) => {
+test("submitting a complete registration creates a pending order and redirects to /payment", async ({ page, tenantId }) => {
   await page.goto("/");
   await fillRequiredFields(page);
   await page.getByRole("button", { name: "Save" }).click();
@@ -65,8 +65,9 @@ test("submitting a complete registration confirms the order and redirects to /pa
   await page.getByRole("button", { name: "Continue" }).click();
 
   await expect(page).toHaveURL(/\/payment/);
-  const { data } = await service.from("orders").select("*").eq("tenant_id", tenantId).not("registered_at", "is", null);
+  const { data } = await service.from("orders").select("*").eq("tenant_id", tenantId);
   expect(data).toHaveLength(1);
   expect(data![0]!.submission_mode).toBe("pay");
+  expect(data![0]!.registered_at).toBeNull(); // pending until its first payment
   expect(data![0]!.is_test).toBe(false);
 });

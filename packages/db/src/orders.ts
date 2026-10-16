@@ -6,11 +6,16 @@ export const createOrderMethods = (supabase: DbClient, tenantId: string) => {
   // pays with the test keys, so it must come from a server-verified preview session. eventYear is
   // required too -- which year's event this order belongs to, since a tenant reuses the same row
   // across years and counts (closeAfter, waitlistAfter) must count only the current one.
-  const createOrder = async ({ people, isTest, eventYear }: {
+  //
+  // submissionMode is what submissionMode() resolved at submit, and decides registered_at in the same
+  // insert: a lottery or waitlist entry is the registration itself, so it's registered now; a pay-mode
+  // order stays pending (registered_at null), uncounted and editable, until its first payment.
+  const createOrder = async ({ people, isTest, eventYear, submissionMode }: {
     people: Person[];
     isTest: boolean;
     eventYear: number;
-  }): Promise<{ id: string; updatedAt: string }> => {
+    submissionMode: RegistrationConfig["mode"];
+  }): Promise<{ id: string }> => {
     const { data, error } = await supabase
       .from("orders")
       .insert({
@@ -18,11 +23,13 @@ export const createOrderMethods = (supabase: DbClient, tenantId: string) => {
         people: people as unknown as Json,
         is_test: isTest,
         event_year: eventYear,
+        submission_mode: submissionMode,
+        registered_at: submissionMode === "pay" ? null : new Date().toISOString(),
       })
-      .select("id, updated_at")
+      .select("id")
       .single();
     if (error) throw error;
-    return { id: data.id, updatedAt: data.updated_at };
+    return { id: data.id };
   };
 
   const getOrder = async (orderId: string): Promise<Order | null> => {
@@ -42,43 +49,9 @@ export const createOrderMethods = (supabase: DbClient, tenantId: string) => {
     return data as unknown as Order;
   };
 
-  // Returns null if some other writer (e.g. another tab sharing the same draft via the order
-  // cookie) has updated this order since expectedUpdatedAt was read, instead of blindly applying
-  // a write that would silently clobber those newer changes.
-  const updateOrderPeople = async (
-    orderId: string,
-    people: Person[],
-    expectedUpdatedAt: string
-  ): Promise<{ updatedAt: string } | null> => {
-    const { data, error } = await supabase
-      .from("orders")
-      .update({ people: people as unknown as Json })
-      .eq("id", orderId)
-      .eq("tenant_id", tenantId)
-      .eq("updated_at", expectedUpdatedAt)
-      .select("updated_at")
-      .single();
-    if (error) {
-      if (error.code === "PGRST116") return null; // No row matched -- conflicting write happened elsewhere
-      throw error;
-    }
-    return { updatedAt: data.updated_at };
-  };
-
-  // Only sets registered_at/submission_mode if registered_at isn't already set, so resubmitting a
-  // confirmed registration doesn't overwrite the original confirmation timestamp or mode.
-  const confirmRegistration = async (orderId: string, mode: RegistrationConfig["mode"]): Promise<void> => {
-    const { error } = await supabase
-      .from("orders")
-      .update({ registered_at: new Date().toISOString(), submission_mode: mode })
-      .eq("id", orderId)
-      .eq("tenant_id", tenantId)
-      .is("registered_at", null);
-    if (error) throw error;
-  };
-
-  // Counts people on confirmed, live orders for one event year -- what registrationStatus and
-  // submissionMode both need as peopleRegistered (everyone, including waitlisted/lottery people).
+  // Counts people on registered, live orders for one event year -- what registrationStatus and
+  // submissionMode both need as peopleRegistered: every lottery and waitlist entry, and pay-mode
+  // orders once paid. A pending pay-mode order (an unfinished or abandoned checkout) holds no spot.
   const countRegisteredPeople = async (eventYear: number): Promise<number> => {
     const { data, error } = await supabase
       .from("orders")
@@ -92,5 +65,5 @@ export const createOrderMethods = (supabase: DbClient, tenantId: string) => {
     return data.reduce((total, order) => total + (order.people as unknown as Person[]).length, 0);
   };
 
-  return { createOrder, getOrder, updateOrderPeople, confirmRegistration, countRegisteredPeople };
+  return { createOrder, getOrder, countRegisteredPeople };
 };
