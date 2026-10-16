@@ -145,3 +145,40 @@ test("the header is the tenant's header color with readable text, or a tint when
   await expect.poll(() => backgroundOf(header)).toBe("rgb(27, 94, 32)");
   await expect.poll(() => textColorOf(title)).toBe("rgb(255, 255, 255)");
 });
+
+test("the header's muted text is mixed from the header's own colors, not the page's", async ({ page, tenantId }) => {
+  await updateTenantConfig(service, tenantId, {
+    event_config: { ...defaultEventConfig(), title: "Spring Dance", start: "2027-04-02T19:00", end: "2027-04-04T15:00" },
+    theme_config: { ...defaultThemeConfig(), headerLight: "#1b5e20" },
+  });
+  // The dates are text-muted-foreground: 60% of the text color blended into the background.
+  // Chromium reports a color-mix() in oklab as oklab(L a b), where L is lightness from 0 to 1.
+  const lightness = (color: string) => {
+    const match = /^oklab\(([\d.]+)/.exec(color);
+    if (!match) throw new Error(`expected an oklab() color, got ${color}`);
+    return Number(match[1]);
+  };
+
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("/");
+  const dates = page.getByRole("banner").getByText("April 2–4, 2027");
+
+  // Mixed from the header's white text and dark green, the dates are light; mixed from the page's
+  // near-black text and white background, they'd be a mid gray around 0.5.
+  expect(lightness(await dates.evaluate((element) => getComputedStyle(element).color))).toBeGreaterThan(0.7);
+});
+
+test("switching theme doesn't animate colors", async ({ page, tenantId }) => {
+  await updateTenantConfig(service, tenantId, { registration_config: { ...defaultRegistrationConfig(), opening: "now" } });
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("/");
+  // A primary button: it has a color transition, which would otherwise fade it into the new theme.
+  const save = page.getByRole("button", { name: "Save" }).first();
+
+  await page.getByRole("button", { name: /theme: auto/i }).click(); // auto -> light
+  await page.getByRole("button", { name: /theme: light/i }).click(); // light -> dark
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+
+  // Read once, not polled: it must already be the dark accent (#3b82f6), not partway there.
+  expect(await backgroundOf(save)).toBe("rgb(59, 130, 246)");
+});

@@ -29,6 +29,21 @@ const subscribe = (onChange: () => void) => {
   };
 };
 
+// Sets <html data-theme> with transitions off for the switch itself.
+const applyTheme = (theme: Theme) => {
+  const noTransitions = document.createElement("style");
+  noTransitions.textContent = "*, *::before, *::after { transition: none !important; }";
+  document.head.appendChild(noTransitions);
+
+  const attribute = dataThemeAttribute(theme);
+  if (attribute) document.documentElement.setAttribute("data-theme", attribute);
+  else document.documentElement.removeAttribute("data-theme");
+
+  // Reading a layout value makes the browser bring style up to date now, while transitions are still off.
+  void document.body.offsetHeight;
+  noTransitions.remove();
+};
+
 type ThemeToggleProps = {
   initialTheme: Theme;
 };
@@ -42,11 +57,7 @@ export function ThemeToggle({ initialTheme }: ThemeToggleProps) {
   // Keeps html's data-theme in step with the cookie. An effect rather than part of the click, so
   // other tabs follow too: their re-read cookie changes `theme`, which runs this in each of them.
   // On the first render it rewrites the value the server already set, which changes nothing.
-  useEffect(() => {
-    const attribute = dataThemeAttribute(theme);
-    if (attribute) document.documentElement.setAttribute("data-theme", attribute);
-    else document.documentElement.removeAttribute("data-theme");
-  }, [theme]);
+  useEffect(() => applyTheme(theme), [theme]);
 
   const cycle = () => {
     const next = nextTheme(theme);
