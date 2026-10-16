@@ -13,7 +13,7 @@ export function SiteHeader({ event, theme }: SiteHeaderProps) {
   const dates = eventDateText(event);
 
   return (
-    <header className="border-b border-primary/30 bg-primary/10">
+    <header className="site-header border-b border-primary/30">
       <div className="mx-auto flex w-full max-w-3xl items-start justify-between gap-4 px-4 py-6">
         <div>
           {event.title && <h1 className="text-2xl font-semibold">{event.title}</h1>}

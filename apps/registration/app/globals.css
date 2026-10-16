@@ -68,8 +68,8 @@
    The colors are the tenant's own, from theme_config: the layout puts each one on <html style> as
    a --tenant-* variable (lib/tenant-theme.ts), both modes' sets at once, and this picks the set
    for the mode showing. Only those values and the fixed error red differ by mode; everything else
-   is mixed from --foreground and --background, so it follows them into dark mode by itself and
-   takes on the tenant's palette (a warm background gets warm borders and muted text). */
+   is mixed from --foreground and --background (the next rule), so it follows them into dark mode
+   by itself and takes on the tenant's palette (a warm background gets warm borders and muted text). */
 :root {
   color-scheme: light;
   --background: var(--tenant-background-light);
@@ -77,6 +77,11 @@
   --primary: var(--tenant-accent-light);
   --primary-foreground: var(--tenant-accent-foreground-light);
   --destructive: oklch(0.577 0.245 27.325);
+  /* The header's own color, set on the admin's Appearance page, else the background tinted with the
+     accent. The tenant variables exist only for a color that's set (var()'s fallback applies when
+     a variable is undefined), and text on a set color is chosen for contrast with it. */
+  --header: var(--tenant-header-light, color-mix(in oklab, var(--primary) 10%, var(--background)));
+  --header-foreground: var(--tenant-header-foreground-light, var(--foreground));
 
   @variant dark {
     color-scheme: dark;
@@ -85,8 +90,34 @@
     --primary: var(--tenant-accent-dark);
     --primary-foreground: var(--tenant-accent-foreground-dark);
     --destructive: oklch(0.704 0.191 22.216);
+    --header: var(--tenant-header-dark, color-mix(in oklab, var(--primary) 10%, var(--background)));
+    --header-foreground: var(--tenant-header-foreground-dark, var(--foreground));
   }
 
+  /* Unused by this app's components, kept so the shadcn theme's variables all resolve. */
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: var(--background);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+
+  --radius: 0.625rem;
+}
+
+/* The colors derived from --foreground and --background. A variable holding var() is worked out on
+   the element that declares it, and its descendants inherit the result, so these are declared
+   both on :root (from the page's colors) and on the header (from its own, below): otherwise the
+   header's muted text and hover backgrounds would still be mixed from the page's colors. */
+:root,
+.site-header {
   /* Surfaces sit directly on the page: cards are grouped by their borders, not a fill. */
   --card: var(--background);
   --card-foreground: var(--foreground);
@@ -105,23 +136,16 @@
   --border: color-mix(in oklab, var(--foreground) 12%, var(--background));
   --input: color-mix(in oklab, var(--foreground) 18%, var(--background));
   --ring: var(--primary);
+}
 
-  /* Unused by this app's components, kept so the shadcn theme's variables all resolve. */
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: var(--background);
-  --sidebar-foreground: var(--foreground);
-  --sidebar-primary: var(--primary);
-  --sidebar-primary-foreground: var(--primary-foreground);
-  --sidebar-accent: var(--accent);
-  --sidebar-accent-foreground: var(--accent-foreground);
-  --sidebar-border: var(--border);
-  --sidebar-ring: var(--ring);
-
-  --radius: 0.625rem;
+/* The registration site's header (components/site-header.tsx) as its own surface: inside it, the
+   background and text are the header's, so everything in it (muted text, the theme toggle and its
+   hover, any link written with text-foreground) reads against the header without knowing it. */
+.site-header {
+  --background: var(--header);
+  --foreground: var(--header-foreground);
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 @layer base {

@@ -1,5 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
-import { defaultRegistrationConfig, defaultThemeConfig } from "@repo/tenant-config";
+import { defaultEventConfig, defaultRegistrationConfig, defaultThemeConfig } from "@repo/tenant-config";
 import { test, expect, service } from "./fixtures";
 import { updateTenantConfig } from "../test/supabase";
 
@@ -120,4 +120,28 @@ test("the tenant's own colors show in each mode, with readable text on its accen
   // Polled: the button animates its colors (`transition-all`), so it takes a moment to arrive.
   await expect.poll(() => backgroundOf(save)).toBe("rgb(241, 160, 57)");
   await expect.poll(() => textColorOf(save)).toBe("rgb(10, 10, 10)"); // near-black on the bright orange
+});
+
+test("the header is the tenant's header color with readable text, or a tint when none is set", async ({ page, tenantId }) => {
+  await updateTenantConfig(service, tenantId, {
+    event_config: { ...defaultEventConfig(), title: "Spring Dance" },
+    theme_config: { ...defaultThemeConfig(), headerLight: "", headerDark: "#1b5e20" },
+  });
+  const header = page.getByRole("banner");
+  const title = page.getByRole("heading", { name: "Spring Dance" });
+  const textColorOf = (locator: Locator) => locator.evaluate((element) => getComputedStyle(element).color);
+
+  // Light mode has no header color: a tint of the accent, so neither the page's background nor
+  // the accent itself.
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("/");
+  const tint = await backgroundOf(header);
+  expect(tint).not.toBe(LIGHT_BACKGROUND);
+  expect(tint).not.toBe("rgb(37, 99, 235)"); // the default accent, #2563eb
+  expect(await textColorOf(title)).toBe("rgb(10, 10, 10)"); // the page's own text
+
+  // Dark mode's header is dark green, so its text turns white.
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect.poll(() => backgroundOf(header)).toBe("rgb(27, 94, 32)");
+  await expect.poll(() => textColorOf(title)).toBe("rgb(255, 255, 255)");
 });

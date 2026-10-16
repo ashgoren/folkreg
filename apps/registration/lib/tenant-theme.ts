@@ -29,6 +29,11 @@ const contrastRatio = (a: string, b: string) => {
 export const readableTextOn = (background: string) =>
   contrastRatio(background, DARK_TEXT) >= contrastRatio(background, LIGHT_TEXT) ? DARK_TEXT : LIGHT_TEXT;
 
+// A header color and the text on it, when one is set. An unset header ("") adds nothing, and
+// globals.css falls back to tinting the background with the accent.
+const headerVariables = (color: string, mode: "light" | "dark") =>
+  color === "" ? {} : { [`--tenant-header-${mode}`]: color, [`--tenant-header-foreground-${mode}`]: readableTextOn(color) };
+
 // The tenant's colors as CSS variables for <html style>. globals.css maps them onto the
 // variables the components use, choosing the light or dark set there, so this only supplies
 // values and knows nothing about which mode is showing.
@@ -38,8 +43,10 @@ export const tenantThemeStyle = (theme: ThemeConfig): CSSProperties =>
     "--tenant-foreground-light": theme.foregroundLight,
     "--tenant-accent-light": theme.accentLight,
     "--tenant-accent-foreground-light": readableTextOn(theme.accentLight),
+    ...headerVariables(theme.headerLight, "light"),
     "--tenant-background-dark": theme.backgroundDark,
     "--tenant-foreground-dark": theme.foregroundDark,
     "--tenant-accent-dark": theme.accentDark,
     "--tenant-accent-foreground-dark": readableTextOn(theme.accentDark),
+    ...headerVariables(theme.headerDark, "dark"),
   }) as CSSProperties;

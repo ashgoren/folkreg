@@ -37,4 +37,15 @@ describe("tenantThemeStyle", () => {
     expect(style).toHaveProperty("--tenant-foreground-dark");
     expect(style).toHaveProperty("--tenant-accent-foreground-light");
   });
+
+  it("adds a header color and readable text on it only for a mode whose header is set", () => {
+    const style = tenantThemeStyle({ ...defaultThemeConfig(), headerLight: "", headerDark: "#1b5e20" });
+
+    expect(style).not.toHaveProperty("--tenant-header-light");
+    expect(style).not.toHaveProperty("--tenant-header-foreground-light");
+    expect(style).toMatchObject({
+      "--tenant-header-dark": "#1b5e20",
+      "--tenant-header-foreground-dark": "#ffffff",
+    });
+  });
 });
