@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm, type Control, type FieldValues } from "react-hook-form";
 import { PersonCard } from "@/components/person-card";
 import { readDraftParty, writeDraftParty } from "@/lib/draft-storage";
-import { activeFields, buildDefaultPerson, buildRegistrationSchema, isPersonValid } from "./registration-party";
+import { activeFieldGroups, buildDefaultPerson, buildRegistrationSchema, isPersonValid } from "./registration-party";
 import { submitRegistration } from "./actions";
 
 // At most one person is ever being edited at a time; everyone else shows a read-only summary.
@@ -105,7 +105,12 @@ export function RegistrationForm({ fieldsConfig, waiverConfig }: { fieldsConfig:
   // Field components take the loosest Control<FieldValues> b/c tenant active fields aren't known until runtime.
   const control = form.control as unknown as Control<FieldValues>;
 
-  const fields = activeFields(fieldsConfig);
+  const fields = activeFieldGroups(fieldsConfig);
+  // Companions don't get the registrant-only fields (the agreement).
+  const companionFields = {
+    contact: fields.contact.filter((field) => !field.firstPersonOnly),
+    misc: fields.misc.filter((field) => !field.firstPersonOnly),
+  };
 
   return (
     <form onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-6">
@@ -124,7 +129,7 @@ export function RegistrationForm({ fieldsConfig, waiverConfig }: { fieldsConfig:
           key={field.id}
           control={control}
           namePrefix={`companions.${index}`}
-          fields={fields.filter((field) => !field.firstPersonOnly)}
+          fields={companionFields}
           isRegistrant={false}
           title={titleFor(index)}
           mode={modeFor(index)}
@@ -138,7 +143,7 @@ export function RegistrationForm({ fieldsConfig, waiverConfig }: { fieldsConfig:
           Add someone else
         </Button>
       ) : (
-        <p className="text-sm text-muted-foreground">You&apos;ll be able to add more people once you save your information above.</p>
+        <p className="text-muted-foreground">You&apos;ll be able to add more people once you save your information above.</p>
       )}
 
       {waiverConfig.show && <p>Waiver placeholder.</p>}
@@ -146,7 +151,7 @@ export function RegistrationForm({ fieldsConfig, waiverConfig }: { fieldsConfig:
       {editingKey === null && (
         <>
           {submitError && (
-            <p role="alert" className="text-sm text-destructive">
+            <p role="alert" className="text-destructive">
               {submitError}
             </p>
           )}

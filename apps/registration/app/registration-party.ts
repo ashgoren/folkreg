@@ -2,18 +2,22 @@ import { z } from "zod";
 import { personSchema, REQUIRED_FIELD_NAMES } from "@repo/fields";
 import type { FieldsConfig } from "@repo/tenant-config";
 import type { Person } from "@repo/types";
-import { fieldConfig, type FieldConfig } from "@/components/fields/types";
+import { fieldConfig, type FieldConfig, type FieldGroups } from "@/components/fields/types";
 
 export type RegistrationParty = { registrant: Person; companions: Person[] };
 
-// All fields used by this tenant (including their full config, which is tenant fields_config merged w/ catalog config).
-// Read by buildRegistrationSchema, buildDefaultPerson, and isPersonValid.
-export const activeFields = (fieldsConfig: FieldsConfig): FieldConfig[] => {
-  const fields = [...fieldsConfig.contact, ...fieldsConfig.misc];
-  const fieldNames = fields.map((field) => field.name);
+// A tenant's active fields, each with its full config: the tenant settings + catalog).
+export const activeFieldGroups = (fieldsConfig: FieldsConfig): FieldGroups => {
+  const fieldNames = [...fieldsConfig.contact, ...fieldsConfig.misc].map((field) => field.name);
   const missing = REQUIRED_FIELD_NAMES.filter((name) => !fieldNames.includes(name));
   if (missing.length > 0) throw new Error(`fields_config is missing ${missing.map((name) => `"${name}"`).join(", ")}`);
-  return fields.map(fieldConfig);
+  return { contact: fieldsConfig.contact.map(fieldConfig), misc: fieldsConfig.misc.map(fieldConfig) };
+};
+
+// Same fields in one list, for what treats every field alike: buildRegistrationSchema, buildDefaultPerson, isPersonValid.
+export const activeFields = (fieldsConfig: FieldsConfig): FieldConfig[] => {
+  const { contact, misc } = activeFieldGroups(fieldsConfig);
+  return [...contact, ...misc];
 };
 
 // One schema for the whole party, including special rules for the first person (agreement, age options).

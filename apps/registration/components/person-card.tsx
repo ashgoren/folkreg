@@ -2,7 +2,7 @@ import { useWatch, type Control, type FieldValues } from "react-hook-form";
 import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DynamicField } from "./fields/dynamic-field";
-import type { FieldConfig } from "./fields/types";
+import type { FieldConfig, FieldGroups } from "./fields/types";
 
 type PersonCardMode = "summary" | "editing";
 
@@ -11,7 +11,7 @@ type PersonCardMode = "summary" | "editing";
 export function PersonCard({ control, namePrefix, fields, isRegistrant, title, mode, onEdit, onDone, onRemove }: {
   control: Control<FieldValues>;
   namePrefix: string; // "registrant" or "companions.${index}"
-  fields: FieldConfig[]; // already filtered for this person (e.g. firstPersonOnly)
+  fields: FieldGroups; // already filtered for this person (e.g. firstPersonOnly)
   isRegistrant: boolean;
   title: string; // e.g. "You" or "Person 2"
   mode: PersonCardMode;
@@ -23,6 +23,16 @@ export function PersonCard({ control, namePrefix, fields, isRegistrant, title, m
   const last = useWatch({ control, name: `${namePrefix}.last` });
   const name = [first, last].filter((part): part is string => typeof part === "string" && part.trim() !== "").join(" ");
   const label = name || title;
+
+  const renderField = (field: FieldConfig) => (
+    <DynamicField
+      key={field.name}
+      control={control}
+      name={`${namePrefix}.${field.name}`}
+      fieldConfig={field}
+      isRegistrant={isRegistrant}
+    />
+  );
 
   if (mode === "editing") {
     return (
@@ -36,15 +46,10 @@ export function PersonCard({ control, namePrefix, fields, isRegistrant, title, m
           )}
         </div>
         <div className="grid grid-cols-12 gap-4">
-          {fields.map((field) => (
-            <DynamicField
-              key={field.name}
-              control={control}
-              name={`${namePrefix}.${field.name}`}
-              fieldConfig={field}
-              isRegistrant={isRegistrant}
-            />
-          ))}
+          {fields.contact.map(renderField)}
+        </div>
+        <div className="mt-12 grid grid-cols-12 gap-x-4 gap-y-12">
+          {fields.misc.map(renderField)}
         </div>
         <Button type="button" className="mt-4" onClick={onDone}>
           Save
@@ -68,7 +73,7 @@ export function PersonCard({ control, namePrefix, fields, isRegistrant, title, m
           </Button>
         )}
       </div>
-      <p className="mt-4 text-sm text-muted-foreground">Summary coming soon.</p>
+      <p className="mt-4 text-muted-foreground">Summary coming soon.</p>
     </div>
   );
 }

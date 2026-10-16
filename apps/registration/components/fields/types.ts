@@ -7,6 +7,8 @@ import type { ActiveField } from "@repo/tenant-config";
 export type FieldConfig = FieldDef & ActiveField;
 export const fieldConfig = (field: ActiveField): FieldConfig => ({ ...FIELD_DEFS[field.name], ...field });
 
+export type FieldGroups = { contact: FieldConfig[]; misc: FieldConfig[] };
+
 // Every field component's entry point: control/name follow react-hook-form's own Controller
 // convention, except name stays a plain string b/c a tenant's active fields aren't known until runtime.
 export interface FieldProps {

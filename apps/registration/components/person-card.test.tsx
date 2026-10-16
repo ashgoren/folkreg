@@ -5,10 +5,10 @@ import { PersonCard } from "./person-card";
 import { TestForm } from "./fields/test-helpers";
 import { fieldConfig } from "./fields/types";
 
-const fields = [
-  fieldConfig({ name: "first", label: "First name", width: 12 }),
-  fieldConfig({ name: "agreement", label: "Agreement", width: 12, options: [{ label: "Yes", value: "yes" }] }),
-];
+const fields = {
+  contact: [fieldConfig({ name: "first", label: "First name", width: 12 })],
+  misc: [fieldConfig({ name: "agreement", label: "Agreement", width: 12, options: [{ label: "Yes", value: "yes" }] })],
+};
 
 const noop = () => {};
 

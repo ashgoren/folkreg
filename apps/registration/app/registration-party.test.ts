@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { defaultFieldsConfig } from "@repo/tenant-config";
 import type { Person } from "@repo/types";
-import { activeFields, buildRegistrationSchema, buildDefaultPerson, isPersonValid } from "./registration-party";
+import { activeFieldGroups, activeFields, buildRegistrationSchema, buildDefaultPerson, isPersonValid } from "./registration-party";
 
 // personSchema's base shape requires every active field present as its type (a string or string[]),
 // whether or not the tenant marked it required -- buildDefaultPerson already supplies that for every
@@ -20,6 +20,19 @@ const validPerson = (overrides: Record<string, unknown> = {}) => ({
   state: "OR",
   zip: "97477",
   ...overrides,
+});
+
+describe("activeFieldGroups", () => {
+  it("keeps fields_config's contact and misc groups apart, each in its configured order", () => {
+    const config = defaultFieldsConfig();
+    const { contact, misc } = activeFieldGroups(config);
+    expect(contact.map((field) => field.name)).toEqual(config.contact.map((field) => field.name));
+    expect(misc.map((field) => field.name)).toEqual(config.misc.map((field) => field.name));
+  });
+
+  it("throws if the tenant's config has deactivated email", () => {
+    expect(() => activeFieldGroups({ contact: [], misc: [] })).toThrow(/email/);
+  });
 });
 
 describe("activeFields", () => {
