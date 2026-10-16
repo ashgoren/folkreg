@@ -7,6 +7,7 @@ import { FormLabel } from "@/components/form-label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useAutosaveForm } from "@/lib/useAutosaveForm";
+import { normalizeHex } from "@/lib/normalize-hex";
 import type { Tenant } from "@repo/types";
 import { themeConfigSchema, type ThemeConfig } from "@repo/tenant-config";
 import { updateAppearance } from "./actions";
@@ -24,7 +25,17 @@ function ColorField({ name, label, control }: { name: keyof ThemeConfig; label: 
             aria-label={`${label} swatch`}
             className="h-8 w-10 shrink-0 rounded border border-input p-0.5"
           />
-          <Input {...field} id={`appearance-${name}`} aria-invalid={fieldState.invalid} /> {/* ...field includes onChange to update the same value as the color input */}
+          <Input
+            {...field} // includes onChange, which updates the same value as the color input
+            id={`appearance-${name}`}
+            aria-invalid={fieldState.invalid}
+            onBlur={() => {
+              // This runs before the form's own onBlur, where autosave saves.
+              const tidied = normalizeHex(field.value);
+              if (tidied !== field.value) field.onChange(tidied);
+              field.onBlur();
+            }}
+          />
         </div>
         {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
       </Field>

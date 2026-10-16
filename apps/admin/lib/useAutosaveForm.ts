@@ -102,6 +102,10 @@ export function useAutosaveForm<TInput extends FieldValues, TOutput>({ label, sc
         textEditPendingRef.current = true;
         return;
       }
+      // This save sends the whole form, so it covers a text edit still waiting for its blur too.
+      // Without this, a change made during a field's blur (focus has already left the field, so
+      // it lands here) would be saved now and then again by the form's onBlur.
+      textEditPendingRef.current = false;
       void saveIfValid();
     });
     return () => subscription.unsubscribe();

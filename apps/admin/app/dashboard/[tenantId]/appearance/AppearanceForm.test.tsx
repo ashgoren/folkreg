@@ -68,6 +68,34 @@ describe("AppearanceForm", () => {
     await expectLastSave(vi.mocked(updateAppearance), tenant.id, { ...DEFAULTS, backgroundLight: "#00ff00" });
   });
 
+  it("tidies a pasted color on tab-out instead of flagging it, and saves the tidied value", async () => {
+    const tenant = makeTenant();
+    const user = userEvent.setup();
+    render(<AppearanceForm tenant={tenant} />);
+
+    await user.clear(textInput("accentLight"));
+    await user.type(textInput("accentLight"), " 1b5e20 ");
+    await user.tab();
+
+    expect(textInput("accentLight")).toHaveValue("#1b5e20");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    await expectLastSave(vi.mocked(updateAppearance), tenant.id, { ...DEFAULTS, accentLight: "#1b5e20" });
+    expect(vi.mocked(updateAppearance)).toHaveBeenCalledTimes(1);
+  });
+
+  it("expands 3-digit shorthand on tab-out", async () => {
+    const tenant = makeTenant();
+    const user = userEvent.setup();
+    render(<AppearanceForm tenant={tenant} />);
+
+    await user.clear(textInput("foregroundDark"));
+    await user.type(textInput("foregroundDark"), "#fff");
+    await user.tab();
+
+    expect(textInput("foregroundDark")).toHaveValue("#ffffff");
+    await expectLastSave(vi.mocked(updateAppearance), tenant.id, { ...DEFAULTS, foregroundDark: "#ffffff" });
+  });
+
   it("flags an invalid hex color and doesn't save it", async () => {
     const user = userEvent.setup();
     render(<AppearanceForm tenant={makeTenant()} />);
