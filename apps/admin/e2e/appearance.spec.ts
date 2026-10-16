@@ -15,6 +15,8 @@ test("autosaves a color, filling in defaults for the untouched ones", async ({ p
     backgroundDark: "#0a0a0a",
     foregroundDark: "#fafafa",
     accentDark: "#3b82f6",
+    headerLight: "",
+    headerDark: "",
   });
 
   await page.reload();

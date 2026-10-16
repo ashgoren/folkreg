@@ -15,6 +15,8 @@ const theme = (): ThemeConfig => ({
   foregroundDark: "#eeeeee",
   accentLight: "#d97706",
   accentDark: "#f59e0b",
+  headerLight: "#1b5e20",
+  headerDark: "",
 });
 
 describe("updateAppearance", () => {

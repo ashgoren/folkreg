@@ -16,6 +16,8 @@ const DEFAULTS: ThemeConfig = {
   backgroundDark: "#0a0a0a",
   foregroundDark: "#fafafa",
   accentDark: "#3b82f6",
+  headerLight: "",
+  headerDark: "",
 };
 
 // Each label ("Background", etc.) appears once per light/dark section, so fields are looked up
@@ -94,6 +96,31 @@ describe("AppearanceForm", () => {
 
     expect(textInput("foregroundDark")).toHaveValue("#ffffff");
     await expectLastSave(vi.mocked(updateAppearance), tenant.id, { ...DEFAULTS, foregroundDark: "#ffffff" });
+  });
+
+  it("marks a blank header's swatch as no color", () => {
+    render(<AppearanceForm tenant={makeTenant()} />);
+
+    const [lightHeaderSwatch] = screen.getAllByLabelText("Header swatch");
+    expect(textInput("headerLight")).toHaveValue("");
+    expect(lightHeaderSwatch!.parentElement!.querySelector("[data-no-color]")).toBeInTheDocument();
+  });
+
+  it("saves a header color, and clearing it saves blank (the tint) again", async () => {
+    const tenant = makeTenant();
+    const user = userEvent.setup();
+    render(<AppearanceForm tenant={tenant} />);
+
+    await user.type(textInput("headerDark"), "1b5e20");
+    await user.tab();
+    await expectLastSave(vi.mocked(updateAppearance), tenant.id, { ...DEFAULTS, headerDark: "#1b5e20" });
+    const darkHeaderSwatch = screen.getAllByLabelText("Header swatch")[1]!;
+    expect(darkHeaderSwatch).toHaveValue("#1b5e20");
+    expect(darkHeaderSwatch.parentElement!.querySelector("[data-no-color]")).not.toBeInTheDocument();
+
+    await user.clear(textInput("headerDark"));
+    await user.tab();
+    await expectLastSave(vi.mocked(updateAppearance), tenant.id, DEFAULTS);
   });
 
   it("flags an invalid hex color and doesn't save it", async () => {

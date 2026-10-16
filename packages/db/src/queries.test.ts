@@ -102,7 +102,7 @@ describe("updateTenant", () => {
   });
 
   it("round-trips jsonb columns as their typed shape", async () => {
-    const theme = { backgroundLight: "#ffffff", backgroundDark: "#000000", foregroundLight: "#111111", foregroundDark: "#eeeeee", accentLight: "#d97706", accentDark: "#f59e0b" };
+    const theme = { backgroundLight: "#ffffff", backgroundDark: "#000000", foregroundLight: "#111111", foregroundDark: "#eeeeee", accentLight: "#d97706", accentDark: "#f59e0b", headerLight: "", headerDark: "#1b5e20" };
     await db.updateTenant({ theme_config: theme, receipts_config: { emailFrom: "a@example.org", emailReplyTo: "" } });
 
     const tenant = await db.getTenant();

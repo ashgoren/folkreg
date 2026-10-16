@@ -106,6 +106,8 @@ export const defaultThemeConfig = (): ThemeConfig => ({
   backgroundDark: "#0a0a0a",
   foregroundDark: "#fafafa",
   accentDark: "#3b82f6",
+  headerLight: "",
+  headerDark: "",
 });
 
 export const defaultWaiverConfig = (): WaiverConfig => ({ show: false, docusealTemplateId: "" });

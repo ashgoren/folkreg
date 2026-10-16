@@ -32,6 +32,7 @@ const optionalUrl = z.string().refine((value) => value === "" || webUrl.safePars
 });
 
 const hexColor = z.string().regex(/^#[0-9a-f]{6}$/i, "Must be a hex color, e.g. #d97706");
+const optionalHexColor = z.union([z.literal(""), hexColor], { error: "Must be a hex color, e.g. #d97706" });
 
 export const TIMEZONES = [
   { value: "America/New_York", label: "Eastern" },
@@ -340,6 +341,8 @@ export const themeConfigSchema = z.object({
   foregroundDark: hexColor,
   accentLight: hexColor,
   accentDark: hexColor,
+  headerLight: optionalHexColor,
+  headerDark: optionalHexColor,
 });
 export type ThemeConfig = z.infer<typeof themeConfigSchema>;
 

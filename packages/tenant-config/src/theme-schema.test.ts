@@ -8,6 +8,8 @@ const valid: ThemeConfig = {
   foregroundDark: "#EEEEEE",
   accentLight: "#d97706",
   accentDark: "#F59E0B",
+  headerLight: "",
+  headerDark: "#1b5e20",
 };
 
 describe("themeConfigSchema", () => {
@@ -29,4 +31,14 @@ describe("themeConfigSchema", () => {
     expect(result.error?.issues[0]?.message).toBe("Must be a hex color, e.g. #d97706");
   });
 
+  it("accepts a blank header color, which means the derived tint", () => {
+    expect(themeConfigSchema.safeParse({ ...valid, headerLight: "", headerDark: "" }).success).toBe(true);
+  });
+
+  it("rejects a malformed header color with the same message", () => {
+    const result = themeConfigSchema.safeParse({ ...valid, headerLight: "#fff" });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.path).toEqual(["headerLight"]);
+    expect(result.error?.issues[0]?.message).toBe("Must be a hex color, e.g. #d97706");
+  });
 });
