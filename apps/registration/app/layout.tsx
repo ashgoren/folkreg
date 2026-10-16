@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { SiteHeader } from "@/components/site-header";
 import { getRequestTenant } from "@/lib/tenant";
 import { THEME_COOKIE, dataThemeAttribute, parseTheme } from "@/lib/theme";
+import { tenantThemeStyle } from "@/lib/tenant-theme";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -24,6 +25,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html
       lang="en"
       data-theme={dataThemeAttribute(theme)}
+      style={tenantThemeStyle(tenant.theme_config)}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">

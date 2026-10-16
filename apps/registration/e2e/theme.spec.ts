@@ -1,12 +1,12 @@
 import type { Locator, Page } from "@playwright/test";
-import { defaultRegistrationConfig } from "@repo/tenant-config";
+import { defaultRegistrationConfig, defaultThemeConfig } from "@repo/tenant-config";
 import { test, expect, service } from "./fixtures";
 import { updateTenantConfig } from "../test/supabase";
 
-// globals.css's background token: oklch(1 0 0) light, oklch(0.145 0 0) dark. Chromium reports the
-// computed color in the same oklch() form.
-const LIGHT_BACKGROUND = "oklch(1 0 0)";
-const DARK_BACKGROUND = "oklch(0.145 0 0)";
+// The default theme_config's page backgrounds, #ffffff light and #0a0a0a dark, as Chromium reports
+// a computed color.
+const LIGHT_BACKGROUND = "rgb(255, 255, 255)";
+const DARK_BACKGROUND = "rgb(10, 10, 10)";
 
 const bodyBackground = (page: Page) => page.locator("body").evaluate((body) => getComputedStyle(body).backgroundColor);
 const backgroundOf = (locator: Locator) => locator.evaluate((element) => getComputedStyle(element).backgroundColor);
@@ -93,4 +93,31 @@ test("dark: utilities follow the theme, including auto on a dark OS", async ({ p
 
   await page.getByRole("button", { name: /theme: auto/i }).click(); // auto -> light, on a dark OS
   await expect.poll(() => backgroundOf(input)).toBe("rgba(0, 0, 0, 0)");
+});
+
+test("the tenant's own colors show in each mode, with readable text on its accent", async ({ page, tenantId }) => {
+  await updateTenantConfig(service, tenantId, {
+    registration_config: { ...defaultRegistrationConfig(), opening: "now" },
+    theme_config: {
+      ...defaultThemeConfig(),
+      backgroundLight: "#fae1b7",
+      accentLight: "#cc7a00",
+      backgroundDark: "#2a1500",
+      accentDark: "#f1a039",
+    },
+  });
+  // The form's Save button is a primary button: the accent behind text chosen to contrast with it.
+  const save = page.getByRole("button", { name: "Save" }).first();
+  const textColorOf = (locator: Locator) => locator.evaluate((element) => getComputedStyle(element).color);
+
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("/");
+  expect(await bodyBackground(page)).toBe("rgb(250, 225, 183)");
+  expect(await backgroundOf(save)).toBe("rgb(204, 122, 0)");
+
+  await page.emulateMedia({ colorScheme: "dark" }); // auto, now on a dark OS
+  await expect.poll(() => bodyBackground(page)).toBe("rgb(42, 21, 0)");
+  // Polled: the button animates its colors (`transition-all`), so it takes a moment to arrive.
+  await expect.poll(() => backgroundOf(save)).toBe("rgb(241, 160, 57)");
+  await expect.poll(() => textColorOf(save)).toBe("rgb(10, 10, 10)"); // near-black on the bright orange
 });
