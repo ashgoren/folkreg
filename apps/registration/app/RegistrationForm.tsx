@@ -2,20 +2,22 @@
 
 import type { FieldsConfig, WaiverConfig } from "@repo/tenant-config";
 import type { RegistrationParty } from "./registration-party";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm, type Control, type FieldValues } from "react-hook-form";
 import { PersonCard } from "@/components/person-card";
 import { readDraftParty, writeDraftParty } from "@/lib/draft-storage";
 import { activeFields, buildDefaultPerson, buildRegistrationSchema, isPersonValid } from "./registration-party";
+import { submitRegistration } from "./actions";
 
 // At most one person is ever being edited at a time; everyone else shows a read-only summary.
 // The editingKey is either "registrant" or a companion's index, or null if no one is being edited.
 type PersonKey = "registrant" | number;
 
-// Which person's card starts open for a party: the first one who isn't valid yet, or no one.
-const firstPersonToEdit = (fieldsConfig: FieldsConfig, party: RegistrationParty): PersonKey | null => {
+// The party's invalid person, or null if everyone is valid. A card only closes while its person is
+// valid, so there's at most one: the person who was being edited. Used to reopen card on draft restore.
+const findInvalidPerson = (fieldsConfig: FieldsConfig, party: RegistrationParty): PersonKey | null => {
   if (!isPersonValid(fieldsConfig, party.registrant, 0)) return "registrant";
   const index = party.companions.findIndex((person) => !isPersonValid(fieldsConfig, person, 1));
   return index === -1 ? null : index;
@@ -43,7 +45,7 @@ export function RegistrationForm({ fieldsConfig, waiverConfig }: { fieldsConfig:
     const draft = readDraftParty();
     if (draft) {
       form.reset(draft);
-      setEditingKey(firstPersonToEdit(fieldsConfig, draft));
+      setEditingKey(findInvalidPerson(fieldsConfig, draft));
     }
     // form.watch callback form to prevent re-renders
     const subscription = form.watch(() => writeDraftParty(form.getValues()));
@@ -53,6 +55,14 @@ export function RegistrationForm({ fieldsConfig, waiverConfig }: { fieldsConfig:
   const fieldStatePathFor = (key: PersonKey) => (key === "registrant" ? "registrant" : (`companions.${key}` as const));
   const titleFor = (key: PersonKey) => (key === "registrant" ? "You" : `Person ${key + 2}`);
   const modeFor = (key: PersonKey) => (editingKey === key ? "editing" : "summary");
+
+  // Any change to the party (edit/add/remove) clears this message.
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const startEditing = (key: PersonKey) => {
+    setSubmitError(null);
+    setEditingKey(key);
+  };
 
   // Fire-and-forget: trigger validation, and if the person passes, clear the editingKey to show their summary instead of the form.
   const finishEditing = async () => {
@@ -64,10 +74,11 @@ export function RegistrationForm({ fieldsConfig, waiverConfig }: { fieldsConfig:
   const addCompanion = () => {
     const newIndex = companions.length;
     append(buildDefaultPerson(fieldsConfig));
-    setEditingKey(newIndex);
+    startEditing(newIndex);
   };
 
   const removeCompanion = (index: number) => {
+    setSubmitError(null);
     remove(index);
     setEditingKey((key) => {
       if (key === "registrant" || key === null) return key;
@@ -75,6 +86,21 @@ export function RegistrationForm({ fieldsConfig, waiverConfig }: { fieldsConfig:
       return key > index ? key - 1 : key;
     });
   };
+
+  const [isSubmitting, startSubmitting] = useTransition();
+
+  // handleSubmit re-validates and only calls this if it passes, with the values the schema parsed.
+  // Continue only shows while every card is closed, and a card only closes while its person is valid, but
+  // the server re-validates, creates the order, and redirects; it only returns when there's an error to show.
+  // useTransition keeps isSubmitting true for the server round trip, so the button can't be clicked twice;
+  // on success, Next's redirect boundary then swaps the form out for the next page.
+  const submit = form.handleSubmit((party) =>
+    startSubmitting(async () => {
+      setSubmitError(null);
+      const { error } = await submitRegistration(party);
+      setSubmitError(error); // only reached on failure (successful submit redirects)
+    })
+  );
 
   // Field components take the loosest Control<FieldValues> b/c tenant active fields aren't known until runtime.
   const control = form.control as unknown as Control<FieldValues>;
@@ -90,7 +116,7 @@ export function RegistrationForm({ fieldsConfig, waiverConfig }: { fieldsConfig:
         isRegistrant
         title="You"
         mode={modeFor("registrant")}
-        onEdit={editingKey === null ? () => setEditingKey("registrant") : undefined}
+        onEdit={editingKey === null ? () => startEditing("registrant") : undefined}
         onDone={finishEditing}
       />
       {companions.map((field, index) => (
@@ -102,7 +128,7 @@ export function RegistrationForm({ fieldsConfig, waiverConfig }: { fieldsConfig:
           isRegistrant={false}
           title={titleFor(index)}
           mode={modeFor(index)}
-          onEdit={editingKey === null ? () => setEditingKey(index) : undefined}
+          onEdit={editingKey === null ? () => startEditing(index) : undefined}
           onDone={finishEditing}
           onRemove={() => removeCompanion(index)}
         />
@@ -114,7 +140,21 @@ export function RegistrationForm({ fieldsConfig, waiverConfig }: { fieldsConfig:
       ) : (
         <p className="text-sm text-muted-foreground">You&apos;ll be able to add more people once you save your information above.</p>
       )}
+
       {waiverConfig.show && <p>Waiver placeholder.</p>}
+
+      {editingKey === null && (
+        <>
+          {submitError && (
+            <p role="alert" className="text-sm text-destructive">
+              {submitError}
+            </p>
+          )}
+          <Button type="button" onClick={submit} disabled={isSubmitting}>
+            {isSubmitting ? "Submitting…" : "Continue"}
+          </Button>
+        </>
+      )}
     </form>
   );
 }

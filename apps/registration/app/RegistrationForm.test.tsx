@@ -26,7 +26,7 @@ const waiverConfig: WaiverConfig = { show: false, docusealTemplateId: "" };
 
 const renderForm = () => render(<RegistrationForm fieldsConfig={fieldsConfig} waiverConfig={waiverConfig} />);
 
-// Fills the registrant's required fields and clicks Done, leaving it valid and in summary mode --
+// Fills the registrant's required fields and clicks Save, leaving it valid and in summary mode --
 // Add Someone Else and Edit (on other people) are both hidden while a form is still open, so this
 // is the realistic sequence for any test that needs to get past the registrant.
 // "Email" and "Confirm email" need a query that distinguishes them, but exact:false (substring,
@@ -41,7 +41,7 @@ const fillValidRegistrant = async (user: ReturnType<typeof userEvent.setup>) => 
   await user.type(screen.getByLabelText(/^Confirm email/), "jane@example.com");
   await user.type(screen.getByLabelText("Phone", { exact: false }), "555-555-5555");
   await user.click(screen.getByRole("checkbox", { name: "Yes" }));
-  await user.click(screen.getByRole("button", { name: "Done" }));
+  await user.click(screen.getByRole("button", { name: "Save" }));
 };
 
 beforeEach(() => {
@@ -91,11 +91,11 @@ describe("RegistrationForm", () => {
     expect(screen.getByRole("group", { name: "Person 2" })).toBeInTheDocument();
   });
 
-  it("clicking Done on an invalid card shows its errors and keeps it in edit mode", async () => {
+  it("clicking Save on an invalid card shows its errors and keeps it in edit mode", async () => {
     const user = userEvent.setup();
     renderForm();
 
-    await user.click(screen.getByRole("button", { name: "Done" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
 
     expect(screen.getByLabelText("First name", { exact: false })).toBeInTheDocument();
     expect(await screen.findByText("Please enter first name.")).toBeInTheDocument();
@@ -121,7 +121,7 @@ describe("RegistrationForm", () => {
     await user.type(screen.getByLabelText(/^Email/), "bob@example.com");
     await user.type(screen.getByLabelText(/^Confirm email/), "bob@example.com");
     await user.type(screen.getByLabelText("Phone", { exact: false }), "555-555-5555");
-    await user.click(screen.getByRole("button", { name: "Done" })); // Person 2 collapses; Edit buttons reappear
+    await user.click(screen.getByRole("button", { name: "Save" })); // Person 2 collapses; Edit buttons reappear
 
     await user.click(screen.getByRole("button", { name: "Edit Jane Doe" })); // the registrant's Edit button, labeled by its typed name
 
@@ -162,14 +162,28 @@ describe("RegistrationForm", () => {
   });
 
   describe("submit", () => {
-    it("doesn't call submitRegistration when the registrant is still invalid", async () => {
+    it("hides Continue while a card is open, showing it once the person is done", async () => {
       const user = userEvent.setup();
       renderForm();
 
+      expect(screen.queryByRole("button", { name: "Continue" })).not.toBeInTheDocument();
+      expect(screen.getByText(/you.ll be able to add more people/i)).toBeInTheDocument();
+
+      await fillValidRegistrant(user);
+
+      expect(screen.getByRole("button", { name: "Continue" })).toBeInTheDocument();
+    });
+
+    it("sends the validated party to submitRegistration", async () => {
+      const user = userEvent.setup();
+      renderForm();
+      await fillValidRegistrant(user);
+
       await user.click(screen.getByRole("button", { name: "Continue" }));
 
-      expect(submitRegistration).not.toHaveBeenCalled();
-      expect(await screen.findByText("Please enter first name.")).toBeInTheDocument();
+      expect(submitRegistration).toHaveBeenCalledWith(
+        expect.objectContaining({ registrant: expect.objectContaining({ first: "Jane", email: "jane@example.com" }), companions: [] })
+      );
     });
 
     it("shows the server's error message", async () => {
@@ -181,6 +195,21 @@ describe("RegistrationForm", () => {
       await user.click(screen.getByRole("button", { name: "Continue" }));
 
       expect(await screen.findByRole("alert")).toHaveTextContent("Registration is no longer open.");
+    });
+
+    it("clears the server's error message once a card is opened again", async () => {
+      vi.mocked(submitRegistration).mockResolvedValue({ error: "Registration is no longer open." });
+      const user = userEvent.setup();
+      renderForm();
+      await fillValidRegistrant(user);
+      await user.click(screen.getByRole("button", { name: "Continue" }));
+      await screen.findByRole("alert");
+
+      await user.click(screen.getByRole("button", { name: "Edit Jane Doe" }));
+      await user.click(screen.getByRole("button", { name: "Save" }));
+
+      expect(screen.getByRole("button", { name: "Continue" })).toBeInTheDocument();
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     });
   });
 

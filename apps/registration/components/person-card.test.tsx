@@ -96,7 +96,7 @@ describe("PersonCard", () => {
     expect(onEdit).toHaveBeenCalled();
   });
 
-  it("calls onDone when the editing card's Done button is clicked", async () => {
+  it("calls onDone when the editing card's Save button is clicked", async () => {
     const onDone = vi.fn();
     const user = userEvent.setup();
     render(
@@ -116,7 +116,7 @@ describe("PersonCard", () => {
       </TestForm>
     );
 
-    await user.click(screen.getByRole("button", { name: "Done" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
 
     expect(onDone).toHaveBeenCalled();
   });

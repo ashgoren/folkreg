@@ -60,6 +60,7 @@ test("a new tab starts a blank form", async ({ page, context }) => {
 test("submitting a complete registration confirms the order and redirects to /payment", async ({ page, tenantId }) => {
   await page.goto("/");
   await fillRequiredFields(page);
+  await page.getByRole("button", { name: "Save" }).click();
 
   await page.getByRole("button", { name: "Continue" }).click();
 

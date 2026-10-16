@@ -47,7 +47,7 @@ export function PersonCard({ control, namePrefix, fields, isRegistrant, title, m
           ))}
         </div>
         <Button type="button" className="mt-4" onClick={onDone}>
-          Done
+          Save
         </Button>
       </div>
     );
