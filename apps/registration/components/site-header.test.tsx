@@ -7,7 +7,7 @@ const event = (overrides: Partial<EventConfig>): EventConfig => ({ ...defaultEve
 
 describe("SiteHeader", () => {
   it("shows the event's title, dates, and location", () => {
-    render(<SiteHeader event={event({
+    render(<SiteHeader theme="auto" event={event({
       title: "Spring Dance", start: "2027-04-02T19:00", end: "2027-04-04T15:00", location: "Grange Hall",
     })} />);
 
@@ -17,22 +17,24 @@ describe("SiteHeader", () => {
   });
 
   it("shows the organizer's own date wording in place of the range", () => {
-    render(<SiteHeader event={event({ title: "Spring Dance", start: "2027-04-02T19:00", date: "Early April" })} />);
+    render(<SiteHeader theme="auto" event={event({ title: "Spring Dance", start: "2027-04-02T19:00", date: "Early April" })} />);
 
     expect(screen.getByText("Early April")).toBeInTheDocument();
     expect(screen.queryByText("April 2, 2027")).not.toBeInTheDocument();
   });
 
   it("leaves out what isn't filled in yet", () => {
-    render(<SiteHeader event={event({ title: "Spring Dance" })} />);
+    render(<SiteHeader theme="auto" event={event({ title: "Spring Dance" })} />);
 
     expect(screen.getByRole("heading", { name: "Spring Dance" })).toBeInTheDocument();
     expect(screen.getByRole("banner").querySelectorAll("p")).toHaveLength(0);
   });
 
-  it("renders nothing for an event with nothing filled in", () => {
-    const { container } = render(<SiteHeader event={defaultEventConfig()} />);
+  it("shows only the theme toggle for an event with nothing filled in", () => {
+    render(<SiteHeader theme="auto" event={defaultEventConfig()} />);
 
-    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByRole("heading")).not.toBeInTheDocument();
+    expect(screen.getByRole("banner").querySelectorAll("p")).toHaveLength(0);
+    expect(screen.getByRole("button", { name: /theme/i })).toBeInTheDocument();
   });
 });

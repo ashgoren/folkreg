@@ -14,9 +14,9 @@ test("the page shows the tenant's event and names it in the title", async ({ pag
   await expect(page).toHaveTitle("Spring Dance Registration");
 });
 
-test("a tenant with no event title yet gets a generic title and no header", async ({ page }) => {
+test("a tenant with no event title yet gets a generic title and a header with no heading", async ({ page }) => {
   await page.goto("/");
 
   await expect(page).toHaveTitle("Registration");
-  await expect(page.getByRole("banner")).toHaveCount(0);
+  await expect(page.getByRole("banner").getByRole("heading")).toHaveCount(0);
 });
