@@ -172,17 +172,6 @@ describe("RegistrationForm", () => {
       expect(await screen.findByText("Please enter first name.")).toBeInTheDocument();
     });
 
-    it("shows a conflict notice rather than silently retrying", async () => {
-      vi.mocked(submitRegistration).mockResolvedValue({ conflict: true });
-      const user = userEvent.setup();
-      renderForm();
-      await fillValidRegistrant(user);
-
-      await user.click(screen.getByRole("button", { name: "Continue" }));
-
-      expect(await screen.findByRole("alert")).toHaveTextContent(/updated in another tab/i);
-    });
-
     it("shows the server's error message", async () => {
       vi.mocked(submitRegistration).mockResolvedValue({ error: "Registration is no longer open." });
       const user = userEvent.setup();

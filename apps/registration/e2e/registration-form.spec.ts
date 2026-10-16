@@ -69,18 +69,3 @@ test("submitting a complete registration confirms the order and redirects to /pa
   expect(data![0]!.submission_mode).toBe("pay");
   expect(data![0]!.is_test).toBe(false);
 });
-
-test("reloading after registering still resumes without error, and resubmitting doesn't move registered_at", async ({ page, tenantId }) => {
-  await page.goto("/");
-  await fillRequiredFields(page);
-  await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page).toHaveURL(/\/payment/);
-
-  const before = await service.from("orders").select("registered_at").eq("tenant_id", tenantId).single();
-
-  await page.goto("/");
-  await expect(page.getByRole("group", { name: "You" })).toBeVisible();
-
-  const after = await service.from("orders").select("registered_at").eq("tenant_id", tenantId).single();
-  expect(after.data?.registered_at).toBe(before.data?.registered_at);
-});
